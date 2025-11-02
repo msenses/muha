@@ -53,7 +53,7 @@ export default function DashboardPage() {
       {/* Sol menü */}
       <aside style={{ padding: 16, borderRight: '1px solid rgba(255,255,255,0.12)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <Image src="/finova_logo_arkaplan_yok.png" alt="Finova" width={24} height={24} />
+          <Image src="/finova_logo_2.png" alt="Finova" width={160} height={40} style={{ height: 24, width: 'auto' }} />
           <strong>Finova</strong>
         </div>
         <nav style={{ display: 'grid', gap: 8 }}>
