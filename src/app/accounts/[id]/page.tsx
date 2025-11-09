@@ -17,6 +17,7 @@ export default function AccountDetailPage() {
   const [rows, setRows] = useState<Inv[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -52,6 +53,12 @@ export default function AccountDetailPage() {
       active = false;
     };
   }, [accountId, router]);
+
+  useEffect(() => {
+    const close = () => setOpenMenuId(null);
+    window.addEventListener('mousedown', close);
+    return () => window.removeEventListener('mousedown', close);
+  }, []);
 
   const ledger = useMemo(() => {
     let bal = 0;
@@ -140,6 +147,7 @@ export default function AccountDetailPage() {
             <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
               <thead>
                 <tr style={{ textAlign: 'left', color: 'white', opacity: 0.9 }}>
+                  <th style={{ padding: '8px' }}>İşlemler</th>
                   <th style={{ padding: '8px' }}>Tarih</th>
                   <th style={{ padding: '8px' }}>Evrak No</th>
                   <th style={{ padding: '8px' }}>Açıklama</th>
@@ -151,6 +159,92 @@ export default function AccountDetailPage() {
               <tbody>
                 {ledger.map((r) => (
                   <tr key={r.id} style={{ color: 'white' }}>
+                    <td style={{ padding: '8px', position: 'relative' }}>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId((curr) => (curr === r.id ? null : r.id));
+                        }}
+                        style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white', cursor: 'pointer' }}
+                      >
+                        İşlemler ▾
+                      </button>
+                      {openMenuId === r.id && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            marginTop: 6,
+                            minWidth: 180,
+                            background: 'white',
+                            color: '#222',
+                            borderRadius: 8,
+                            boxShadow: '0 10px 24px rgba(0,0,0,0.25)',
+                            zIndex: 50,
+                            overflow: 'hidden',
+                          }}
+                          onMouseDown={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            onClick={() => {
+                              setOpenMenuId(null);
+                              router.push((`/invoices/${r.id}/edit`) as Route);
+                            }}
+                            style={{ width: '100%', textAlign: 'left', padding: '8px 10px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                          >
+                            Faturayı Aç
+                          </button>
+                          <button
+                            onClick={async () => {
+                              setOpenMenuId(null);
+                              if (!confirm('Bu faturayı silmek istediğinize emin misiniz?')) return;
+                              try {
+                                await supabase.from('invoice_items').delete().eq('invoice_id', r.id);
+                                await supabase.from('stock_movements').delete().eq('invoice_id', r.id);
+                                const { error } = await supabase.from('invoices').delete().eq('id', r.id);
+                                if (error) throw error;
+                                setRows((prev) => prev.filter((x) => x.id !== r.id));
+                              } catch (e) {
+                                alert('Silme başarısız.');
+                              }
+                            }}
+                            style={{ width: '100%', textAlign: 'left', padding: '8px 10px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#e74c3c' }}
+                          >
+                            Faturayı Sil
+                          </button>
+                          <div style={{ height: 1, background: '#eee' }} />
+                          <button
+                            onClick={() => {
+                              setOpenMenuId(null);
+                              router.push((`/cash?credit=${accountId}`) as Route);
+                            }}
+                            style={{ width: '100%', textAlign: 'left', padding: '8px 10px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                          >
+                            Tahsilat Oluştur
+                          </button>
+                          <button
+                            onClick={() => {
+                              setOpenMenuId(null);
+                              router.push((`/cash?debit=${accountId}`) as Route);
+                            }}
+                            style={{ width: '100%', textAlign: 'left', padding: '8px 10px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                          >
+                            Ödeme Oluştur
+                          </button>
+                          <button
+                            onClick={() => {
+                              setOpenMenuId(null);
+                              alert('Yazdır (yakında)');
+                            }}
+                            style={{ width: '100%', textAlign: 'left', padding: '8px 10px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                          >
+                            Yazdır/PDF
+                          </button>
+                        </div>
+                      )}
+                    </td>
                     <td style={{ padding: '8px' }}>{r.date}</td>
                     <td style={{ padding: '8px' }}>{r.no}</td>
                     <td style={{ padding: '8px' }}>{r.desc}</td>
