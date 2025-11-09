@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchCurrentCompanyId } from '@/lib/company';
@@ -21,6 +21,19 @@ export default function AccountsPage() {
   const [q, setQ] = useState('');
   const [showNew, setShowNew] = useState(false);
   const [scope, setScope] = useState<'all' | 'debt' | 'credit'>('all');
+  const [showReports, setShowReports] = useState(false);
+  const reportsRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (!reportsRef.current) return;
+      if (!reportsRef.current.contains(e.target as Node)) {
+        setShowReports(false);
+      }
+    };
+    window.addEventListener('mousedown', onClick);
+    return () => window.removeEventListener('mousedown', onClick);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -120,8 +133,19 @@ export default function AccountsPage() {
       {/* Üst Araç Çubuğu */}
       <div style={{ padding: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
         <button onClick={() => router.push('/accounts/new')} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: '#e74c3c', color: 'white', cursor: 'pointer' }}>+Yeni Cari</button>
-        <button onClick={() => {}} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: '#3498db', color: 'white', cursor: 'pointer' }}>Gruplar</button>
-        <button onClick={() => router.push('/reports')} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: '#d4a40c', color: 'white', cursor: 'pointer' }}>Raporlar ▾</button>
+        <button onClick={() => router.push('/accounts/groups')} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: '#3498db', color: 'white', cursor: 'pointer' }}>Gruplar</button>
+        <div ref={reportsRef} style={{ position: 'relative' }}>
+          <button onClick={() => setShowReports((s) => !s)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: '#d4a40c', color: 'white', cursor: 'pointer' }}>Raporlar ▾</button>
+          {showReports && (
+            <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, minWidth: 220, background: 'white', color: '#333', borderRadius: 8, boxShadow: '0 10px 28px rgba(0,0,0,0.25)', padding: 6, zIndex: 1500 }}>
+              <button onClick={() => { setShowReports(false); router.push('/reports?type=cari-ekstre'); }} style={{ width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer' }}>≡ Cari Ekstre</button>
+              <button onClick={() => { setShowReports(false); router.push('/reports?type=cari-islem'); }} style={{ width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer' }}>≡ Cari İşlem Raporu</button>
+              <button onClick={() => { setShowReports(false); router.push('/reports?type=cari-rapor'); }} style={{ width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer' }}>≡ Cari Rapor</button>
+              <button onClick={() => { setShowReports(false); router.push('/reports?type=babs'); }} style={{ width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer' }}>≡ BA-BS raporu</button>
+              <button onClick={() => { setShowReports(false); router.push('/reports?type=mutabakat'); }} style={{ width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer' }}>≡ Cari Mutabakat Raporu</button>
+            </div>
+          )}
+        </div>
         <button onClick={() => router.push('/cash')} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: '#16a085', color: 'white', cursor: 'pointer' }}>Mahsup fişi</button>
       </div>
 
