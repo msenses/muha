@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import type { Route } from 'next';
 
 type Account = { id: string; name: string; code: string | null; phone: string | null; email: string | null; balance: number | null };
 type Inv = { id: string; invoice_no: string | null; invoice_date: string; type: 'sales' | 'purchase'; total: number };
@@ -85,8 +86,8 @@ export default function AccountDetailPage() {
         <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)' }}>
           {/* Üst bar */}
           <div style={{ display: 'flex', gap: 8, padding: 12, alignItems: 'center', background: 'rgba(255,255,255,0.04)' }}>
-            <button onClick={() => router.push('/reports?type=cari-ekstre&id=' + accountId)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: '#d4a40c', color: 'white' }}>Raporlar</button>
-            <button onClick={() => router.push(`/accounts/${accountId}/edit`)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: '#3498db', color: 'white' }}>Düzenle</button>
+            <button onClick={() => router.push((`/reports?type=cari-ekstre&id=${accountId}`) as Route)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: '#d4a40c', color: 'white' }}>Raporlar</button>
+            <button onClick={() => router.push((`/accounts/${accountId}/edit`) as Route)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: '#3498db', color: 'white' }}>Düzenle</button>
           </div>
 
           {/* Sekmeler/Özet */}
@@ -104,10 +105,10 @@ export default function AccountDetailPage() {
 
             {/* Hızlı Rap. Butonları */}
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <button onClick={() => router.push('/reports?type=cari-ekstre&id=' + accountId)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white' }}>≡ Cari Ekstre</button>
-              <button onClick={() => router.push('/reports?type=cari-islem&id=' + accountId)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white' }}>≡ Cari İşlemler Raporu</button>
+              <button onClick={() => router.push((`/reports?type=cari-ekstre&id=${accountId}`) as Route)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white' }}>≡ Cari Ekstre</button>
+              <button onClick={() => router.push((`/reports?type=cari-islem&id=${accountId}`) as Route)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white' }}>≡ Cari İşlemler Raporu</button>
               <button onClick={() => alert('Kargo fişi mock')} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white' }}>🧾 Kargo Fişi</button>
-              <button onClick={() => router.push('/reports?type=mutabakat&id=' + accountId)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white' }}>≡ Cari Mutabakat Raporu</button>
+              <button onClick={() => router.push((`/reports?type=mutabakat&id=${accountId}`) as Route)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white' }}>≡ Cari Mutabakat Raporu</button>
             </div>
 
             {/* Bakiye */}
