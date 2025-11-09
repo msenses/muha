@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import type { Route } from 'next';
 
 import { supabase } from '@/lib/supabaseClient';
 
@@ -100,7 +101,7 @@ export default function StockPage() {
           <div style={{ fontSize: 12, opacity: 0.85, marginBottom: 8 }}>Ana Sayfa / Stok Kartları</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: 12, borderRadius: 12, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}>
             <button
-              onClick={() => router.push('/stock/new')}
+              onClick={() => router.push(('/stock/new') as Route)}
               style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid #0b5ed7', background: '#0d6efd', color: 'white', cursor: 'pointer' }}
             >
               Yeni Stok (F5)
