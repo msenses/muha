@@ -19,6 +19,7 @@ export default function StockPage() {
   const [rows, setRows] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
+  const [reportsOpen, setReportsOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -109,18 +110,30 @@ export default function StockPage() {
             <button onClick={() => router.push(('/stock/groups') as Route)} style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.08)', color: 'white', cursor: 'pointer' }}>
               Gruplar
             </button>
-            <button style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.08)', color: 'white', cursor: 'pointer' }}>
+            <button onClick={() => router.push(('/stock/units') as Route)} style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.08)', color: 'white', cursor: 'pointer' }}>
               Birimler
             </button>
-            <button style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.08)', color: 'white', cursor: 'pointer' }}>
+            <button onClick={() => router.push(('/stock/warehouses') as Route)} style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.08)', color: 'white', cursor: 'pointer' }}>
               Depolar
             </button>
-            <button style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.08)', color: 'white', cursor: 'pointer' }}>
+            <button onClick={() => router.push(('/stock/package-groups') as Route)} style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.08)', color: 'white', cursor: 'pointer' }}>
               Stok Paket Grupları
             </button>
-            <button style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid #d4ac0d', background: '#f1c40f', color: '#2c3e50', cursor: 'pointer' }}>
-              Raporlar
-            </button>
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setReportsOpen((v) => !v)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 10, border: '1px solid #d4ac0d', background: '#f1c40f', color: '#2c3e50', cursor: 'pointer' }}>
+                Raporlar <span style={{ fontSize: 12 }}>▾</span>
+              </button>
+              {reportsOpen && (
+                <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, minWidth: 220, borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.15)', background: 'white', color: '#2c3e50', boxShadow: '0 10px 24px rgba(0,0,0,0.2)', zIndex: 10 }}>
+                  <button onClick={() => router.push(('/reports') as Route)} style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 0, cursor: 'pointer' }}>🧾 Stok Hareketleri</button>
+                  <button onClick={() => router.push(('/reports') as Route)} style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 0, cursor: 'pointer' }}>🏷️ Stok Etiket Bas</button>
+                  <button onClick={() => router.push(('/reports') as Route)} style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 0, cursor: 'pointer' }}>📦 Toplu Stok Raporu</button>
+                  <button onClick={() => router.push(('/reports') as Route)} style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 0, cursor: 'pointer' }}>📈 Depo Hareket Raporu</button>
+                  <button onClick={() => router.push(('/reports') as Route)} style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 0, cursor: 'pointer' }}>🔁 Depo Aktarım Raporu</button>
+                  <button onClick={() => router.push(('/reports') as Route)} style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 0, cursor: 'pointer' }}>💲 Fiyat Listesi</button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
