@@ -2,15 +2,28 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
 
 export default function StockMovementsReportViewPage() {
-  const search = useSearchParams();
   const router = useRouter();
-  const all = search.get('all') === '1';
-  const start = search.get('start') ?? '';
-  const end = search.get('end') ?? '';
+  const [all, setAll] = useState(true);
+  const [start, setStart] = useState('');
+  const [end, setEnd] = useState('');
+
+  // useSearchParams statik dışa aktarımda build-time'da hata verebildiği için
+  // parametreleri yalnızca istemci tarafında, mount sonrası okuyalım.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const sp = new URLSearchParams(window.location.search);
+    const isAll = sp.get('all') === '1';
+    const s = sp.get('start') ?? '';
+    const e = sp.get('end') ?? '';
+    setAll(isAll);
+    setStart(s);
+    setEnd(e);
+  }, []);
 
   return (
     <main style={{ minHeight: '100dvh', background: '#eef3f7', color: '#2c3e50' }}>
