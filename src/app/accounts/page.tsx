@@ -103,7 +103,7 @@ export default function AccountsPage() {
           return (
             <tr key={r.id} style={{ color: 'white' }}>
               <td style={{ padding: '8px' }}>
-                <button onClick={() => router.push(`/accounts/${r.id}/edit`)} style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white', cursor: 'pointer' }}>Cariye Git</button>
+                <button onClick={() => router.push(`/accounts/${r.id}`)} style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white', cursor: 'pointer' }}>Cariye Git</button>
               </td>
               <td style={{ padding: '8px' }}>{idx + 1}.</td>
               <td style={{ padding: '8px' }}>{r.name}</td>
