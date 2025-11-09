@@ -1,4 +1,6 @@
 'use client';
+'use client';
+export const dynamic = 'force-dynamic';
 
 import { useSearchParams, useRouter } from 'next/navigation';
 import type { Route } from 'next';
