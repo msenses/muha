@@ -100,7 +100,13 @@ export default function StockPage() {
           return (
             <tr key={p.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
               <td style={{ padding: 10 }}>
-                <button title="İncele" style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white', cursor: 'pointer' }}>🔍</button>
+                <button
+                  title="İncele"
+                  onClick={() => router.push((`/stock/${p.id}`) as Route)}
+                  style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white', cursor: 'pointer' }}
+                >
+                  🔍
+                </button>
               </td>
               <td style={{ padding: 10, opacity: 0.9 }}>{p.sku ?? '-'}</td>
               <td style={{ padding: 10, opacity: 0.9 }}>{'-'}</td>
