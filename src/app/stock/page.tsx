@@ -152,10 +152,10 @@ export default function StockPage() {
                 <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, minWidth: 220, borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.15)', background: 'white', color: '#2c3e50', boxShadow: '0 10px 24px rgba(0,0,0,0.2)', zIndex: 10 }}>
                   <button onClick={() => router.push(('/stock/reports/movements') as Route)} style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 0, cursor: 'pointer' }}>🧾 Stok Hareketleri</button>
                   <button onClick={() => router.push(('/stock/reports/labels') as Route)} style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 0, cursor: 'pointer' }}>🏷️ Stok Etiket Bas</button>
-                  <button onClick={() => router.push(('/reports') as Route)} style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 0, cursor: 'pointer' }}>📦 Toplu Stok Raporu</button>
-                  <button onClick={() => router.push(('/reports') as Route)} style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 0, cursor: 'pointer' }}>📈 Depo Hareket Raporu</button>
-                  <button onClick={() => router.push(('/reports') as Route)} style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 0, cursor: 'pointer' }}>🔁 Depo Aktarım Raporu</button>
-                  <button onClick={() => router.push(('/reports') as Route)} style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 0, cursor: 'pointer' }}>💲 Fiyat Listesi</button>
+                  <button onClick={() => router.push(('/stock/reports/summary') as Route)} style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 0, cursor: 'pointer' }}>📦 Toplu Stok Raporu</button>
+                  <button onClick={() => router.push(('/stock/reports/warehouse') as Route)} style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 0, cursor: 'pointer' }}>📈 Depo Hareket Raporu</button>
+                  <button onClick={() => router.push(('/stock/reports/transfer') as Route)} style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 0, cursor: 'pointer' }}>🔁 Depo Aktarım Raporu</button>
+                  <button onClick={() => router.push(('/stock/reports/pricelist') as Route)} style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 0, cursor: 'pointer' }}>💲 Fiyat Listesi</button>
                 </div>
               )}
             </div>
