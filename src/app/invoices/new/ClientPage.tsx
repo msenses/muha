@@ -43,6 +43,9 @@ export default function InvoiceNewClientPage() {
     discount_amount: 0,
   }]);
   const [tevkifatRate, setTevkifatRate] = useState<'YOK' | '10/1' | '5/10'>('YOK');
+  const [invoiceTab, setInvoiceTab] = useState<'info' | 'extra'>('info');
+  const [extraField1, setExtraField1] = useState('');
+  const [extraField2, setExtraField2] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [settings, setSettings] = useState({
@@ -248,28 +251,53 @@ export default function InvoiceNewClientPage() {
             {/* Fatura Bilgileri */}
             <div style={{ padding: 16, borderRadius: 16, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
-                <button type="button" style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white' }}>Fatura Bilgileri</button>
-                <button type="button" style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white' }}>Fatura Ek Alanlar</button>
+                <button
+                  type="button"
+                  onClick={() => setInvoiceTab('info')}
+                  style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: invoiceTab === 'info' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.12)', color: 'white' }}
+                >
+                  Fatura Bilgileri
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInvoiceTab('extra')}
+                  style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: invoiceTab === 'extra' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.12)', color: 'white' }}
+                >
+                  Fatura Ek Alanlar
+                </button>
                 <button type="button" onClick={() => setShowSettings(true)} style={{ marginLeft: 'auto', padding: '8px 10px', borderRadius: 8, border: '1px solid #1e40af', background: '#1e40af', color: 'white' }}>Alış Satış Ayarları</button>
               </div>
-              <div style={{ display: 'grid', gap: 8 }}>
-                <div>
-                  <div style={{ fontSize: 12, opacity: 0.8 }}>Fatura Tarihi</div>
-                  <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+              {invoiceTab === 'info' ? (
+                <div style={{ display: 'grid', gap: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 12, opacity: 0.8 }}>Fatura Tarihi</div>
+                    <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, opacity: 0.8 }}>Sevk Tarihi</div>
+                    <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, opacity: 0.8 }}>Saat</div>
+                    <input type="time" defaultValue="13:43" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, opacity: 0.8 }}>Fatura No</div>
+                    <input value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} placeholder="Otomatik" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                  </div>
                 </div>
-                <div>
-                  <div style={{ fontSize: 12, opacity: 0.8 }}>Sevk Tarihi</div>
-                  <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+              ) : (
+                <div style={{ padding: 8, border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, background: 'rgba(255,255,255,0.04)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 12, opacity: 0.85, marginBottom: 4 }}>Özel Alan 1</div>
+                    <input value={extraField1} onChange={(e) => setExtraField1(e.target.value)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, opacity: 0.85, marginBottom: 4 }}>Özel Alan 2</div>
+                    <input value={extraField2} onChange={(e) => setExtraField2(e.target.value)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                  </div>
                 </div>
-                <div>
-                  <div style={{ fontSize: 12, opacity: 0.8 }}>Saat</div>
-                  <input type="time" defaultValue="13:43" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
-                </div>
-                <div>
-                  <div style={{ fontSize: 12, opacity: 0.8 }}>Fatura No</div>
-                  <input value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} placeholder="Otomatik" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
-                </div>
-              </div>
+              )}
             </div>
           </div>
 
