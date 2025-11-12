@@ -76,6 +76,8 @@ export default function InvoiceNewClientPage() {
   const [draftDiscAmount, setDraftDiscAmount] = useState<number>(0);
   const [draftOtvRate, setDraftOtvRate] = useState<number>(0);
   const [draftOtvIncl, setDraftOtvIncl] = useState<'excluded' | 'included'>('excluded');
+  const [showStockModal, setShowStockModal] = useState(false);
+  const [stockSearch, setStockSearch] = useState('');
 
   const draftTotals = useMemo(() => {
     const qty = Number(draftQty || 0);
@@ -429,7 +431,7 @@ export default function InvoiceNewClientPage() {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
-                <button type="button" onClick={() => { const el = document.querySelector('select'); (el as HTMLSelectElement | null)?.focus(); }} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #22b8cf', background: '#22b8cf', color: 'white' }}>Stok Bul</button>
+                <button type="button" onClick={() => setShowStockModal(true)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #22b8cf', background: '#22b8cf', color: 'white' }}>Stok Bul</button>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button type="button" onClick={() => setShowAddPanel(false)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white' }}>Vazgeç</button>
                   <button type="button" onClick={commitDraft} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #22b8cf', background: '#22b8cf', color: 'white' }}>Ekle</button>
@@ -495,6 +497,49 @@ export default function InvoiceNewClientPage() {
                 </tbody>
             </table>
           </div>
+
+          {/* Stok Bul Modal */}
+          {showStockModal && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'grid', placeItems: 'center', zIndex: 1100 }} onClick={() => setShowStockModal(false)}>
+              <div onClick={(e) => e.stopPropagation()} style={{ width: 760, maxWidth: '95%', background: '#ffffff', color: '#111827', borderRadius: 8, boxShadow: '0 16px 40px rgba(0,0,0,0.35)' }}>
+                <div style={{ padding: 10, borderBottom: '1px solid #e5e7eb', fontWeight: 700 }}>STOK BUL</div>
+                <div style={{ padding: 10 }}>
+                  <input value={stockSearch} onChange={(e) => setStockSearch(e.target.value)} placeholder="Ara..." style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db', marginBottom: 10 }} />
+                  <div style={{ overflow: 'auto', maxHeight: 380, border: '1px solid #e5e7eb', borderRadius: 6 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ background: '#f3f4f6', color: '#111827', textAlign: 'left' }}>
+                          <th style={{ padding: 8, width: 70 }}>İşlem</th>
+                          <th style={{ padding: 8 }}>Ürün Adı</th>
+                          <th style={{ padding: 8, width: 120 }}>Stok Kodu</th>
+                          <th style={{ padding: 8, width: 120 }}>Barkod</th>
+                          <th style={{ padding: 8, width: 120 }}>Satış Fiyatı</th>
+                          <th style={{ padding: 8, width: 120 }}>Bakiye</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(products.filter((p) => (p.name ?? '').toLowerCase().includes((stockSearch || '').toLowerCase()))).map((p) => (
+                          <tr key={p.id} style={{ borderTop: '1px solid #e5e7eb' }}>
+                            <td style={{ padding: 6 }}>
+                              <button type="button" onClick={() => { onDraftProductPick(p.id); setShowStockModal(false); }} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #22b8cf', background: '#22b8cf', color: 'white', cursor: 'pointer' }}>Seç</button>
+                            </td>
+                            <td style={{ padding: 6 }}>{p.name}</td>
+                            <td style={{ padding: 6 }}>-</td>
+                            <td style={{ padding: 6 }}>-</td>
+                            <td style={{ padding: 6 }}>{Number(p.price ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
+                            <td style={{ padding: 6 }}>-</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+                    <button type="button" onClick={() => setShowStockModal(false)} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#f3f4f6' }}>Kapat</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Alt blok: Tutarlar + Açıklama/Ödeme */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
