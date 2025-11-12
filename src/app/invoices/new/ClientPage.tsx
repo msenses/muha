@@ -79,6 +79,15 @@ export default function InvoiceNewClientPage() {
   const [showStockModal, setShowStockModal] = useState(false);
   const [stockSearch, setStockSearch] = useState('');
 
+  // Alt bölüm sekmeleri
+  const [bottomTab, setBottomTab] = useState<'totals' | 'mustahsil' | 'bulk'>('totals');
+  const [withholding, setWithholding] = useState<number>(0); // G.V. Stopaj
+  const [pastureFund, setPastureFund] = useState<number>(0); // Mera Fonu
+  const [exchangeFee, setExchangeFee] = useState<number>(0); // Borsa Tescil Ücreti
+  const [sgkCut, setSgkCut] = useState<number>(0); // SGK Prim Kesintisi
+  const [bulkDiscRate, setBulkDiscRate] = useState<number>(0);
+  const [bulkDiscAmount, setBulkDiscAmount] = useState<number>(0);
+
   const draftTotals = useMemo(() => {
     const qty = Number(draftQty || 0);
     let netUnit = Number(draftUnitPrice || 0);
@@ -541,26 +550,79 @@ export default function InvoiceNewClientPage() {
             </div>
           )}
 
-          {/* Alt blok: Tutarlar + Açıklama/Ödeme */}
+          {/* Alt blok: Tutarlar/Müstahsil/Toplu İskonto + Açıklama/Ödeme */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div style={{ padding: 12, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)' }}>
-              <div style={{ fontWeight: 700, marginBottom: 8 }}>Tutarlar</div>
-              <div style={{ display: 'grid', gap: 6 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Toplam</span><strong>{totals.net.toFixed(2)}</strong></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>İskonto</span><strong>0.00</strong></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Ara Toplam</span><strong>{totals.net.toFixed(2)}</strong></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>KDV Tutar</span><strong>{totals.vat.toFixed(2)}</strong></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>ÖTV Tutar</span><strong>{totals.otv.toFixed(2)}</strong></div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', gap: 8 }}>
-                  <span>Tevkifat Oranı</span>
-                  <select value={tevkifatRate} onChange={(e) => setTevkifatRate(e.target.value as any)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
-                    <option value="YOK">YOK</option>
-                    <option value="10/1">10/1</option>
-                    <option value="5/10">5/10</option>
-                  </select>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}><span>G.Toplam</span><strong>{totals.total.toFixed(2)}</strong></div>
+            <div style={{ padding: 12, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', display: 'grid', gap: 10 }}>
+              {/* Tabs */}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button type="button" onClick={() => setBottomTab('totals')} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: bottomTab === 'totals' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.12)', color: 'white' }}>Tutarlar</button>
+                <button type="button" onClick={() => setBottomTab('mustahsil')} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: bottomTab === 'mustahsil' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.12)', color: 'white' }}>Müstahsil Ek Alan</button>
+                <button type="button" onClick={() => setBottomTab('bulk')} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: bottomTab === 'bulk' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.12)', color: 'white' }}>Toplu İskonto</button>
               </div>
+
+              {bottomTab === 'totals' && (
+                <div style={{ display: 'grid', gap: 6 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Toplam</span><strong>{totals.net.toFixed(2)}</strong></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>İskonto</span><strong>0.00</strong></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Ara Toplam</span><strong>{totals.net.toFixed(2)}</strong></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>KDV Tutar</span><strong>{totals.vat.toFixed(2)}</strong></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>ÖTV Tutar</span><strong>{totals.otv.toFixed(2)}</strong></div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', gap: 8 }}>
+                    <span>Tevkifat Oranı</span>
+                    <select value={tevkifatRate} onChange={(e) => setTevkifatRate(e.target.value as any)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
+                      <option value="YOK">YOK</option>
+                      <option value="10/1">10/1</option>
+                      <option value="5/10">5/10</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}><span>G.Toplam</span><strong>{totals.total.toFixed(2)}</strong></div>
+                </div>
+              )}
+
+              {bottomTab === 'mustahsil' && (
+                <div style={{ display: 'grid', gap: 8 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 80px', alignItems: 'center', gap: 8 }}>
+                    <div>G.V. Stopaj :</div>
+                    <input type="number" step="0.01" value={withholding} onChange={(e) => setWithholding(parseFloat(e.target.value) || 0)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                    <div style={{ textAlign: 'right', opacity: 0.8 }}>0.00 %</div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 80px', alignItems: 'center', gap: 8 }}>
+                    <div>Mera Fonu :</div>
+                    <input type="number" step="0.01" value={pastureFund} onChange={(e) => setPastureFund(parseFloat(e.target.value) || 0)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                    <div style={{ textAlign: 'right', opacity: 0.8 }}>0.00 %</div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 80px', alignItems: 'center', gap: 8 }}>
+                    <div>Borsa Tescil Ücreti :</div>
+                    <input type="number" step="0.01" value={exchangeFee} onChange={(e) => setExchangeFee(parseFloat(e.target.value) || 0)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                    <div style={{ textAlign: 'right', opacity: 0.8 }}>0.00 %</div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 80px', alignItems: 'center', gap: 8 }}>
+                    <div>SGK Prim Kesintisi :</div>
+                    <input type="number" step="0.01" value={sgkCut} onChange={(e) => setSgkCut(parseFloat(e.target.value) || 0)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                    <div style={{ textAlign: 'right', opacity: 0.8 }}>0.00 %</div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+                    <span>G.Toplam</span>
+                    <strong>{totals.total.toFixed(2)}</strong>
+                  </div>
+                </div>
+              )}
+
+              {bottomTab === 'bulk' && (
+                <div style={{ display: 'grid', gap: 8 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 12, opacity: 0.85, marginBottom: 4 }}>Toplu İskonto (%)</div>
+                      <input type="number" step="0.01" value={bulkDiscRate} onChange={(e) => setBulkDiscRate(parseFloat(e.target.value) || 0)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, opacity: 0.85, marginBottom: 4 }}>Toplu İskonto (TL)</div>
+                      <input type="number" step="0.01" value={bulkDiscAmount} onChange={(e) => setBulkDiscAmount(parseFloat(e.target.value) || 0)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                    </div>
+                  </div>
+                  <div style={{ opacity: 0.8, fontSize: 12 }}>Not: Bu alan görsel uyumu içindir; satırları otomatik etkilemez.</div>
+                </div>
+              )}
             </div>
 
             <div style={{ padding: 12, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', display: 'grid', gap: 10 }}>
