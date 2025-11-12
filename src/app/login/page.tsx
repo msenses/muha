@@ -41,7 +41,7 @@ export default function LoginPage() {
     <main style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)' }}>
       <div style={{ width: 400, maxWidth: '92%' }}>
         <div style={{ marginBottom: 12 }}>
-          <Image src="/finova_logo_arkaplan_yok.png" alt="Finova" width={1200} height={400} style={{ width: '100%', height: 'auto', display: 'block' }} />
+          <Image src="/finova_logo_2.png" alt="Finova" width={1200} height={400} style={{ width: '100%', height: 'auto', display: 'block' }} />
         </div>
         <form onSubmit={handleSubmit} style={{ width: '100%', padding: 24, borderRadius: 16, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)', color: 'white' }}>
         <label style={{ display: 'block', fontSize: 13, opacity: 0.9 }}>E-posta</label>
