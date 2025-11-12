@@ -62,6 +62,9 @@ export default function InvoiceNewClientPage() {
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const barcodeRef = useRef<HTMLInputElement | null>(null);
+  const [paymentType, setPaymentType] = useState<'Nakit' | 'Havale' | 'Kredi Kartı'>('Nakit');
+  const bankOptions = [{ id: 'default', name: 'Varsayılan', branch: 'Merkez' }];
+  const [selectedBankId, setSelectedBankId] = useState<string>('default');
 
   // Ürün ekleme paneli (görseldeki satır editörü)
   const [showAddPanel, setShowAddPanel] = useState(false);
@@ -655,10 +658,10 @@ export default function InvoiceNewClientPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 4 }}>Ödeme Şekli</div>
-                  <select style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
-                    <option>Nakit</option>
-                    <option>Havale</option>
-                    <option>Kredi Kartı</option>
+                  <select value={paymentType} onChange={(e) => setPaymentType(e.target.value as any)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
+                    <option value="Nakit">Nakit</option>
+                    <option value="Havale">Havale</option>
+                    <option value="Kredi Kartı">Kredi Kartı</option>
                   </select>
                 </div>
                 <div style={{ display: 'flex', gap: 12 }}>
@@ -666,6 +669,26 @@ export default function InvoiceNewClientPage() {
                   <button disabled={loading} type="submit" style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.15)', color: 'white' }}>{loading ? 'Kaydediliyor…' : 'Kaydet'}</button>
                 </div>
               </div>
+
+              {paymentType === 'Kredi Kartı' && (
+                <div style={{ marginTop: 12, borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: 10, borderBottom: '1px solid rgba(255,255,255,0.12)', fontWeight: 600, opacity: 0.9 }}>
+                    <div>Banka Adı</div>
+                    <div>Şubesi</div>
+                  </div>
+                  <div style={{ display: 'grid' }}>
+                    {bankOptions.map((b) => (
+                      <label key={b.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', padding: 10, borderTop: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <input type="radio" name="bank" checked={selectedBankId === b.id} onChange={() => setSelectedBankId(b.id)} />
+                          {b.name}
+                        </div>
+                        <div>{b.branch}</div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
