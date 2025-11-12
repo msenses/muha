@@ -85,8 +85,8 @@ export default function InvoiceNewClientPage() {
   const [pastureFund, setPastureFund] = useState<number>(0); // Mera Fonu
   const [exchangeFee, setExchangeFee] = useState<number>(0); // Borsa Tescil Ücreti
   const [sgkCut, setSgkCut] = useState<number>(0); // SGK Prim Kesintisi
-  const [bulkDiscRate, setBulkDiscRate] = useState<number>(0);
-  const [bulkDiscAmount, setBulkDiscAmount] = useState<number>(0);
+  const [bulkMode, setBulkMode] = useState<'none' | 'percent_subtotal' | 'percent_total' | 'tl_subtotal' | 'tl_total'>('none');
+  const [bulkValue, setBulkValue] = useState<number>(0);
 
   const draftTotals = useMemo(() => {
     const qty = Number(draftQty || 0);
@@ -610,17 +610,21 @@ export default function InvoiceNewClientPage() {
 
               {bottomTab === 'bulk' && (
                 <div style={{ display: 'grid', gap: 8 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                    <div>
-                      <div style={{ fontSize: 12, opacity: 0.85, marginBottom: 4 }}>Toplu İskonto (%)</div>
-                      <input type="number" step="0.01" value={bulkDiscRate} onChange={(e) => setBulkDiscRate(parseFloat(e.target.value) || 0)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 12, opacity: 0.85, marginBottom: 4 }}>Toplu İskonto (TL)</div>
-                      <input type="number" step="0.01" value={bulkDiscAmount} onChange={(e) => setBulkDiscAmount(parseFloat(e.target.value) || 0)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
-                    </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr 160px', alignItems: 'center', gap: 8 }}>
+                    <div>İskonto:</div>
+                    <select value={bulkMode} onChange={(e) => setBulkMode(e.target.value as any)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
+                      <option value="none">Seçim Yapınız</option>
+                      <option value="percent_subtotal">Yüzde İskonto Ara Toplamdan</option>
+                      <option value="percent_total">Yüzde İskonto Genel Toplamdan</option>
+                      <option value="tl_subtotal">TL İskonto Ara Toplamdan</option>
+                      <option value="tl_total">TL İskonto Genel Toplamdan</option>
+                    </select>
+                    <input type="number" step="0.01" value={bulkValue} onChange={(e) => setBulkValue(parseFloat(e.target.value) || 0)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
                   </div>
-                  <div style={{ opacity: 0.8, fontSize: 12 }}>Not: Bu alan görsel uyumu içindir; satırları otomatik etkilemez.</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+                    <span>G.Toplam</span>
+                    <strong>{totals.total.toFixed(2)}</strong>
+                  </div>
                 </div>
               )}
             </div>
