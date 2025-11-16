@@ -231,33 +231,55 @@ export default function EMustahsilNewClientPage() {
               </div>
               {leftTab === 'totals' ? (
                 <div style={{ padding: 12, display: 'grid', gap: 8 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 80px', alignItems: 'center', gap: 8 }}>
-                    <div>G.V. Stopajı :</div>
-                    <input type="number" step="0.01" value={gvStopaj} onChange={(e) => setGvStopaj(parseFloat(e.target.value) || 0)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
-                    <div style={{ textAlign: 'right', opacity: 0.8 }}>{(gvStopaj).toFixed(2)} %</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '6px 0' }}>
+                    <span>Toplam</span><strong>{totals.net.toFixed(2)}</strong>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 80px', alignItems: 'center', gap: 8 }}>
-                    <div>Mera Fonu :</div>
-                    <input type="number" step="0.01" value={pastureFund} onChange={(e) => setPastureFund(parseFloat(e.target.value) || 0)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
-                    <div style={{ textAlign: 'right', opacity: 0.8 }}>0.00 ₺</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '6px 0' }}>
+                    <span>İskonto</span><strong>0.00</strong>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 80px', alignItems: 'center', gap: 8 }}>
-                    <div>Borsa Tescil Ücreti :</div>
-                    <input type="number" step="0.01" value={exchangeFee} onChange={(e) => setExchangeFee(parseFloat(e.target.value) || 0)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
-                    <div style={{ textAlign: 'right', opacity: 0.8 }}>0.00 ₺</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '6px 0' }}>
+                    <span>Ara Toplam</span><strong>{totals.net.toFixed(2)}</strong>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 80px', alignItems: 'center', gap: 8 }}>
-                    <div>SGK Prim Kesintisi :</div>
-                    <input type="number" step="0.01" value={sgkCut} onChange={(e) => setSgkCut(parseFloat(e.target.value) || 0)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
-                    <div style={{ textAlign: 'right', opacity: 0.8 }}>0.00 ₺</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '6px 0' }}>
+                    <span>Kdv Tutar</span><strong>0.00</strong>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}><span>G.Toplam</span><strong>{totals.gtotal.toFixed(2)}</strong></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '6px 0' }}>
+                    <span>Ötv Tutar</span><strong>0.00</strong>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px', alignItems: 'center', gap: 8, borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '6px 0' }}>
+                    <span>Tevkifat Oranı</span>
+                    <select style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
+                      <option>YOK</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0' }}>
+                    <span>G.Toplam</span><strong>{totals.net.toFixed(2)}</strong>
+                  </div>
                 </div>
               ) : (
                 <div style={{ padding: 12, display: 'grid', gap: 8 }}>
                   <div style={{ fontSize: 12, opacity: 0.9 }}>Müstahsil Ek Alan</div>
-                  <input placeholder="Ek Alan 1" style={{ width: 320, padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
-                  <input placeholder="Ek Alan 2" style={{ width: 320, padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 80px', alignItems: 'center', gap: 8 }}>
+                    <div>G.V. Stopajı :</div>
+                    <input type="number" step="0.01" value={gvStopaj} onChange={(e) => setGvStopaj(parseFloat(e.target.value) || 0)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                    <div style={{ textAlign: 'right', opacity: 0.8 }}>{((totals.net * (gvStopaj || 0)) / 100).toFixed(2)} ₺</div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 80px', alignItems: 'center', gap: 8 }}>
+                    <div>Mera Fonu :</div>
+                    <input type="number" step="0.01" value={pastureFund} onChange={(e) => setPastureFund(parseFloat(e.target.value) || 0)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                    <div style={{ textAlign: 'right', opacity: 0.8 }}>{(pastureFund || 0).toFixed(2)} ₺</div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 80px', alignItems: 'center', gap: 8 }}>
+                    <div>Borsa Tescil Ücreti :</div>
+                    <input type="number" step="0.01" value={exchangeFee} onChange={(e) => setExchangeFee(parseFloat(e.target.value) || 0)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                    <div style={{ textAlign: 'right', opacity: 0.8 }}>{(exchangeFee || 0).toFixed(2)} ₺</div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 80px', alignItems: 'center', gap: 8 }}>
+                    <div>SGK Prim Kesintisi :</div>
+                    <input type="number" step="0.01" value={sgkCut} onChange={(e) => setSgkCut(parseFloat(e.target.value) || 0)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                    <div style={{ textAlign: 'right', opacity: 0.8 }}>{(sgkCut || 0).toFixed(2)} ₺</div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}><span>G.Toplam</span><strong>{totals.gtotal.toFixed(2)}</strong></div>
                 </div>
               )}
             </div>
