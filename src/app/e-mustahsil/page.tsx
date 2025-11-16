@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabaseClient';
 
 type Row = {
   id: string;
+  account_id?: string | null;
   name: string | null; // cari ünvan
   contact: string | null;
   date: string; // YYYY-MM-DD
@@ -39,7 +40,7 @@ export default function EMustahsilPage() {
       // Placeholder veri kaynağı: invoices tablosundan çek, tip ve tarih aralığına göre
       const query = supabase
         .from('invoices')
-        .select('id, invoice_date, total, accounts(name)')
+        .select('id, account_id, invoice_date, total, accounts(name)')
         .gte('invoice_date', startDate)
         .lte('invoice_date', endDate)
         .order('invoice_date', { ascending: false })
@@ -51,6 +52,7 @@ export default function EMustahsilPage() {
       } else {
         const mapped: Row[] = (data ?? []).map((d: any) => ({
           id: d.id,
+          account_id: d.account_id ?? null,
           name: d.accounts?.name ?? '-',
           contact: '-',
           date: d.invoice_date,
@@ -93,7 +95,7 @@ export default function EMustahsilPage() {
         {filtered.map((r) => (
           <tr key={r.id} style={{ color: 'white' }}>
             <td style={{ padding: '8px' }}>
-              <button style={{ padding: 6, borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white', cursor: 'pointer' }}>🔍</button>
+              <button onClick={() => r.account_id && router.push((`/e-mustahsil/preview?account=${r.account_id}`) as any)} style={{ padding: 6, borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white', cursor: 'pointer' }}>🔍</button>
             </td>
             <td style={{ padding: '8px' }}>{r.name}</td>
             <td style={{ padding: '8px' }}>{r.contact}</td>
