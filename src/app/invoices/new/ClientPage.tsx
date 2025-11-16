@@ -67,8 +67,8 @@ export default function InvoiceNewClientPage() {
     fetchLastPrice: false,
     eInvoiceActive: false,
   });
-  const [applyAvgCostToStocks, setApplyAvgCostToStocks] = useState<boolean>(false);
-  const [applyPurchasePriceToStocks, setApplyPurchasePriceToStocks] = useState<boolean>(true);
+  // Sağ üstteki iki seçenekten yalnızca biri seçili olsun (görseldeki gibi)
+  const [stockMode, setStockMode] = useState<'avg' | 'purchase'>('purchase');
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const barcodeRef = useRef<HTMLInputElement | null>(null);
@@ -399,11 +399,11 @@ export default function InvoiceNewClientPage() {
                   </div>
                   <div style={{ gridColumn: '1 / span 1', display: 'grid', gap: 6, marginTop: 4 }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <input type="checkbox" checked={applyAvgCostToStocks} onChange={(e) => setApplyAvgCostToStocks(e.target.checked)} />
+                      <input type="checkbox" checked={stockMode === 'avg'} onChange={() => setStockMode('avg')} />
                       Maliyet Ortalamasını Stoklara İşle
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <input type="checkbox" checked={applyPurchasePriceToStocks} onChange={(e) => setApplyPurchasePriceToStocks(e.target.checked)} />
+                      <input type="checkbox" checked={stockMode === 'purchase'} onChange={() => setStockMode('purchase')} />
                       Alış Fiyatını Stoklara İşle
                     </label>
                   </div>
