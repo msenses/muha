@@ -16,7 +16,7 @@ type Account = {
 
 export default function AccountsPage() {
   const router = useRouter();
-  const [selectionFor, setSelectionFor] = useState<'sales' | 'purchase' | null>(null);
+  const [selectionFor, setSelectionFor] = useState<'sales' | 'purchase' | 'dispatch' | null>(null);
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<Account[]>([]);
   const [q, setQ] = useState('');
