@@ -270,7 +270,7 @@ export default function InvoiceNewClientPage() {
   return (
     <main style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16 }}>
-        <strong>Satış Faturası</strong>
+        <strong>{type === 'sales' ? 'Satış Faturası' : 'Alış Faturası'}</strong>
       </header>
       <section style={{ padding: 16 }}>
         <form onSubmit={submit} style={{ display: 'grid', gap: 12 }}>
