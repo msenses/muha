@@ -31,6 +31,14 @@ export default function InvoiceNewClientPage() {
   const [invoiceNo, setInvoiceNo] = useState('');
   const [accountId, setAccountId] = useState<string>(typeof window === 'undefined' ? '' : (new URLSearchParams(window.location.search).get('account') ?? ''));
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accountName, setAccountName] = useState<string>('');
+  const [accountContact, setAccountContact] = useState<string>('');
+  const [accountAddress, setAccountAddress] = useState<string>('');
+  const [accountEmail, setAccountEmail] = useState<string>('');
+  const [taxOffice, setTaxOffice] = useState<string>('');
+  const [taxNo, setTaxNo] = useState<string>('');
+  const [city, setCity] = useState<string>('');
+  const [district, setDistrict] = useState<string>('');
   const [products, setProducts] = useState<Product[]>([]);
   const [lines, setLines] = useState<Line[]>([{
     product_id: null,
@@ -59,6 +67,8 @@ export default function InvoiceNewClientPage() {
     fetchLastPrice: false,
     eInvoiceActive: false,
   });
+  const [applyAvgCostToStocks, setApplyAvgCostToStocks] = useState<boolean>(false);
+  const [applyPurchasePriceToStocks, setApplyPurchasePriceToStocks] = useState<boolean>(true);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const barcodeRef = useRef<HTMLInputElement | null>(null);
@@ -122,6 +132,21 @@ export default function InvoiceNewClientPage() {
     };
     init();
   }, [router]);
+
+  // Seçilen cari için alanları doldur
+  useEffect(() => {
+    const loadAccount = async () => {
+      if (!accountId) return;
+      const { data } = await supabase.from('accounts').select('name, email, address, tax_id').eq('id', accountId).single();
+      if (data) {
+        setAccountName(data.name ?? '');
+        setAccountEmail(data.email ?? '');
+        setAccountAddress(data.address ?? '');
+        setTaxNo(data.tax_id ?? '');
+      }
+    };
+    loadAccount();
+  }, [accountId]);
 
   useEffect(() => {
     try {
@@ -280,28 +305,31 @@ export default function InvoiceNewClientPage() {
             <div style={{ padding: 16, borderRadius: 16, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}>
               <div style={{ fontWeight: 700, marginBottom: 10, opacity: 0.95 }}>Cari Bilgileri</div>
               <div style={{ display: 'grid', gap: 8 }}>
-                <div>
-                  <div style={{ fontSize: 12, opacity: 0.8 }}>Cari</div>
-                  <select value={accountId} onChange={(e) => setAccountId(e.target.value)} required style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
-                    <option value="">Seçiniz…</option>
-                    {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <div style={{ fontSize: 12, opacity: 0.8 }}>Ünvan</div>
-                  <input placeholder="Mehmet Bey" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'end' }}>
+                  <div>
+                    <div style={{ fontSize: 12, opacity: 0.8 }}>Ünvan</div>
+                    {accountId ? (
+                      <input value={accountName} onChange={(e) => setAccountName(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                    ) : (
+                      <select value={accountId} onChange={(e) => setAccountId(e.target.value)} required style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
+                        <option value="">Seçiniz…</option>
+                        {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                      </select>
+                    )}
+                  </div>
+                  <button type="button" onClick={() => { setAccountId(''); setAccountName(''); }} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white' }}>{accountId ? 'Değiştir' : 'Cari Seç'}</button>
                 </div>
                 <div>
                   <div style={{ fontSize: 12, opacity: 0.8 }}>Yetkili</div>
-                  <input placeholder="Ahmet Bey" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                  <input value={accountContact} onChange={(e) => setAccountContact(e.target.value)} placeholder="-" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
                 </div>
                 <div>
                   <div style={{ fontSize: 12, opacity: 0.8 }}>Adres</div>
-                  <input placeholder="Merkez" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                  <input value={accountAddress} onChange={(e) => setAccountAddress(e.target.value)} placeholder="Adres" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
                 </div>
                 <div>
                   <div style={{ fontSize: 12, opacity: 0.8 }}>Mail</div>
-                  <input placeholder="mail@example.com" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                  <input value={accountEmail} onChange={(e) => setAccountEmail(e.target.value)} placeholder="mail@example.com" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
                 </div>
               </div>
             </div>
@@ -312,19 +340,19 @@ export default function InvoiceNewClientPage() {
               <div style={{ display: 'grid', gap: 8 }}>
                 <div>
                   <div style={{ fontSize: 12, opacity: 0.8 }}>Vergi Dairesi</div>
-                  <input placeholder="Üsküdar" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                  <input value={taxOffice} onChange={(e) => setTaxOffice(e.target.value)} placeholder="Üsküdar" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
                 </div>
                 <div>
                   <div style={{ fontSize: 12, opacity: 0.8 }}>Vergi No</div>
-                  <input placeholder="12345678" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                  <input value={taxNo} onChange={(e) => setTaxNo(e.target.value)} placeholder="12345678" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
                 </div>
                 <div>
                   <div style={{ fontSize: 12, opacity: 0.8 }}>İl</div>
-                  <input placeholder="Düzce" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                  <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Düzce" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
                 </div>
                 <div>
                   <div style={{ fontSize: 12, opacity: 0.8 }}>İlçe</div>
-                  <input placeholder="Merkez" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                  <input value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="Merkez" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
                 </div>
               </div>
             </div>
@@ -362,6 +390,14 @@ export default function InvoiceNewClientPage() {
                     <div style={{ fontSize: 12, opacity: 0.8 }}>Saat</div>
                     <input type="time" defaultValue="13:43" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
                   </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input type="checkbox" checked={applyAvgCostToStocks} onChange={(e) => setApplyAvgCostToStocks(e.target.checked)} />
+                    Maliyet Ortalamasını Stoklara İşle
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input type="checkbox" checked={applyPurchasePriceToStocks} onChange={(e) => setApplyPurchasePriceToStocks(e.target.checked)} />
+                    Alış Fiyatını Stoklara İşle
+                  </label>
                   <div>
                     <div style={{ fontSize: 12, opacity: 0.8 }}>Fatura No</div>
                     <input value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} placeholder="Otomatik" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
