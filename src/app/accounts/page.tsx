@@ -142,7 +142,7 @@ export default function AccountsPage() {
                     } else if (selectionFor === 'purchase_return') {
                       router.push((`/returns/purchase/new?account=${r.id}`) as any);
                     } else if (selectionFor === 'emustahsil') {
-                      router.push((`/e-mustahsil/new?account=${r.id}`) as any);
+                      router.push((`/e-mustahsil/preview?account=${r.id}`) as any);
                     } else {
                       router.push((`/accounts/${r.id}`) as any);
                     }
