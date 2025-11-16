@@ -1,9 +1,11 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export default function IncomeExpenseBalanceReportPage() {
+  const router = useRouter();
   const [allTime, setAllTime] = useState(false);
   const [start, setStart] = useState('2022-11-14');
   const [end, setEnd] = useState('2022-11-14');
@@ -28,7 +30,7 @@ export default function IncomeExpenseBalanceReportPage() {
             </label>
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 14 }}>
-            <button style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}>🧾 Bakiye Raporu Getir</button>
+            <button onClick={() => router.push('/income-expense/reports/balance/view')} style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}>🧾 Bakiye Raporu Getir</button>
           </div>
         </div>
       </section>

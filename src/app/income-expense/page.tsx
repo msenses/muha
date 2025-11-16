@@ -7,11 +7,22 @@ import { useState } from 'react';
 export default function IncomeExpensePage() {
   const router = useRouter();
   const [showNew, setShowNew] = useState(false);
+  const [items, setItems] = useState<Array<{ name: string; code: string; accNo: string; desc: string; branch: string }>>([
+    { name: 'Elektrik', code: '0001', accNo: '123456789', desc: 'Deneme', branch: 'Merkez' },
+    { name: 'Su', code: '2', accNo: '54321', desc: '', branch: 'Merkez' },
+  ]);
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [accNo, setAccNo] = useState('');
   const [desc, setDesc] = useState('');
   const [openReports, setOpenReports] = useState(false);
+  // Düzenle/Sil state
+  const [editIdx, setEditIdx] = useState<number | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editCode, setEditCode] = useState('');
+  const [editAccNo, setEditAccNo] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [deleteIdx, setDeleteIdx] = useState<number | null>(null);
 
   return (
     <main style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
@@ -49,21 +60,40 @@ export default function IncomeExpensePage() {
                 </tr>
               </thead>
               <tbody>
-                {/* Örnek satır (statik) */}
-                <tr style={{ color: 'white' }}>
-                  <td style={{ padding: '8px' }}>
-                    <button onClick={() => router.push('/income-expense/electricity')} style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid #16a34a', background: '#16a34a', color: 'white', cursor: 'pointer' }}>➕ Detaya Git</button>
-                  </td>
-                  <td style={{ padding: '8px' }}>Elektrik</td>
-                  <td style={{ padding: '8px' }}>0001</td>
-                  <td style={{ padding: '8px' }}>Deneme</td>
-                  <td style={{ padding: '8px' }}>123456789</td>
-                  <td style={{ padding: '8px' }}>Merkez</td>
-                  <td style={{ padding: '8px' }}>
-                    <button title="Düzenle" style={{ padding: 6, marginRight: 6, borderRadius: 6, border: '1px solid #f59e0b', background: '#f59e0b', color: '#fff', cursor: 'pointer' }}>✏️</button>
-                    <button title="Sil" style={{ padding: 6, borderRadius: 6, border: '1px solid #ef4444', background: '#ef4444', color: '#fff', cursor: 'pointer' }}>✖</button>
-                  </td>
-                </tr>
+                {items.map((it, i) => (
+                  <tr key={i} style={{ color: 'white' }}>
+                    <td style={{ padding: '8px' }}>
+                      <button onClick={() => router.push('/income-expense/electricity')} style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid #16a34a', background: '#16a34a', color: 'white', cursor: 'pointer' }}>➕ Detaya Git</button>
+                    </td>
+                    <td style={{ padding: '8px' }}>{it.name}</td>
+                    <td style={{ padding: '8px' }}>{it.code}</td>
+                    <td style={{ padding: '8px' }}>{it.desc || '-'}</td>
+                    <td style={{ padding: '8px' }}>{it.accNo}</td>
+                    <td style={{ padding: '8px' }}>{it.branch}</td>
+                    <td style={{ padding: '8px' }}>
+                      <button
+                        title="Düzenle"
+                        onClick={() => {
+                          setEditIdx(i);
+                          setEditName(it.name);
+                          setEditCode(it.code);
+                          setEditAccNo(it.accNo);
+                          setEditDesc(it.desc);
+                        }}
+                        style={{ padding: 6, marginRight: 6, borderRadius: 6, border: '1px solid #f59e0b', background: '#f59e0b', color: '#fff', cursor: 'pointer' }}
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        title="Sil"
+                        onClick={() => setDeleteIdx(i)}
+                        style={{ padding: 6, borderRadius: 6, border: '1px solid #ef4444', background: '#ef4444', color: '#fff', cursor: 'pointer' }}
+                      >
+                        ✖
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -96,6 +126,73 @@ export default function IncomeExpensePage() {
             <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button onClick={() => setShowNew(false)} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #d1d5db', background: '#fff' }}>Kapat</button>
               <button onClick={() => setShowNew(false)} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #2563eb', background: '#2563eb', color: '#fff' }}>Ekle</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Düzenle Modal */}
+      {editIdx !== null && (
+        <div onClick={() => setEditIdx(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'grid', placeItems: 'center', zIndex: 60 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: 560, maxWidth: '95%', borderRadius: 10, background: '#fff', color: '#111827', boxShadow: '0 20px 50px rgba(0,0,0,0.35)', border: '1px solid #e5e7eb' }}>
+            <div style={{ padding: 12, borderBottom: '1px solid #e5e7eb', fontWeight: 700 }}>Düzenle</div>
+            <div style={{ padding: 12, display: 'grid', gap: 10 }}>
+              <label style={{ display: 'grid', gap: 4 }}>
+                <span>Ad:</span>
+                <input value={editName} onChange={(e) => setEditName(e.target.value)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }} />
+              </label>
+              <label style={{ display: 'grid', gap: 4 }}>
+                <span>Kodu:</span>
+                <input value={editCode} onChange={(e) => setEditCode(e.target.value)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }} />
+              </label>
+              <label style={{ display: 'grid', gap: 4 }}>
+                <span>Abone/Hesap No:</span>
+                <input value={editAccNo} onChange={(e) => setEditAccNo(e.target.value)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }} />
+              </label>
+              <label style={{ display: 'grid', gap: 4 }}>
+                <span>Açıklama:</span>
+                <input value={editDesc} onChange={(e) => setEditDesc(e.target.value)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }} />
+              </label>
+            </div>
+            <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setEditIdx(null)} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #d1d5db', background: '#fff' }}>Kapat</button>
+              <button
+                onClick={() => {
+                  if (editIdx === null) return;
+                  const next = items.slice();
+                  next[editIdx] = { ...next[editIdx], name: editName, code: editCode, accNo: editAccNo, desc: editDesc };
+                  setItems(next);
+                  setEditIdx(null);
+                }}
+                style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #2563eb', background: '#2563eb', color: '#fff' }}
+              >
+                Kaydet
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sil Onayı */}
+      {deleteIdx !== null && (
+        <div onClick={() => setDeleteIdx(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'grid', placeItems: 'center', zIndex: 60 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: 420, maxWidth: '95%', borderRadius: 10, background: '#fff', color: '#111827', boxShadow: '0 20px 50px rgba(0,0,0,0.35)', border: '1px solid #e5e7eb' }}>
+            <div style={{ padding: 12, borderBottom: '1px solid #e5e7eb', fontWeight: 700 }}>Sil</div>
+            <div style={{ padding: 12 }}>Bu kaydı silmek istediğinize emin misiniz?</div>
+            <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setDeleteIdx(null)} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #d1d5db', background: '#fff' }}>Kapat</button>
+              <button
+                onClick={() => {
+                  if (deleteIdx === null) return;
+                  const next = items.slice();
+                  next.splice(deleteIdx, 1);
+                  setItems(next);
+                  setDeleteIdx(null);
+                }}
+                style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #ef4444', background: '#ef4444', color: '#fff' }}
+              >
+                Sil
+              </button>
             </div>
           </div>
         </div>
