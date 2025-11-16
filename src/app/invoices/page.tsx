@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import type { Route } from 'next';
 import { supabase } from '@/lib/supabaseClient';
 
 type Invoice = {
@@ -131,8 +132,8 @@ export default function InvoicesPage() {
           <button disabled style={{ opacity: 0.7, cursor: 'not-allowed', padding: '10px 12px', borderRadius: 8, border: '1px solid #bdc3c7', background: '#bdc3c7', color: '#2c3e50' }}>Alış İrsaliyesi</button>
           <button disabled style={{ opacity: 0.7, cursor: 'not-allowed', padding: '10px 12px', borderRadius: 8, border: '1px solid #f39c12', background: '#f39c12', color: 'white' }}>Satış İade</button>
           <button disabled style={{ opacity: 0.7, cursor: 'not-allowed', padding: '10px 12px', borderRadius: 8, border: '1px solid #f1c40f', background: '#f1c40f', color: '#2c3e50' }}>Alış İade</button>
-          <button onClick={() => router.push('/e-fatura')} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #e74c3c', background: 'transparent', color: 'white', cursor: 'pointer' }}>E-Fatura</button>
-          <button onClick={() => router.push('/e-mustahsil')} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #e74c3c', background: 'transparent', color: 'white', cursor: 'pointer' }}>E-Müstahsil</button>
+          <button onClick={() => router.push(('/e-fatura') as Route)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #e74c3c', background: 'transparent', color: 'white', cursor: 'pointer' }}>E-Fatura</button>
+          <button onClick={() => router.push(('/e-mustahsil') as Route)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #e74c3c', background: 'transparent', color: 'white', cursor: 'pointer' }}>E-Müstahsil</button>
           <button disabled style={{ opacity: 0.7, cursor: 'not-allowed', padding: '10px 12px', borderRadius: 8, border: '1px solid #3498db', background: 'transparent', color: 'white' }}>Fatura Rapor</button>
         </div>
         <div style={{ height: 1, background: 'rgba(255,255,255,0.15)' }} />
