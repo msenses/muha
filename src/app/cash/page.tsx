@@ -22,7 +22,7 @@ export default function CashListPage() {
     <main style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
       {/* Üst araç çubuğu */}
       <header style={{ display: 'flex', gap: 8, padding: 16 }}>
-        <button onClick={() => setShowNew(true)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #22c55e', background: '#22c55e', color: '#fff', cursor: 'pointer' }}>+ Ekle</button>
+        <button onClick={() => router.push('/cash/new')} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #22c55e', background: '#22c55e', color: '#fff', cursor: 'pointer' }}>+ Ekle</button>
         <div style={{ position: 'relative' }}>
           <button onClick={() => setOpenReports((v) => !v)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #f59e0b', background: '#f59e0b', color: '#fff', cursor: 'pointer' }}>Raporlar ▾</button>
           {openReports && (
@@ -80,39 +80,7 @@ export default function CashListPage() {
         </div>
       </section>
 
-      {/* Yeni Kasa Modal */}
-      {showNew && (
-        <div onClick={() => setShowNew(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'grid', placeItems: 'center', zIndex: 60 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: 520, maxWidth: '95%', borderRadius: 10, background: '#fff', color: '#111827', boxShadow: '0 20px 50px rgba(0,0,0,0.35)', border: '1px solid #e5e7eb' }}>
-            <div style={{ padding: 12, borderBottom: '1px solid #e5e7eb', fontWeight: 700 }}>Yeni Kasa Ekle</div>
-            <div style={{ padding: 12, display: 'grid', gap: 10 }}>
-              <label style={{ display: 'grid', gap: 4 }}>
-                <span>Kasa Adı:</span>
-                <input value={newName} onChange={(e) => setNewName(e.target.value)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }} />
-              </label>
-              <label style={{ display: 'grid', gap: 4 }}>
-                <span>Açıklama:</span>
-                <input value={newDesc} onChange={(e) => setNewDesc(e.target.value)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }} />
-              </label>
-            </div>
-            <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setShowNew(false)} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #d1d5db', background: '#fff' }}>Kapat</button>
-              <button
-                onClick={() => {
-                  if (!newName.trim()) return;
-                  setItems((prev) => [{ name: newName, desc: newDesc || '-', balance: 0 }, ...prev]);
-                  setNewName('');
-                  setNewDesc('');
-                  setShowNew(false);
-                }}
-                style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #2563eb', background: '#2563eb', color: '#fff' }}
-              >
-                Ekle
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Yeni Kasa Modal (artık kullanılmıyor; yeni sayfa kullanılacak) */}
 
       {/* Düzenle Modal */}
       {editIdx !== null && (
