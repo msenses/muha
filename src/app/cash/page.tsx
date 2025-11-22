@@ -55,7 +55,7 @@ export default function CashListPage() {
                 {items.map((it, i) => (
                   <tr key={i} style={{ color: 'white' }}>
                     <td style={{ padding: '8px' }}>
-                      <button onClick={() => { /* Detay sayfası hazır olduğunda rota eklenecek */ }} style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid #16a34a', background: '#16a34a', color: 'white', cursor: 'pointer' }}>➕ Detaya Git</button>
+                      <button onClick={() => { router.push(('/cash/varsayilan') as Route); }} style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid #16a34a', background: '#16a34a', color: 'white', cursor: 'pointer' }}>➕ Detaya Git</button>
                     </td>
                     <td style={{ padding: '8px' }}>{it.name}</td>
                     <td style={{ padding: '8px' }}>{it.desc}</td>
@@ -142,12 +142,4 @@ export default function CashListPage() {
       )}
     </main>
   );
-}
-
-export const dynamic = 'force-dynamic';
-
-import CashClientPage from './ClientPage';
-
-export default function CashPage() {
-  return <CashClientPage />;
 }
