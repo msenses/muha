@@ -20,6 +20,21 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
   const [endDate, setEndDate] = useState('14.11.2022');
   const [q, setQ] = useState('');
 
+  // Giriş modal durumu ve alanlar
+  const [showIncome, setShowIncome] = useState(false);
+  const [incomeDate, setIncomeDate] = useState<string>(() => {
+    try {
+      return new Date().toISOString().slice(0, 10);
+    } catch {
+      return '2022-11-14';
+    }
+  });
+  const [incomeAccount, setIncomeAccount] = useState<string | null>(null);
+  const [incomeDesc, setIncomeDesc] = useState('');
+  const [incomeDocNo, setIncomeDocNo] = useState('');
+  const [incomeAmount, setIncomeAmount] = useState('0.00');
+  const [openAccountPick, setOpenAccountPick] = useState(false);
+
   const rows: Row[] = [
     { id: '1', date: '14.11.2022', type: 'GİRİŞ(+) ', amount: 500, title: '', note: '' },
     { id: '2', date: '14.11.2022', type: 'GİRİŞ(+) ', amount: 250, title: '', note: '' },
@@ -45,7 +60,7 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
           {/* Sol menü */}
           <aside>
             <div style={{ display: 'grid', gap: 10 }}>
-              <button style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #22c55e', background: '#22c55e', color: '#fff' }}>Giriş Yap (+)</button>
+              <button onClick={() => setShowIncome(true)} style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #22c55e', background: '#22c55e', color: '#fff' }}>Giriş Yap (+)</button>
               <button style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #ef4444', background: '#ef4444', color: '#fff' }}>Çıkış Yap (-)</button>
               <button style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #3b82f6', background: '#3b82f6', color: '#fff' }}>Bankaya Virman</button>
               <button style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>Kasadan Kasaya Virman</button>
@@ -120,6 +135,83 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
           </div>
         </div>
       </section>
+
+      {/* Yeni Giriş Ekle Modal */}
+      {showIncome && (
+        <div onClick={() => setShowIncome(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'grid', placeItems: 'center', zIndex: 1000 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: 560, maxWidth: '95%', borderRadius: 10, background: '#ffffff', color: '#111827', boxShadow: '0 24px 60px rgba(0,0,0,0.45)', border: '1px solid #e5e7eb' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderBottom: '1px solid #e5e7eb' }}>
+              <strong>Yeni Giriş Ekle</strong>
+              <button onClick={() => setShowIncome(false)} style={{ padding: 6, borderRadius: 6, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>✖</button>
+            </div>
+
+            <div style={{ padding: 12, display: 'grid', gap: 10 }}>
+              {/* Tip */}
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span>Tip:</span>
+                <input value="GİRİŞ(+)" readOnly style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: '#f3f4f6' }} />
+              </label>
+
+              {/* Tarih */}
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span>Tarih:</span>
+                <input type="date" value={incomeDate} onChange={(e) => setIncomeDate(e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }} />
+              </label>
+
+              {/* Cari Ünvan */}
+              <div style={{ display: 'grid', gap: 6 }}>
+                <span>Cari Ünvan:</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8 }}>
+                  <input readOnly value={incomeAccount ?? 'Henüz seçilmiş bir cari yok'} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: '#f9fafb' }} />
+                  <button type="button" onClick={() => setOpenAccountPick(true)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #1ea7fd', background: '#1ea7fd', color: 'white', cursor: 'pointer' }}>Carilerden Seç</button>
+                  <button type="button" onClick={() => setIncomeAccount(null)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>Temizle</button>
+                </div>
+              </div>
+
+              {/* Açıklama */}
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span>Açıklama:</span>
+                <input value={incomeDesc} onChange={(e) => setIncomeDesc(e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }} />
+              </label>
+
+              {/* Evrak No */}
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span>Evrak No:</span>
+                <input value={incomeDocNo} onChange={(e) => setIncomeDocNo(e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }} />
+              </label>
+
+              {/* Tutar */}
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span>Tutar:</span>
+                <input value={incomeAmount} onChange={(e) => setIncomeAmount(e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }} />
+              </label>
+            </div>
+
+            <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setShowIncome(false)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>Kapat</button>
+              <button onClick={() => { /* demo ekle */ setShowIncome(false); }} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #22c55e', background: '#22c55e', color: '#fff', cursor: 'pointer' }}>Ekle</button>
+            </div>
+          </div>
+
+          {/* Cari seçim küçük penceresi */}
+          {openAccountPick && (
+            <div onClick={(e) => { e.stopPropagation(); }} style={{ position: 'fixed', inset: 0, display: 'grid', placeItems: 'center', zIndex: 1010 }}>
+              <div style={{ width: 520, maxWidth: '95%', borderRadius: 10, background: '#fff', color: '#111827', boxShadow: '0 24px 60px rgba(0,0,0,0.45)', border: '1px solid #e5e7eb' }}>
+                <div style={{ padding: 12, borderBottom: '1px solid #e5e7eb', fontWeight: 700 }}>Cari Seç</div>
+                <div style={{ padding: 12, display: 'grid', gap: 8 }}>
+                  {['Mehmet Bey', 'Ahmet Ltd.', 'Ayşe Hanım'].map((n) => (
+                    <button key={n} onClick={() => { setIncomeAccount(n); setOpenAccountPick(false); }} style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>{n}</button>
+                  ))}
+                  {!['Mehmet Bey', 'Ahmet Ltd.', 'Ayşe Hanım'].length && <div style={{ opacity: 0.7 }}>Kayıt yok</div>}
+                </div>
+                <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end' }}>
+                  <button onClick={() => setOpenAccountPick(false)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>Kapat</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </main>
   );
 }
