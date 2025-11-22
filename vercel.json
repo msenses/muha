@@ -1,7 +1,9 @@
 {
   "build": {
     "env": {
-      "NEXT_SWC_DISABLE_NATIVE": "1"
+      "NEXT_SWC_DISABLE_NATIVE": "1",
+      "NEXT_DISABLE_SWC_NATIVE": "1",
+      "RUST_BACKTRACE": "1"
     }
   }
 }
