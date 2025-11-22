@@ -1,0 +1,8 @@
+{
+  "build": {
+    "env": {
+      "NEXT_SWC_DISABLE_NATIVE": "1"
+    }
+  }
+}
+
