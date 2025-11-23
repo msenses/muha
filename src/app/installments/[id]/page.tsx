@@ -116,7 +116,7 @@ export default function InstallmentDetailPage({ params }: { params: { id: string
                             {openActionRowId === r.id && (
                               <div style={{ position: 'absolute', top: 36, left: 8, minWidth: 180, background: 'white', color: '#111827', border: '1px solid #e5e7eb', borderRadius: 8, boxShadow: '0 10px 32px rgba(0,0,0,0.25)', zIndex: 50 }}>
                                 <button
-                                  onClick={() => setOpenActionRowId(null)}
+                                  onClick={() => { setOpenActionRowId(null); router.push((`/installments/${params.id}/receipt`) as Route); }}
                                   style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}
                                 >
                                   🖨 Makbuz Bas
