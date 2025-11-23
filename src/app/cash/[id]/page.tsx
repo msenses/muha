@@ -52,6 +52,22 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
   const [openOutcomeAccountPick, setOpenOutcomeAccountPick] = useState(false);
   const [outcomeAccountPickQuery, setOutcomeAccountPickQuery] = useState('');
 
+  // Bankaya Virman modalı durumları
+  const [showBankTransfer, setShowBankTransfer] = useState(false);
+  const [bankTransferDate, setBankTransferDate] = useState<string>(() => {
+    try {
+      return new Date().toISOString().slice(0, 10);
+    } catch {
+      return '2022-11-14';
+    }
+  });
+  const [bankTransferDesc, setBankTransferDesc] = useState('');
+  const [bankTransferDocNo, setBankTransferDocNo] = useState('');
+  const [bankTransferAmount, setBankTransferAmount] = useState('0.00');
+  const [bankName, setBankName] = useState<string | null>(null);
+  const [openBankPick, setOpenBankPick] = useState(false);
+  const [bankPickQuery, setBankPickQuery] = useState('');
+
   const rows: Row[] = [
     { id: '1', date: '14.11.2022', type: 'GİRİŞ(+) ', amount: 500, title: '', note: '' },
     { id: '2', date: '14.11.2022', type: 'GİRİŞ(+) ', amount: 250, title: '', note: '' },
@@ -79,7 +95,7 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
             <div style={{ display: 'grid', gap: 10 }}>
               <button onClick={() => setShowIncome(true)} style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #22c55e', background: '#22c55e', color: '#fff' }}>Giriş Yap (+)</button>
               <button onClick={() => setShowOutcome(true)} style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #ef4444', background: '#ef4444', color: '#fff' }}>Çıkış Yap (-)</button>
-              <button style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #3b82f6', background: '#3b82f6', color: '#fff' }}>Bankaya Virman</button>
+              <button onClick={() => setShowBankTransfer(true)} style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #3b82f6', background: '#3b82f6', color: '#fff' }}>Bankaya Virman</button>
               <button style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>Kasadan Kasaya Virman</button>
               <button style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #d1a054', background: '#d1a054', color: '#1f2937' }}>Raporla</button>
             </div>
@@ -272,6 +288,117 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
         </div>
       )}
 
+      {/* Kasadan Bankaya Virman Modal */}
+      {showBankTransfer && (
+        <div onClick={() => setShowBankTransfer(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'grid', placeItems: 'center', zIndex: 1000 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: 560, maxWidth: '95%', borderRadius: 10, background: '#ffffff', color: '#111827', boxShadow: '0 24px 60px rgba(0,0,0,0.45)', border: '1px solid #e5e7eb' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderBottom: '1px solid #e5e7eb' }}>
+              <strong>Kasadan Bankaya Virman İşlemi</strong>
+              <button onClick={() => setShowBankTransfer(false)} style={{ padding: 6, borderRadius: 6, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>✖</button>
+            </div>
+
+            <div style={{ padding: 12, display: 'grid', gap: 10 }}>
+              {/* Tarih */}
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span>Tarih:</span>
+                <input type="date" value={bankTransferDate} onChange={(e) => setBankTransferDate(e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }} />
+              </label>
+
+              {/* Tip */}
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span>Tip:</span>
+                <input value="ÇIKIŞ(-)" readOnly style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: '#f3f4f6' }} />
+              </label>
+
+              {/* Açıklama */}
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span>Açıklama:</span>
+                <input value={bankTransferDesc} onChange={(e) => setBankTransferDesc(e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }} />
+              </label>
+
+              {/* Evrak No */}
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span>Evrak No:</span>
+                <input value={bankTransferDocNo} onChange={(e) => setBankTransferDocNo(e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }} />
+              </label>
+
+              {/* Tutar */}
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span>Tutar:</span>
+                <input value={bankTransferAmount} onChange={(e) => setBankTransferAmount(e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }} />
+              </label>
+
+              {/* Banka Adı */}
+              <div style={{ display: 'grid', gap: 6 }}>
+                <span>Banka Adı:</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8 }}>
+                  <input readOnly value={bankName ?? '-'} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: '#f9fafb' }} />
+                  <button type="button" onClick={() => setOpenBankPick(true)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #2563eb', background: '#2563eb', color: 'white', cursor: 'pointer' }}>Banka Seç</button>
+                  <button type="button" onClick={() => setBankName(null)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>Temizle</button>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setShowBankTransfer(false)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>Kapat</button>
+              <button onClick={() => { /* demo save */ setShowBankTransfer(false); }} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #3b82f6', background: '#3b82f6', color: '#fff', cursor: 'pointer' }}>Kaydet</button>
+            </div>
+          </div>
+
+          {/* Banka seçim modalı */}
+          {openBankPick && (
+            <div onClick={(e) => { e.stopPropagation(); }} style={{ position: 'fixed', inset: 0, display: 'grid', placeItems: 'center', zIndex: 1010 }}>
+              <div style={{ width: 780, maxWidth: '96%', borderRadius: 10, background: '#fff', color: '#111827', boxShadow: '0 24px 60px rgba(0,0,0,0.45)', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderBottom: '1px solid #e5e7eb' }}>
+                  <strong>Banka Seç</strong>
+                  <button onClick={() => setOpenBankPick(false)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>✖</button>
+                </div>
+                <div style={{ padding: 12 }}>
+                  <input value={bankPickQuery} onChange={(e) => setBankPickQuery(e.target.value)} placeholder="Ara..." style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }} />
+                </div>
+                <div style={{ padding: '0 12px 12px', maxHeight: 360, overflow: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ background: '#f3f4f6', color: '#111827' }}>
+                        <th style={{ textAlign: 'left', padding: '8px 10px' }}>İşlem</th>
+                        <th style={{ textAlign: 'left', padding: '8px 10px' }}>Banka</th>
+                        <th style={{ textAlign: 'left', padding: '8px 10px' }}>Şube</th>
+                        <th style={{ textAlign: 'left', padding: '8px 10px' }}>IBAN</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        const banks = [
+                          { id: 'b1', name: 'Ziraat Bankası', branch: 'Merkez', iban: 'TR12 0001 0000 1111 2222 3333 44' },
+                          { id: 'b2', name: 'İş Bankası', branch: 'Ankara', iban: 'TR34 0006 4000 5555 6666 7777 88' },
+                          { id: 'b3', name: 'Garanti BBVA', branch: 'İstanbul', iban: 'TR56 0006 2000 9999 0000 1111 22' },
+                        ];
+                        const filtered = banks.filter((r) => {
+                          const hay = `${r.name} ${r.branch} ${r.iban}`.toLowerCase();
+                          return hay.includes(bankPickQuery.toLowerCase());
+                        });
+                        return filtered.map((r) => (
+                          <tr key={r.id} style={{ borderBottom: '1px solid #eee' }}>
+                            <td style={{ padding: '8px 10px' }}>
+                              <button onClick={() => { setBankName(`${r.name} - ${r.branch}`); setOpenBankPick(false); }} style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #2563eb', background: '#2563eb', color: '#fff', cursor: 'pointer' }}>Seç</button>
+                            </td>
+                            <td style={{ padding: '8px 10px' }}>{r.name}</td>
+                            <td style={{ padding: '8px 10px' }}>{r.branch}</td>
+                            <td style={{ padding: '8px 10px' }}>{r.iban}</td>
+                          </tr>
+                        ));
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+                <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                  <button onClick={() => setOpenBankPick(false)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>Kapat</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       {/* Yeni Çıkış Ekle Modal */}
       {showOutcome && (
         <div onClick={() => setShowOutcome(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'grid', placeItems: 'center', zIndex: 1000 }}>
