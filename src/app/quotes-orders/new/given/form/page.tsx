@@ -71,16 +71,16 @@ function FormInner() {
             <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6 }}><span>Adres:</span><input value={account.address} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }} /></label>
           </div>
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 10, display: 'grid', gap: 6 }}>
-            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6 }}><span>Vergi Dairesi:</span><input value={account.taxOffice} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }} /></label>
-            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6 }}><span>Vergi No:</span><input value={account.taxNo} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }} /></label>
-            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr 120px 1fr', gap: 6 }}><span>İlçe:</span><input value={account.city} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }} /><span>İl:</span><input value={account.district} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }} /></label>
+            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6, alignItems: 'center' }}><span>Vergi Dairesi:</span><input value={account.taxOffice} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} /></label>
+            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6, alignItems: 'center' }}><span>Vergi No:</span><input value={account.taxNo} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} /></label>
+            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr 120px 1fr', gap: 6, alignItems: 'center' }}><span>İlçe:</span><input value={account.city} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} /><span>İl:</span><input value={account.district} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} /></label>
           </div>
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 10, display: 'grid', gap: 6 }}>
-            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6 }}><span>İşlem Tarihi</span><input value="27.11.2022" readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }} /></label>
-            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6 }}><span>Sevk Tarihi</span><input value="27.11.2022" readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }} /></label>
-            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 80px 1fr', gap: 6 }}>
-              <span>Saat</span><input value="13:50" readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }} />
-              <span>İşlem No</span><input value="111" readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }} />
+            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6, alignItems: 'center' }}><span>İşlem Tarihi</span><input value="27.11.2022" readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} /></label>
+            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6, alignItems: 'center' }}><span>Sevk Tarihi</span><input value="27.11.2022" readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} /></label>
+            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 120px 1fr', gap: 6, alignItems: 'center' }}>
+              <span>Saat</span><input value="13:50" readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} />
+              <span>İşlem No</span><input value="111" readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} />
             </div>
           </div>
         </div>
