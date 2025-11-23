@@ -43,7 +43,7 @@ export default function GivenQuoteSelectAccountPage() {
                 {filtered.map((a) => (
                   <tr key={a.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
                     <td style={{ padding: '10px 12px' }}>
-                      <button style={{ padding: '8px 12px', borderRadius: 999, border: '1px solid #16a34a', background: '#16a34a', color: 'white', cursor: 'pointer' }}>+ Seç</button>
+                      <button onClick={() => { window.location.href = `/quotes-orders/new/given/form?account=${a.id}`; }} style={{ padding: '8px 12px', borderRadius: 999, border: '1px solid #16a34a', background: '#16a34a', color: 'white', cursor: 'pointer' }}>+ Seç</button>
                     </td>
                     <td style={{ padding: '10px 12px' }}>{a.title}</td>
                     <td style={{ padding: '10px 12px' }}>{a.officer}</td>
