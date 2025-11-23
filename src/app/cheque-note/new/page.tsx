@@ -25,6 +25,8 @@ export default function ChequeNoteNewPage() {
   // Cari seçim modalı
   const [openAccountPick, setOpenAccountPick] = useState(false);
   const [accountPickQuery, setAccountPickQuery] = useState('');
+  // Cirolu evrak için: Asıl Borçlu
+  const [principalDebtor, setPrincipalDebtor] = useState('');
 
   return (
     <main style={{ minHeight: '100dvh', background: '#ecf0f5', color: '#111827' }}>
@@ -96,9 +98,15 @@ export default function ChequeNoteNewPage() {
               <span>Evrak Türü :</span>
               <select value={docType} onChange={(e) => setDocType(e.target.value as any)} style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db' }}>
                 <option>ASIL EVRAK</option>
-                <option>SURET</option>
+                <option>CİROLU EVRAK</option>
               </select>
             </label>
+            {docType === 'CİROLU EVRAK' && (
+              <label style={{ display: 'grid', gap: 6, marginBottom: 16 }}>
+                <span>Asıl Borçlu :</span>
+                <input value={principalDebtor} onChange={(e) => setPrincipalDebtor(e.target.value)} placeholder="" style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db' }} />
+              </label>
+            )}
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button onClick={() => router.push(('/cheque-note') as Route)} style={{ padding: '10px 16px', borderRadius: 6, border: '1px solid #22c55e', background: '#22c55e', color: '#fff' }}>Kaydet</button>
             </div>
