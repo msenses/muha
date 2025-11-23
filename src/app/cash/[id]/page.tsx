@@ -86,6 +86,9 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
   const [sourceCashPickQuery, setSourceCashPickQuery] = useState('');
   const [targetCashPickQuery, setTargetCashPickQuery] = useState('');
 
+  // Liste satır "İşlemler" açılır menü durumu
+  const [openActionRowId, setOpenActionRowId] = useState<string | null>(null);
+
   const rows: Row[] = [
     { id: '1', date: '14.11.2022', type: 'GİRİŞ(+) ', amount: 500, title: '', note: '' },
     { id: '2', date: '14.11.2022', type: 'GİRİŞ(+) ', amount: 250, title: '', note: '' },
@@ -167,9 +170,31 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
                     </thead>
                     <tbody>
                       {filtered.map((r) => (
-                        <tr key={r.id} style={{ color: 'white' }}>
-                          <td style={{ padding: '8px' }}>
-                            <button style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid #16a34a', background: '#16a34a', color: 'white', cursor: 'pointer' }}>İşlemler ▾</button>
+                      <tr key={r.id} style={{ color: 'white' }}>
+                          <td style={{ padding: '8px', position: 'relative' }}>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setOpenActionRowId(prev => prev === r.id ? null : r.id); }}
+                              style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid #16a34a', background: '#16a34a', color: 'white', cursor: 'pointer' }}
+                            >
+                              İşlemler ▾
+                            </button>
+                            {openActionRowId === r.id && (
+                              <div style={{ position: 'absolute', top: 36, left: 8, minWidth: 140, background: 'white', color: '#111827', border: '1px solid #e5e7eb', borderRadius: 8, boxShadow: '0 10px 32px rgba(0,0,0,0.25)', zIndex: 50 }}>
+                                <button
+                                  onClick={() => { setOpenActionRowId(null); }}
+                                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}
+                                >
+                                  Düzenle
+                                </button>
+                                <div style={{ height: 1, background: '#e5e7eb' }} />
+                                <button
+                                  onClick={() => { setOpenActionRowId(null); }}
+                                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+                                >
+                                  Sil
+                                </button>
+                              </div>
+                            )}
                           </td>
                           <td style={{ padding: '8px' }}>{r.date}</td>
                           <td style={{ padding: '8px' }}>{r.type}</td>
