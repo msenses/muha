@@ -65,15 +65,38 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
 
           {/* Sağ işlem paneli */}
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 10, display: 'grid', gap: 8, alignContent: 'start' }}>
-            {(['DÜZELT','İADE YAP','TAHSİLAT YAP'] as const).map((t) => (
-              <button key={t} style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db', background: '#f9fafb', cursor: 'pointer' }}>{t}</button>
-            ))}
-            <button onClick={() => setShowPay(true)} style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db', background: '#f9fafb', cursor: 'pointer' }}>
-              ÖDEME YAP
-            </button>
-            {(['CİRO ET','BANKAYA VER','VERİLEN ÇEK/SENET BORDROSU','ALINAN ÇEK/SENET BORDROSU','RAPORLA'] as const).map((t) => (
-              <button key={t} style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db', background: '#f9fafb', cursor: 'pointer' }}>{t}</button>
-            ))}
+            {(() => {
+              const isUnpaid = (data.status || '').toUpperCase() === 'BEKLEMEDE';
+              const actions: Array<{ label: string; enabled: boolean; onClick?: () => void }> = [
+                { label: 'DÜZELT', enabled: true },
+                { label: 'İADE YAP', enabled: !isUnpaid },
+                { label: 'TAHSİLAT YAP', enabled: !isUnpaid },
+                { label: 'ÖDEME YAP', enabled: true, onClick: () => setShowPay(true) },
+                { label: 'CİRO ET', enabled: !isUnpaid },
+                { label: 'BANKAYA VER', enabled: !isUnpaid },
+                { label: 'VERİLEN ÇEK/SENET BORDROSU', enabled: true },
+                { label: 'ALINAN ÇEK/SENET BORDROSU', enabled: !isUnpaid },
+                { label: 'RAPORLA', enabled: true },
+              ];
+              return actions.map(({ label, enabled, onClick }) => (
+                <button
+                  key={label}
+                  disabled={!enabled}
+                  onClick={enabled ? onClick : undefined}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: 6,
+                    border: '1px solid #d1d5db',
+                    background: '#f9fafb',
+                    cursor: enabled ? 'pointer' : 'not-allowed',
+                    opacity: enabled ? 1 : 0.5,
+                  }}
+                >
+                  {label}
+                </button>
+              ));
+            })()}
             <button style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fee2e2', color: '#991b1b', cursor: 'pointer' }}>
               SİL
             </button>
