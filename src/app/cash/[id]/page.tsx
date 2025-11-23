@@ -89,6 +89,12 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
   // Liste satır "İşlemler" açılır menü durumu
   const [openActionRowId, setOpenActionRowId] = useState<string | null>(null);
 
+  // Raporla modalı
+  const [showReport, setShowReport] = useState(false);
+  const [reportAllTime, setReportAllTime] = useState(false);
+  const [reportStart, setReportStart] = useState('14.11.2022');
+  const [reportEnd, setReportEnd] = useState('14.11.2022');
+
   const rows: Row[] = [
     { id: '1', date: '14.11.2022', type: 'GİRİŞ(+) ', amount: 500, title: '', note: '' },
     { id: '2', date: '14.11.2022', type: 'GİRİŞ(+) ', amount: 250, title: '', note: '' },
@@ -118,7 +124,7 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
               <button onClick={() => setShowOutcome(true)} style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #ef4444', background: '#ef4444', color: '#fff' }}>Çıkış Yap (-)</button>
               <button onClick={() => setShowBankTransfer(true)} style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #3b82f6', background: '#3b82f6', color: '#fff' }}>Bankaya Virman</button>
               <button onClick={() => setShowCashTransfer(true)} style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>Kasadan Kasaya Virman</button>
-              <button style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #d1a054', background: '#d1a054', color: '#1f2937' }}>Raporla</button>
+              <button onClick={() => setShowReport(true)} style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #d1a054', background: '#d1a054', color: '#1f2937' }}>Raporla</button>
             </div>
 
             <div style={{ marginTop: 12, borderRadius: 10, background: 'rgba(255,255,255,0.08)', padding: 12 }}>
@@ -711,6 +717,42 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Raporla Modal */}
+      {showReport && (
+        <div onClick={() => setShowReport(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'grid', placeItems: 'center', zIndex: 1000 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: 620, maxWidth: '95%', borderRadius: 10, background: '#ffffff', color: '#111827', boxShadow: '0 24px 60px rgba(0,0,0,0.45)', border: '1px solid #e5e7eb' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderBottom: '1px solid #e5e7eb' }}>
+              <strong>İşlem</strong>
+              <button onClick={() => setShowReport(false)} style={{ padding: 6, borderRadius: 6, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>✖</button>
+            </div>
+
+            <div style={{ padding: 16 }}>
+              <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, background: '#fff' }}>
+                <div style={{ padding: 12, borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input id="alltime" type="checkbox" checked={reportAllTime} onChange={(e) => setReportAllTime(e.target.checked)} />
+                  <label htmlFor="alltime" style={{ userSelect: 'none', cursor: 'pointer' }}>Tüm Zamanlar</label>
+                </div>
+
+                <div style={{ padding: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <label style={{ display: 'grid', gap: 6 }}>
+                    <span>Başlangıç Tarihi</span>
+                    <input value={reportStart} onChange={(e) => setReportStart(e.target.value)} disabled={reportAllTime} placeholder="14.11.2022" style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: reportAllTime ? '#f3f4f6' : '#fff' }} />
+                  </label>
+                  <label style={{ display: 'grid', gap: 6 }}>
+                    <span>Bitiş Tarihi</span>
+                    <input value={reportEnd} onChange={(e) => setReportEnd(e.target.value)} disabled={reportAllTime} placeholder="14.11.2022" style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: reportAllTime ? '#f3f4f6' : '#fff' }} />
+                  </label>
+                </div>
+
+                <div style={{ padding: 12, display: 'flex', justifyContent: 'flex-end' }}>
+                  <button onClick={() => { /* rapor getir - demo */ setShowReport(false); }} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}>≡ Kasa Raporu Getir</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </main>
