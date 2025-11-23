@@ -182,7 +182,6 @@ function FormInner() {
             </label>
           </div>
         </div>
-      </section>
         </div>
       </section>
     </main>
