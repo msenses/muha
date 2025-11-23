@@ -47,6 +47,11 @@ export default function InstallmentDetailPage({ params }: { params: { id: string
   const [reportStart, setReportStart] = useState('22.11.2022');
   const [reportEnd, setReportEnd] = useState('22.11.2022');
   const [reportKind, setReportKind] = useState<'TÜMÜ' | 'VADESİ GEÇEN TAKSİTLER' | 'BEKLEYEN TAKSİTLER' | 'ÖDENEN TAKSİTLER'>('VADESİ GEÇEN TAKSİTLER');
+  // Tahsil Et modalı
+  const [showCollect, setShowCollect] = useState(false);
+  const [collectAmount, setCollectAmount] = useState('2450');
+  const [collectDate, setCollectDate] = useState('22.11.2022');
+  const [collectMethod, setCollectMethod] = useState<string>('Seç');
 
   return (
     <main style={{ minHeight: '100dvh', background: '#ecf0f5', color: '#111827' }}>
@@ -110,11 +115,26 @@ export default function InstallmentDetailPage({ params }: { params: { id: string
                             </button>
                             {openActionRowId === r.id && (
                               <div style={{ position: 'absolute', top: 36, left: 8, minWidth: 180, background: 'white', color: '#111827', border: '1px solid #e5e7eb', borderRadius: 8, boxShadow: '0 10px 32px rgba(0,0,0,0.25)', zIndex: 50 }}>
-                                <button style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}>Tahsilat Yap</button>
+                                <button
+                                  onClick={() => setOpenActionRowId(null)}
+                                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}
+                                >
+                                  🖨 Makbuz Bas
+                                </button>
                                 <div style={{ height: 1, background: '#e5e7eb' }} />
-                                <button style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}>Düzenle</button>
+                                <button
+                                  onClick={() => { setOpenActionRowId(null); setShowCollect(true); }}
+                                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}
+                                >
+                                  ✏ Tahsil Et
+                                </button>
                                 <div style={{ height: 1, background: '#e5e7eb' }} />
-                                <button style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#ef4444', cursor: 'pointer' }}>Sil</button>
+                                <button
+                                  disabled
+                                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#9ca3af', cursor: 'not-allowed' }}
+                                >
+                                  🗑 İptal Et
+                                </button>
                               </div>
                             )}
                           </td>
@@ -134,6 +154,39 @@ export default function InstallmentDetailPage({ params }: { params: { id: string
           </div>
         </div>
       </section>
+
+      {/* Tahsil Et Modal */}
+      {showCollect && (
+        <div onClick={() => setShowCollect(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'grid', placeItems: 'center', zIndex: 1000 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: 560, maxWidth: '95%', borderRadius: 10, background: '#ffffff', color: '#111827', boxShadow: '0 24px 60px rgba(0,0,0,0.45)', border: '1px solid #e5e7eb' }}>
+            <div style={{ padding: 12, borderBottom: '1px solid #e5e7eb', fontWeight: 700 }}>
+              1. Taksitlendirme için tahsilat girişi
+            </div>
+            <div style={{ padding: 12, display: 'grid', gap: 12 }}>
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span>Tutar</span>
+                <input value={collectAmount} onChange={(e) => setCollectAmount(e.target.value)} style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db' }} />
+              </label>
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span>Tarih</span>
+                <input value={collectDate} onChange={(e) => setCollectDate(e.target.value)} style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db' }} />
+              </label>
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span>Ödeme Şekli</span>
+                <select value={collectMethod} onChange={(e) => setCollectMethod(e.target.value)} style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db' }}>
+                  <option>Seç</option>
+                  <option>Kasaya</option>
+                  <option>Bankaya</option>
+                </select>
+              </label>
+            </div>
+            <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={() => { /* demo submit */ setShowCollect(false); }} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>Tahsilat Yap</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Gelişmiş Rapor Modal */}
       {showReport && (
         <div onClick={() => setShowReport(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'grid', placeItems: 'center', zIndex: 1000 }}>
