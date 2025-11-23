@@ -25,7 +25,7 @@ export default function InstallmentsPage() {
       <section style={{ padding: 12 }}>
         {/* Üst bar */}
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #22c55e', background: '#22c55e', color: '#fff', cursor: 'pointer' }}>+ Yeni Taksit Oluştur</button>
+          <button onClick={() => router.push(('/installments/new') as Route)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #22c55e', background: '#22c55e', color: '#fff', cursor: 'pointer' }}>+ Yeni Taksit Oluştur</button>
           <button style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #f59e0b', background: '#f59e0b', color: '#1f2937', cursor: 'pointer' }}>📄 Gelişmiş Rapor</button>
         </div>
 
