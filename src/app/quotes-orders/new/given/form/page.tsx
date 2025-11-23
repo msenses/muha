@@ -1,7 +1,7 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useMemo, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 type Row = {
@@ -13,7 +13,7 @@ type Row = {
   qty: number;
 };
 
-export default function GivenQuoteFormPage() {
+function FormInner() {
   const sp = useSearchParams();
   const accountId = sp.get('account') || '1';
 
@@ -183,6 +183,14 @@ export default function GivenQuoteFormPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function GivenQuoteFormPage() {
+  return (
+    <Suspense fallback={<main style={{ minHeight: '100dvh' }} />}>
+      <FormInner />
+    </Suspense>
   );
 }
 
