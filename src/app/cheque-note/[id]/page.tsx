@@ -90,7 +90,7 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
                 { label: 'ÖDEME YAP', onClick: () => setShowPay(true) },
                 { label: 'CİRO ET' },
                 { label: 'BANKAYA VER' },
-                { label: 'VERİLEN ÇEK/SENET BORDROSU' },
+                { label: 'VERİLEN ÇEK/SENET BORDROSU', onClick: () => router.push((`/cheque-note/${params.id}/reports/outgoing`) as Route) },
                 { label: 'ALINAN ÇEK/SENET BORDROSU' },
                 { label: 'RAPORLA' },
               ];
