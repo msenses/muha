@@ -23,7 +23,7 @@ export default function ChequeNotePage() {
   const [reportAllTime, setReportAllTime] = useState(false);
   const [reportStart, setReportStart] = useState('27.11.2022');
   const [reportEnd, setReportEnd] = useState('27.11.2022');
-  const [reportType, setReportType] = useState<'HEPSİ' | 'VERİLEN' | 'ALINAN'>('HEPSİ');
+  const [reportType, setReportType] = useState<'HEPSİ' | 'MÜŞTERİ EVRAĞI' | 'KENDİ EVRAĞIMIZ'>('HEPSİ');
   const [reportStatus, setReportStatus] = useState<'HEPSİ' | 'BEKLEMEDE' | 'ÖDENDİ' | 'TAHSİL EDİLDİ'>('HEPSİ');
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
@@ -160,8 +160,8 @@ export default function ChequeNotePage() {
                     <span>Listelemek İstediğiniz Çek Türünü Seçiniz.</span>
                     <select value={reportType} onChange={(e) => setReportType(e.target.value as any)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }}>
                       <option>HEPSİ</option>
-                      <option>VERİLEN</option>
-                      <option>ALINAN</option>
+                      <option>MÜŞTERİ EVRAĞI</option>
+                      <option>KENDİ EVRAĞIMIZ</option>
                     </select>
                   </label>
                   <label style={{ display: 'grid', gap: 6 }}>
@@ -176,7 +176,7 @@ export default function ChequeNotePage() {
                 </div>
 
                 <div style={{ padding: 12, display: 'flex', justifyContent: 'flex-end' }}>
-                  <button onClick={() => setShowReport(false)} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}>≡ Çek/Senet Raporu Getir</button>
+                  <button onClick={() => { setShowReport(false); router.push(('/cheque-note/reports/list') as Route); }} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}>≡ Çek/Senet Raporu Getir</button>
                 </div>
               </div>
             </div>
