@@ -175,8 +175,9 @@ export default function InstallmentDetailPage({ params }: { params: { id: string
                 <span>Ödeme Şekli</span>
                 <select value={collectMethod} onChange={(e) => setCollectMethod(e.target.value)} style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db' }}>
                   <option>Seç</option>
-                  <option>Kasaya</option>
-                  <option>Bankaya</option>
+                  <option>Nakit</option>
+                  <option>Havale</option>
+                  <option>Kredi Kartı</option>
                 </select>
               </label>
             </div>
