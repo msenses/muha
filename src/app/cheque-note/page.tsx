@@ -18,6 +18,13 @@ export default function ChequeNotePage() {
     { id: 2, date: '22.11.2022', due: '22.11.2022', firm: 'Mustafa Bey', status: 'BEKLEMEDE', amount: 100000 },
   ];
 
+  // Rapor modalı
+  const [showReport, setShowReport] = useState(false);
+  const [reportAllTime, setReportAllTime] = useState(false);
+  const [reportStart, setReportStart] = useState('27.11.2022');
+  const [reportEnd, setReportEnd] = useState('27.11.2022');
+  const [reportType, setReportType] = useState<'HEPSİ' | 'VERİLEN' | 'ALINAN'>('HEPSİ');
+  const [reportStatus, setReportStatus] = useState<'HEPSİ' | 'BEKLEMEDE' | 'ÖDENDİ' | 'TAHSİL EDİLDİ'>('HEPSİ');
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
     let list = rows.filter(r => `${r.id} ${r.date} ${r.due} ${r.firm} ${r.status} ${r.amount}`.toLowerCase().includes(q));
@@ -46,7 +53,7 @@ export default function ChequeNotePage() {
             </div>
             <div style={{ marginTop: 16, color: 'white', opacity: 0.9, fontWeight: 700 }}>Raporlar</div>
             <div style={{ marginTop: 8 }}>
-              <button style={{ padding: '10px 12px', width: '100%', borderRadius: 6, border: '1px solid #ef4444', background: '#ef4444', color: '#fff' }}>≡ Raporla</button>
+              <button onClick={() => setShowReport(true)} style={{ padding: '10px 12px', width: '100%', borderRadius: 6, border: '1px solid #ef4444', background: '#ef4444', color: '#fff' }}>≡ Raporla</button>
             </div>
           </aside>
 
@@ -120,6 +127,62 @@ export default function ChequeNotePage() {
           </div>
         </div>
       </section>
+
+      {/* Raporla Modal */}
+      {showReport && (
+        <div onClick={() => setShowReport(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'grid', placeItems: 'center', zIndex: 1000 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: 680, maxWidth: '95%', borderRadius: 10, background: '#ffffff', color: '#111827', boxShadow: '0 24px 60px rgba(0,0,0,0.45)', border: '1px solid #e5e7eb' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderBottom: '1px solid #e5e7eb' }}>
+              <strong>İşlem</strong>
+              <button onClick={() => setShowReport(false)} style={{ padding: 6, borderRadius: 6, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>✖</button>
+            </div>
+
+            <div style={{ padding: 16 }}>
+              <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, background: '#fff' }}>
+                <div style={{ padding: 12, borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input id="alltime" type="checkbox" checked={reportAllTime} onChange={(e) => setReportAllTime(e.target.checked)} />
+                  <label htmlFor="alltime" style={{ userSelect: 'none', cursor: 'pointer' }}>Tüm Zamanlar</label>
+                </div>
+
+                <div style={{ padding: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <label style={{ display: 'grid', gap: 6 }}>
+                    <span>Başlangıç Tarihi</span>
+                    <input value={reportStart} onChange={(e) => setReportStart(e.target.value)} disabled={reportAllTime} placeholder="27.11.2022" style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: reportAllTime ? '#f3f4f6' : '#fff' }} />
+                  </label>
+                  <label style={{ display: 'grid', gap: 6 }}>
+                    <span>Bitiş Tarihi</span>
+                    <input value={reportEnd} onChange={(e) => setReportEnd(e.target.value)} disabled={reportAllTime} placeholder="27.11.2022" style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: reportAllTime ? '#f3f4f6' : '#fff' }} />
+                  </label>
+                </div>
+
+                <div style={{ padding: '0 12px 12px', display: 'grid', gap: 12 }}>
+                  <label style={{ display: 'grid', gap: 6 }}>
+                    <span>Listelemek İstediğiniz Çek Türünü Seçiniz.</span>
+                    <select value={reportType} onChange={(e) => setReportType(e.target.value as any)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }}>
+                      <option>HEPSİ</option>
+                      <option>VERİLEN</option>
+                      <option>ALINAN</option>
+                    </select>
+                  </label>
+                  <label style={{ display: 'grid', gap: 6 }}>
+                    <span>Listelemek İstediğiniz Çek Durumunu Seçiniz.</span>
+                    <select value={reportStatus} onChange={(e) => setReportStatus(e.target.value as any)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }}>
+                      <option>HEPSİ</option>
+                      <option>BEKLEMEDE</option>
+                      <option>ÖDENDİ</option>
+                      <option>TAHSİL EDİLDİ</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div style={{ padding: 12, display: 'flex', justifyContent: 'flex-end' }}>
+                  <button onClick={() => setShowReport(false)} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}>≡ Çek/Senet Raporu Getir</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
