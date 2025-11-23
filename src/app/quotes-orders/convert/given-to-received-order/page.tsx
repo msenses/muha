@@ -119,7 +119,7 @@ function ConvertInner() {
                       <td style={{ padding: '8px' }}>{r.price.toFixed(2)}</td>
                       <td style={{ padding: '8px' }}>{r.qty}</td>
                       <td style={{ padding: '8px' }}>{lineTotal.toFixed(2)}</td>
-                      <td style={{ padding: '8px' }}>0.00</button></td>
+                      <td style={{ padding: '8px' }}>0.00</td>
                       <td style={{ padding: '8px' }}>0.00</td>
                       <td style={{ padding: '8px' }}>{lineGrand.toFixed(2)}</td>
                       <td style={{ padding: '8px' }}>
