@@ -101,7 +101,7 @@ export default function ChequeNotePage() {
                   <tbody>
                     {filtered.map((r) => (
                       <tr key={r.id} style={{ color: 'white' }}>
-                        <td style={{ padding: '8px' }}><button style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>🔍</button></td>
+                        <td style={{ padding: '8px' }}><button onClick={() => router.push((`/cheque-note/${r.id}`) as Route)} style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>🔍</button></td>
                         <td style={{ padding: '8px' }}>{r.id}</td>
                         <td style={{ padding: '8px' }}>{r.date}</td>
                         <td style={{ padding: '8px' }}>{r.due}</td>
