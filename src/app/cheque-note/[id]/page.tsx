@@ -94,7 +94,7 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
                 { label: 'ALINAN ÇEK/SENET BORDROSU' },
                 { label: 'RAPORLA' },
               ];
-              return actions.map(({ label, enabled, onClick }) => (
+              return actions.map(({ label, onClick }) => (
                 <button
                   key={label}
                   disabled={!getEnabled(label)}
