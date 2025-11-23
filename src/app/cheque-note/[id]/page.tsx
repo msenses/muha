@@ -69,9 +69,24 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
               const statusUpper = (data.status || '').toUpperCase();
               const isUnpaid = statusUpper === 'BEKLEMEDE';
               const isPaid = statusUpper === 'ÖDENDİ';
+              const isCustomerDoc = (data.kind || '').toUpperCase().includes('MÜŞTERİ');
               const getEnabled = (label: string) => {
+                // Ödendi öncelikli kural
                 if (isPaid) {
                   return label === 'VERİLEN ÇEK/SENET BORDROSU' || label === 'RAPORLA';
+                }
+                // Alınan çek kuralları
+                if (isCustomerDoc) {
+                  return (
+                    label === 'DÜZELT' ||
+                    label === 'İADE YAP' ||
+                    label === 'TAHSİLAT YAP' ||
+                    label === 'CİRO ET' ||
+                    label === 'BANKAYA VER' ||
+                    label === 'ALINAN ÇEK/SENET BORDROSU' ||
+                    label === 'RAPORLA' ||
+                    label === 'SİL'
+                  );
                 }
                 if (isUnpaid) {
                   return (
@@ -114,7 +129,9 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
               ));
             })()}
             {(() => {
-              const canDelete = (data.status || '').toUpperCase() !== 'ÖDENDİ';
+              const statusUpper = (data.status || '').toUpperCase();
+              const isCustomerDoc = (data.kind || '').toUpperCase().includes('MÜŞTERİ');
+              const canDelete = statusUpper !== 'ÖDENDİ' || isCustomerDoc;
               return (
                 <button
                   disabled={!canDelete}
