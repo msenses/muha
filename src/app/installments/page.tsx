@@ -14,6 +14,11 @@ export default function InstallmentsPage() {
     { id: 1, title: 'Mustafa Bey', total: 50000, collected: 1000 },
     { id: 2, title: 'Mehmet Bey', total: 10000, collected: 100 },
   ]);
+  const [showReport, setShowReport] = useState(false);
+  const [reportAllTime, setReportAllTime] = useState(false);
+  const [reportStart, setReportStart] = useState('22.11.2022');
+  const [reportEnd, setReportEnd] = useState('22.11.2022');
+  const [reportKind, setReportKind] = useState<'TÜMÜ' | 'VADESİ GEÇEN TAKSİTLER' | 'BEKLEYEN TAKSİTLER' | 'ÖDENEN TAKSİTLER'>('VADESİ GEÇEN TAKSİTLER');
 
   const filtered = useMemo(() => {
     const hay = q.toLowerCase();
@@ -26,7 +31,7 @@ export default function InstallmentsPage() {
         {/* Üst bar */}
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <button onClick={() => router.push(('/installments/new') as Route)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #22c55e', background: '#22c55e', color: '#fff', cursor: 'pointer' }}>+ Yeni Taksit Oluştur</button>
-          <button style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #f59e0b', background: '#f59e0b', color: '#1f2937', cursor: 'pointer' }}>📄 Gelişmiş Rapor</button>
+          <button onClick={() => setShowReport(true)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #f59e0b', background: '#f59e0b', color: '#1f2937', cursor: 'pointer' }}>📄 Gelişmiş Rapor</button>
         </div>
 
         <div style={{ marginTop: 12, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)' }}>
@@ -73,6 +78,49 @@ export default function InstallmentsPage() {
           </div>
         </div>
       </section>
+      {/* Gelişmiş Rapor Modal */}
+      {showReport && (
+        <div onClick={() => setShowReport(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'grid', placeItems: 'center', zIndex: 1000 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: 680, maxWidth: '95%', borderRadius: 10, background: '#ffffff', color: '#111827', boxShadow: '0 24px 60px rgba(0,0,0,0.45)', border: '1px solid #e5e7eb' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderBottom: '1px solid #e5e7eb' }}>
+              <strong>İşlem</strong>
+              <button onClick={() => setShowReport(false)} style={{ padding: 6, borderRadius: 6, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>✖</button>
+            </div>
+            <div style={{ padding: 16 }}>
+              <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, background: '#fff' }}>
+                <div style={{ padding: 12, borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input id="alltime" type="checkbox" checked={reportAllTime} onChange={(e) => setReportAllTime(e.target.checked)} />
+                  <label htmlFor="alltime" style={{ userSelect: 'none', cursor: 'pointer' }}>Tüm Zamanlar</label>
+                </div>
+                <div style={{ padding: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <label style={{ display: 'grid', gap: 6 }}>
+                    <span>Başlangıç Tarihi</span>
+                    <input value={reportStart} onChange={(e) => setReportStart(e.target.value)} disabled={reportAllTime} placeholder="22.11.2022" style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: reportAllTime ? '#f3f4f6' : '#fff' }} />
+                  </label>
+                  <label style={{ display: 'grid', gap: 6 }}>
+                    <span>Bitiş Tarihi</span>
+                    <input value={reportEnd} onChange={(e) => setReportEnd(e.target.value)} disabled={reportAllTime} placeholder="22.11.2022" style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: reportAllTime ? '#f3f4f6' : '#fff' }} />
+                  </label>
+                </div>
+                <div style={{ padding: '0 12px 12px' }}>
+                  <label style={{ display: 'grid', gap: 6 }}>
+                    <span>Listeleme istediğiniz Taksit Türünü Seçiniz :</span>
+                    <select value={reportKind} onChange={(e) => setReportKind(e.target.value as any)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }}>
+                      <option>VADESİ GEÇEN TAKSİTLER</option>
+                      <option>BEKLEYEN TAKSİTLER</option>
+                      <option>ÖDENEN TAKSİTLER</option>
+                      <option>TÜMÜ</option>
+                    </select>
+                  </label>
+                </div>
+                <div style={{ padding: 12, display: 'flex', justifyContent: 'flex-end' }}>
+                  <button onClick={() => setShowReport(false)} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}>≡ Taksit Raporu Getir</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
