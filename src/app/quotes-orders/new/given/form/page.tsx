@@ -195,6 +195,11 @@ function FormInner() {
           </div>
         </div>
         </div>
+
+        {/* Alt kaydet butonu */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+          <button style={{ padding: '10px 16px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>Kaydet</button>
+        </div>
       </section>
     </main>
   );
