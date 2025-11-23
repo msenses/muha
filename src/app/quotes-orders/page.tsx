@@ -77,7 +77,15 @@ export default function QuotesOrdersPage() {
                           <button onClick={() => setOpenRow(prev => prev === r.id ? null : r.id)} style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid #16a34a', background: '#16a34a', color: 'white', cursor: 'pointer' }}>İŞLEM ▾</button>
                           {openRow === r.id && (
                             <div style={{ position: 'absolute', top: 36, left: 8, minWidth: 280, background: 'white', color: '#111827', border: '1px solid #e5e7eb', borderRadius: 8, boxShadow: '0 10px 32px rgba(0,0,0,0.25)', zIndex: 50 }}>
-                              <button onClick={() => { window.location.href = '/quotes-orders/convert/given-to-received-order'; }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}>Verilen Teklifi Alınan Siparişe Dönüştür</button>
+                              {r.type === 'VERİLEN TEKLİF' && (
+                                <button onClick={() => { window.location.href = '/quotes-orders/convert/given-to-received-order'; }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}>Verilen Teklifi Alınan Siparişe Dönüştür</button>
+                              )}
+                              {r.type === 'ALINAN TEKLİF' && (
+                                <button onClick={() => { window.location.href = '/quotes-orders/convert/received-to-given-order'; }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}>Alınan Teklifi Verilen Siparişe Dönüştür</button>
+                              )}
+                              {(r.type !== 'VERİLEN TEKLİF' && r.type !== 'ALINAN TEKLİF') && (
+                                <button disabled style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#9ca3af', cursor: 'not-allowed' }}>Dönüştür</button>
+                              )}
                               <div style={{ height: 1, background: '#e5e7eb' }} />
                               <button disabled style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#9ca3af', cursor: 'not-allowed' }}>🔒 Formu Bas</button>
                               <div style={{ height: 1, background: '#e5e7eb' }} />
