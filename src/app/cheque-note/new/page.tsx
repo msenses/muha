@@ -20,7 +20,11 @@ export default function ChequeNoteNewPage() {
   const [bankBranch, setBankBranch] = useState('');
   const [accountNo, setAccountNo] = useState('');
   const [title, setTitle] = useState('');
-  const [docType, setDocType] = useState<'ASIL EVRAK' | 'SURET'>('ASIL EVRAK');
+  const [docType, setDocType] = useState<'ASIL EVRAK' | 'CİROLU EVRAK'>('ASIL EVRAK');
+
+  // Cari seçim modalı
+  const [openAccountPick, setOpenAccountPick] = useState(false);
+  const [accountPickQuery, setAccountPickQuery] = useState('');
 
   return (
     <main style={{ minHeight: '100dvh', background: '#ecf0f5', color: '#111827' }}>
@@ -85,7 +89,7 @@ export default function ChequeNoteNewPage() {
               <span>ÜNVAN :</span>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8 }}>
                 <input value={title} onChange={(e) => setTitle(e.target.value)} style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db' }} />
-                <button title="Cari Seç" style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>🔍</button>
+                <button onClick={() => setOpenAccountPick(true)} title="Cari Seç" style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>🔍</button>
               </div>
             </div>
             <label style={{ display: 'grid', gap: 6, marginBottom: 16 }}>
@@ -101,6 +105,55 @@ export default function ChequeNoteNewPage() {
           </div>
         </div>
       </section>
+
+      {/* Cari Seç Modal */}
+      {openAccountPick && (
+        <div onClick={() => setOpenAccountPick(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'grid', placeItems: 'center', zIndex: 1000 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: 720, maxWidth: '95%', borderRadius: 10, background: '#ffffff', color: '#111827', boxShadow: '0 24px 60px rgba(0,0,0,0.45)', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderBottom: '1px solid #e5e7eb', fontWeight: 700 }}>CARI SEÇ
+              <button onClick={() => setOpenAccountPick(false)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>✖</button>
+            </div>
+            <div style={{ padding: 12 }}>
+              <input value={accountPickQuery} onChange={(e) => setAccountPickQuery(e.target.value)} placeholder="" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }} />
+            </div>
+            <div style={{ padding: '0 12px 12px', maxHeight: 360, overflow: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: '#f3f4f6', color: '#111827' }}>
+                    <th style={{ textAlign: 'left', padding: '8px 10px' }}>Cari Ünvan</th>
+                    <th style={{ textAlign: 'left', padding: '8px 10px' }}>Yetkili</th>
+                    <th style={{ textAlign: 'right', padding: '8px 10px' }}>İşlem</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(() => {
+                    const all = [
+                      { id: '1', title: 'Mehmet Bey', officer: 'Ahmet Bey' },
+                      { id: '2', title: 'Mustafa Bey', officer: 'Mustafa Bey' },
+                    ];
+                    const filtered = all.filter((r) => {
+                      const hay = `${r.title} ${r.officer}`.toLowerCase();
+                      return hay.includes(accountPickQuery.toLowerCase());
+                    });
+                    return filtered.map((r) => (
+                      <tr key={r.id} style={{ borderBottom: '1px solid #eee' }}>
+                        <td style={{ padding: '8px 10px' }}>{r.title}</td>
+                        <td style={{ padding: '8px 10px' }}>{r.officer}</td>
+                        <td style={{ padding: '8px 10px', textAlign: 'right' }}>
+                          <button onClick={() => { setTitle(r.title); setOpenAccountPick(false); }} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}>Seç</button>
+                        </td>
+                      </tr>
+                    ));
+                  })()}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={() => setOpenAccountPick(false)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff' }}>Kapat</button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
