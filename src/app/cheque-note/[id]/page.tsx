@@ -66,40 +66,73 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
           {/* Sağ işlem paneli */}
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 10, display: 'grid', gap: 8, alignContent: 'start' }}>
             {(() => {
-              const isUnpaid = (data.status || '').toUpperCase() === 'BEKLEMEDE';
-              const actions: Array<{ label: string; enabled: boolean; onClick?: () => void }> = [
-                { label: 'DÜZELT', enabled: true },
-                { label: 'İADE YAP', enabled: !isUnpaid },
-                { label: 'TAHSİLAT YAP', enabled: !isUnpaid },
-                { label: 'ÖDEME YAP', enabled: true, onClick: () => setShowPay(true) },
-                { label: 'CİRO ET', enabled: !isUnpaid },
-                { label: 'BANKAYA VER', enabled: !isUnpaid },
-                { label: 'VERİLEN ÇEK/SENET BORDROSU', enabled: true },
-                { label: 'ALINAN ÇEK/SENET BORDROSU', enabled: !isUnpaid },
-                { label: 'RAPORLA', enabled: true },
+              const statusUpper = (data.status || '').toUpperCase();
+              const isUnpaid = statusUpper === 'BEKLEMEDE';
+              const isPaid = statusUpper === 'ÖDENDİ';
+              const getEnabled = (label: string) => {
+                if (isPaid) {
+                  return label === 'VERİLEN ÇEK/SENET BORDROSU' || label === 'RAPORLA';
+                }
+                if (isUnpaid) {
+                  return (
+                    label === 'DÜZELT' ||
+                    label === 'ÖDEME YAP' ||
+                    label === 'VERİLEN ÇEK/SENET BORDROSU' ||
+                    label === 'RAPORLA'
+                  );
+                }
+                return true;
+              };
+              const actions: Array<{ label: string; onClick?: () => void }> = [
+                { label: 'DÜZELT' },
+                { label: 'İADE YAP' },
+                { label: 'TAHSİLAT YAP' },
+                { label: 'ÖDEME YAP', onClick: () => setShowPay(true) },
+                { label: 'CİRO ET' },
+                { label: 'BANKAYA VER' },
+                { label: 'VERİLEN ÇEK/SENET BORDROSU' },
+                { label: 'ALINAN ÇEK/SENET BORDROSU' },
+                { label: 'RAPORLA' },
               ];
               return actions.map(({ label, enabled, onClick }) => (
                 <button
                   key={label}
-                  disabled={!enabled}
-                  onClick={enabled ? onClick : undefined}
+                  disabled={!getEnabled(label)}
+                  onClick={getEnabled(label) ? onClick : undefined}
                   style={{
                     width: '100%',
                     padding: '10px 12px',
                     borderRadius: 6,
                     border: '1px solid #d1d5db',
                     background: '#f9fafb',
-                    cursor: enabled ? 'pointer' : 'not-allowed',
-                    opacity: enabled ? 1 : 0.5,
+                    cursor: getEnabled(label) ? 'pointer' : 'not-allowed',
+                    opacity: getEnabled(label) ? 1 : 0.5,
                   }}
                 >
                   {label}
                 </button>
               ));
             })()}
-            <button style={{ width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid #fca5a5', background: '#fee2e2', color: '#991b1b', cursor: 'pointer' }}>
-              SİL
-            </button>
+            {(() => {
+              const canDelete = (data.status || '').toUpperCase() !== 'ÖDENDİ';
+              return (
+                <button
+                  disabled={!canDelete}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: 6,
+                    border: '1px solid #fca5a5',
+                    background: '#fee2e2',
+                    color: '#991b1b',
+                    cursor: canDelete ? 'pointer' : 'not-allowed',
+                    opacity: canDelete ? 1 : 0.5,
+                  }}
+                >
+                  SİL
+                </button>
+              );
+            })()}
             <button onClick={() => router.push(('/cheque-note') as Route)} style={{ marginTop: 6, width: '100%', padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db', background: '#fff' }}>
               ← Listeye Dön
             </button>
