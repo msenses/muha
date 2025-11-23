@@ -170,7 +170,7 @@ export default function InstallmentDetailPage({ params }: { params: { id: string
                   </label>
                 </div>
                 <div style={{ padding: 12, display: 'flex', justifyContent: 'flex-end' }}>
-                  <button onClick={() => setShowReport(false)} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}>≡ Taksit Raporu Getir</button>
+                  <button onClick={() => { setShowReport(false); router.push((`/installments/${params.id}/reports/view`) as Route); }} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}>≡ Taksit Raporu Getir</button>
                 </div>
               </div>
             </div>
