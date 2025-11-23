@@ -107,7 +107,7 @@ export default function QuotesOrdersPage() {
               <div style={{ padding: 10, background: '#f3f4f6', fontWeight: 700 }}>Teklif</div>
               <div style={{ padding: 10, display: 'grid', gap: 8 }}>
                 <button onClick={() => { window.location.href = '/quotes-orders/new/given'; }} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>➕ Yeni Verilen Teklif</button>
-                <button style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #ef4444', background: '#ef4444', color: '#fff' }}>➕ Yeni Alınan Teklif</button>
+                <button onClick={() => { window.location.href = '/quotes-orders/new/received'; }} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #ef4444', background: '#ef4444', color: '#fff' }}>➕ Yeni Alınan Teklif</button>
               </div>
             </div>
             <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid #e5e7eb', background: '#fff' }}>
