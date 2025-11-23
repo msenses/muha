@@ -76,12 +76,16 @@ export default function QuotesOrdersPage() {
                         <td style={{ padding: '8px', position: 'relative' }}>
                           <button onClick={() => setOpenRow(prev => prev === r.id ? null : r.id)} style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid #16a34a', background: '#16a34a', color: 'white', cursor: 'pointer' }}>İŞLEM ▾</button>
                           {openRow === r.id && (
-                            <div style={{ position: 'absolute', top: 36, left: 8, minWidth: 160, background: 'white', color: '#111827', border: '1px solid #e5e7eb', borderRadius: 8, boxShadow: '0 10px 32px rgba(0,0,0,0.25)', zIndex: 50 }}>
-                              <button style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}>Görüntüle</button>
+                            <div style={{ position: 'absolute', top: 36, left: 8, minWidth: 280, background: 'white', color: '#111827', border: '1px solid #e5e7eb', borderRadius: 8, boxShadow: '0 10px 32px rgba(0,0,0,0.25)', zIndex: 50 }}>
+                              <button disabled style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#9ca3af', cursor: 'not-allowed' }}>🔒 Verilen Teklifi Alınan Siparişe Dönüştür</button>
                               <div style={{ height: 1, background: '#e5e7eb' }} />
-                              <button style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}>Düzenle</button>
+                              <button disabled style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#9ca3af', cursor: 'not-allowed' }}>🔒 Formu Bas</button>
                               <div style={{ height: 1, background: '#e5e7eb' }} />
-                              <button style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#ef4444', cursor: 'pointer' }}>Sil</button>
+                              <button style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}>✏ Düzelt</button>
+                              <div style={{ height: 1, background: '#e5e7eb' }} />
+                              <button style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#ef4444', cursor: 'pointer' }}>🗑 Sil</button>
+                              <div style={{ height: 1, background: '#e5e7eb' }} />
+                              <button style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#ef4444', cursor: 'pointer' }}>⛔ İptal Et</button>
                             </div>
                           )}
                         </td>
