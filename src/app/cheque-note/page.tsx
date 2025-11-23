@@ -2,12 +2,16 @@
 export const dynamic = 'force-dynamic';
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import type { Route } from 'next';
 
 type Row = { id: number; date: string; due: string; firm: string; status: 'BEKLEMEDE' | 'ÖDENDİ' | 'TAHSİL EDİLDİ'; amount: number };
 
 export default function ChequeNotePage() {
+  const router = useRouter();
   const [query, setQuery] = useState('');
-  const [order, setOrder] = useState<'Sıralama' | 'Tarih' | 'Tutar'>('Sıralama');
+  const [sortOpen, setSortOpen] = useState(false);
+  const [sortMode, setSortMode] = useState<'Sıralama' | 'Tarihi Yeniden Eskiye' | 'Tarihi Eskiden Yeniye' | 'Vade Eskiden Yeniye' | 'Vade Yeniden Eskiye'>('Sıralama');
 
   const rows: Row[] = [
     { id: 1, date: '22.11.2022', due: '22.11.2022', firm: 'Mustafa Bey', status: 'BEKLEMEDE', amount: 100000 },
@@ -17,10 +21,18 @@ export default function ChequeNotePage() {
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
     let list = rows.filter(r => `${r.id} ${r.date} ${r.due} ${r.firm} ${r.status} ${r.amount}`.toLowerCase().includes(q));
-    if (order === 'Tarih') list = list.slice().sort((a, b) => a.date.localeCompare(b.date));
-    if (order === 'Tutar') list = list.slice().sort((a, b) => a.amount - b.amount);
+    const parse = (d: string) => {
+      // dd.mm.yyyy -> yyyy-mm-dd
+      const [dd, mm, yyyy] = d.split('.');
+      const iso = `${yyyy}-${mm}-${dd}`;
+      return new Date(iso).getTime();
+    };
+    if (sortMode === 'Tarihi Eskiden Yeniye') list = list.slice().sort((a, b) => parse(a.date) - parse(b.date));
+    if (sortMode === 'Tarihi Yeniden Eskiye') list = list.slice().sort((a, b) => parse(b.date) - parse(a.date));
+    if (sortMode === 'Vade Eskiden Yeniye') list = list.slice().sort((a, b) => parse(a.due) - parse(b.due));
+    if (sortMode === 'Vade Yeniden Eskiye') list = list.slice().sort((a, b) => parse(b.due) - parse(a.due));
     return list;
-  }, [query, order]);
+  }, [query, sortMode]);
 
   return (
     <main style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
@@ -29,7 +41,7 @@ export default function ChequeNotePage() {
           {/* Sol menü */}
           <aside>
             <div style={{ display: 'grid', gap: 10 }}>
-              <button style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #22c55e', background: '#22c55e', color: '#fff' }}>Yeni Verilen ÇEK/SENET</button>
+              <button onClick={() => router.push(('/cheque-note/new') as Route)} style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #22c55e', background: '#22c55e', color: '#fff' }}>Yeni Verilen ÇEK/SENET</button>
               <button style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #f59e0b', background: '#f59e0b', color: '#1f2937' }}>Yeni Alınan ÇEK/SENET</button>
             </div>
             <div style={{ marginTop: 16, color: 'white', opacity: 0.9, fontWeight: 700 }}>Raporlar</div>
@@ -43,11 +55,28 @@ export default function ChequeNotePage() {
             {/* Üst bar */}
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: '#12b3c5', borderRadius: 8, padding: 8, border: '1px solid rgba(255,255,255,0.18)' }}>
               <div style={{ fontWeight: 700, padding: '8px 10px' }}>Çek Senet Listesi</div>
-              <select value={order} onChange={(e) => setOrder(e.target.value as any)} style={{ marginLeft: 8, padding: '8px 10px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.95)', color: '#111827' }}>
-                <option>Sıralama</option>
-                <option>Tarih</option>
-                <option>Tutar</option>
-              </select>
+              {/* Sıralama butonu ve açılır menü */}
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setSortOpen(v => !v)}
+                  style={{ marginLeft: 8, padding: '8px 10px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.95)', color: '#111827', cursor: 'pointer' }}
+                >
+                  {sortMode} ▾
+                </button>
+                {sortOpen && (
+                  <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, minWidth: 220, background: '#ffffff', color: '#111827', border: '1px solid #e5e7eb', borderRadius: 6, boxShadow: '0 10px 24px rgba(0,0,0,0.25)', zIndex: 30 }}>
+                    {(['Sıralama','Tarihi Yeniden Eskiye','Tarihi Eskiden Yeniye','Vade Eskiden Yeniye','Vade Yeniden Eskiye'] as const).map(opt => (
+                      <button
+                        key={opt}
+                        onClick={() => { setSortMode(opt); setSortOpen(false); }}
+                        style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <input placeholder="Ara..." value={query} onChange={(e) => setQuery(e.target.value)} style={{ width: 220, padding: '8px 10px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.1)', color: 'white' }} />
                 <button style={{ padding: 8, borderRadius: 6, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.18)', color: 'white' }}>🔍</button>
