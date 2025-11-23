@@ -22,7 +22,7 @@ export default function GivenQuoteSelectAccountPage() {
   return (
     <main style={{ minHeight: '100dvh', background: '#ecf0f5', color: '#111827' }}>
       <section style={{ padding: 12 }}>
-        <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid #e5e7eb', background: '#fff' }}>
+        <div style={{ width: '100%', maxWidth: 1280, margin: '0 auto', borderRadius: 12, overflow: 'hidden', border: '1px solid #e5e7eb', background: '#fff' }}>
           {/* Başlık ve arama */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#12b3c5', color: 'white', padding: 8 }}>
             <div style={{ fontWeight: 700 }}>Verilen Teklif Cari Seçimi</div>

@@ -53,7 +53,8 @@ function FormInner() {
 
   return (
     <main style={{ minHeight: '100dvh', background: '#ecf0f5', color: '#111827' }}>
-      <section style={{ padding: 12, display: 'grid', gap: 12 }}>
+      <section style={{ padding: 12 }}>
+        <div style={{ width: '100%', maxWidth: 1280, margin: '0 auto', display: 'grid', gap: 12 }}>
         <div style={{ fontWeight: 800, color: '#0f172a' }}>VERİLEN TEKLİF</div>
 
         {/* Üst bilgiler */}
@@ -180,6 +181,8 @@ function FormInner() {
               </select>
             </label>
           </div>
+        </div>
+      </section>
         </div>
       </section>
     </main>
