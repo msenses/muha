@@ -58,7 +58,13 @@ function FormInner() {
         <div style={{ fontWeight: 800, color: '#0f172a' }}>VERİLEN TEKLİF</div>
 
         {/* Üst bilgiler */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 0.8fr', gap: 12 }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))',
+            gap: 12
+          }}
+        >
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 10, display: 'grid', gap: 6 }}>
             <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6 }}><span>Ünvan:</span><input value={account.title} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }} /></label>
             <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6 }}><span>Yetkili:</span><input value={account.officer} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }} /></label>
@@ -80,7 +86,7 @@ function FormInner() {
         </div>
 
         {/* Barkod + ürün ekle */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8 }}>
           <input placeholder="Barkod..." style={{ padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: 6, background: '#fff' }} />
           <button onClick={addProduct} style={{ borderRadius: 6, border: '1px solid #ef4444', background: '#ef4444', color: '#fff' }}>Ürün Ekle</button>
         </div>
@@ -131,7 +137,13 @@ function FormInner() {
         </div>
 
         {/* Alt iki panel - sol tutarlar, sağ açıklama/depo */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 12 }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))',
+            gap: 12
+          }}
+        >
           {/* Sol tutarlar */}
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 10, display: 'grid', gap: 8 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 8 }}>
