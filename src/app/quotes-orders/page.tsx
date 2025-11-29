@@ -19,6 +19,12 @@ export default function QuotesOrdersPage() {
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<'Hepsi' | 'Teklif' | 'Sipariş'>('Hepsi');
   const [openRow, setOpenRow] = useState<number | null>(null);
+  const [showReport, setShowReport] = useState(false);
+  const [reportStart, setReportStart] = useState('');
+  const [reportEnd, setReportEnd] = useState('');
+  const [reportSortType, setReportSortType] = useState<'Tarihe Göre' | 'Ada Göre'>('Tarihe Göre');
+  const [reportSortOrder, setReportSortOrder] = useState<'AZ' | 'ZA'>('AZ');
+  const [reportListType, setReportListType] = useState<'Hepsi' | 'Teklif' | 'Sipariş'>('Hepsi');
 
   const rows: Row[] = [
     { id: 1, type: 'VERİLEN TEKLİF', date: '27.11.2022', no: '1', flow: 'Verilen Teklif => Verilen Sipariş', stage: 'Bekliyor', title: 'Mehmet Bey', total: 0, note: 'KDV dahildir' },
@@ -83,7 +89,13 @@ export default function QuotesOrdersPage() {
                               {r.type === 'ALINAN TEKLİF' && (
                                 <button onClick={() => { window.location.href = '/quotes-orders/convert/received-to-given-order'; }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}>Alınan Teklifi Verilen Siparişe Dönüştür</button>
                               )}
-                              {(r.type !== 'VERİLEN TEKLİF' && r.type !== 'ALINAN TEKLİF') && (
+                              {r.type === 'ALINAN SİPARİŞ' && (
+                                <button onClick={() => { window.location.href = '/quotes-orders/convert/received-order-to-dispatch'; }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}>Alınan Siparişi İrsaliyeye Dönüştür</button>
+                              )}
+                              {r.type === 'VERİLEN SİPARİŞ' && (
+                                <button onClick={() => { window.location.href = '/quotes-orders/convert/given-order-to-invoice'; }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}>Verilen Siparişi Faturaya Dönüştür</button>
+                              )}
+                              {(r.type !== 'VERİLEN TEKLİF' && r.type !== 'ALINAN TEKLİF' && r.type !== 'ALINAN SİPARİŞ' && r.type !== 'VERİLEN SİPARİŞ') && (
                                 <button disabled style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#9ca3af', cursor: 'not-allowed' }}>Dönüştür</button>
                               )}
                               <div style={{ height: 1, background: '#e5e7eb' }} />
@@ -132,7 +144,7 @@ export default function QuotesOrdersPage() {
             <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid #e5e7eb', background: '#fff' }}>
               <div style={{ padding: 10, background: '#f3f4f6', fontWeight: 700 }}>Raporlar</div>
               <div style={{ padding: 10 }}>
-                <button style={{ padding: '10px 12px', width: '100%', borderRadius: 8, border: '1px solid #d1a054', background: '#d1a054', color: '#1f2937' }}>🗂 Rapor Al</button>
+                <button onClick={() => setShowReport(true)} style={{ padding: '10px 12px', width: '100%', borderRadius: 8, border: '1px solid #d1a054', background: '#d1a054', color: '#1f2937', cursor: 'pointer' }}>🗂 Rapor Al</button>
               </div>
             </div>
             <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid #e5e7eb', background: '#fff' }}>
@@ -148,6 +160,59 @@ export default function QuotesOrdersPage() {
           </aside>
         </div>
       </section>
+
+      {/* Rapor modalı */}
+      {showReport && (
+        <div onClick={() => setShowReport(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'grid', placeItems: 'center', zIndex: 1000 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 420, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 16, display: 'grid', gap: 10 }}>
+            <div style={{ fontWeight: 700, fontSize: 18, color: '#374151' }}>Teklif Raporu</div>
+
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span>Başlangıç Tarihi</span>
+              <input value={reportStart} onChange={(e) => setReportStart(e.target.value)} placeholder="27.11.2022" style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }} />
+            </label>
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span>Bitiş Tarihi</span>
+              <input value={reportEnd} onChange={(e) => setReportEnd(e.target.value)} placeholder="27.11.2022" style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }} />
+            </label>
+
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span>Sıralama Türü</span>
+              <select value={reportSortType} onChange={(e) => setReportSortType(e.target.value as any)} style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }}>
+                <option>Tarihe Göre</option>
+                <option>Ada Göre</option>
+              </select>
+            </label>
+
+            <div style={{ display: 'grid', gap: 6 }}>
+              <span>Sıralama Şekli</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <input type="radio" checked={reportSortOrder === 'AZ'} onChange={() => setReportSortOrder('AZ')} />
+                  <span>A-Z</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <input type="radio" checked={reportSortOrder === 'ZA'} onChange={() => setReportSortOrder('ZA')} />
+                  <span>Z-A</span>
+                </label>
+              </div>
+            </div>
+
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span>Listelemek istediğiniz türü seçiniz.</span>
+              <select value={reportListType} onChange={(e) => setReportListType(e.target.value as any)} style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }}>
+                <option>Hepsi</option>
+                <option>Teklif</option>
+                <option>Sipariş</option>
+              </select>
+            </label>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowReport(false)} style={{ padding: '10px 14px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>🗂 Raporla</button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
