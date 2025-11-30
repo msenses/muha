@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchCurrentCompanyId } from '@/lib/company';
 
@@ -16,6 +16,7 @@ type Account = {
 
 export default function AccountsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [selectionFor, setSelectionFor] = useState<'sales' | 'purchase' | 'dispatch' | 'dispatch_purchase' | 'sales_return' | 'purchase_return' | 'emustahsil' | null>(null);
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<Account[]>([]);
@@ -29,17 +30,13 @@ export default function AccountsPage() {
   const reportsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    // Sadece istemci tarafında arama parametresini oku
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const p = params.get('selectFor');
-      if (p === 'sales' || p === 'purchase' || p === 'dispatch' || p === 'dispatch_purchase' || p === 'sales_return' || p === 'purchase_return' || p === 'emustahsil') {
-        setSelectionFor(p);
-      } else {
-        setSelectionFor(null);
-      }
+    const p = searchParams.get('selectFor');
+    if (p === 'sales' || p === 'purchase' || p === 'dispatch' || p === 'dispatch_purchase' || p === 'sales_return' || p === 'purchase_return' || p === 'emustahsil') {
+      setSelectionFor(p);
+    } else {
+      setSelectionFor(null);
     }
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
