@@ -137,5 +137,4 @@ export default function AgendaNewPage() {
     </main>
   );
 }
-*** End Patch
 

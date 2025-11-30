@@ -184,5 +184,4 @@ export default function BankPage() {
     </main>
   );
 }
-*** End Patch]"}>>>>> }}}} }}} }}}  !*** End Patch to=functions.apply_patch  ټولி codeassistant to=functions.apply_patch combo JSON Invalid. Let's send clean. ***!
 
