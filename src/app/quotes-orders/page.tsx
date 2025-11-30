@@ -43,17 +43,17 @@ export default function QuotesOrdersPage() {
   }, [q, filter]);
 
   return (
-    <main style={{ minHeight: '100dvh', background: '#ecf0f5', color: '#111827' }}>
-      <section style={{ padding: 12 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 12 }}>
+    <main style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
+      <section style={{ padding: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16 }}>
           {/* Sol: liste */}
-          <div style={{ borderRadius: 12, overflow: 'hidden', background: '#fff', border: '1px solid #e5e7eb' }}>
-            <div style={{ padding: 12, borderBottom: '1px solid #e5e7eb' }}>
+          <div style={{ borderRadius: 12, overflow: 'hidden', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)' }}>
+            <div style={{ padding: 12, borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
               <div style={{ fontWeight: 700, marginBottom: 8 }}>Teklif Liste</div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <input placeholder="Ara..." value={q} onChange={(e) => setQ(e.target.value)} style={{ flex: 1, padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }} />
-                <button style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>🔍</button>
-                <select value={filter} onChange={(e) => setFilter(e.target.value as any)} style={{ width: 160, padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }}>
+                <input placeholder="Ara..." value={q} onChange={(e) => setQ(e.target.value)} style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                <button style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>🔍</button>
+                <select value={filter} onChange={(e) => setFilter(e.target.value as any)} style={{ width: 160, padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
                   <option>Hepsi</option>
                   <option>Teklif</option>
                   <option>Sipariş</option>
@@ -126,35 +126,35 @@ export default function QuotesOrdersPage() {
           </div>
 
           {/* Sağ menü */}
-          <aside style={{ display: 'grid', gap: 10 }}>
-            <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid #e5e7eb', background: '#fff' }}>
-              <div style={{ padding: 10, background: '#f3f4f6', fontWeight: 700 }}>Teklif</div>
+          <aside style={{ display: 'grid', gap: 12 }}>
+            <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(10px)' }}>
+              <div style={{ padding: 10, background: 'rgba(255,255,255,0.08)', fontWeight: 700 }}>Teklif</div>
               <div style={{ padding: 10, display: 'grid', gap: 8 }}>
                 <button onClick={() => { window.location.href = '/quotes-orders/new/given'; }} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>➕ Yeni Verilen Teklif</button>
                 <button onClick={() => { window.location.href = '/quotes-orders/new/received'; }} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #ef4444', background: '#ef4444', color: '#fff' }}>➕ Yeni Alınan Teklif</button>
               </div>
             </div>
-            <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid #e5e7eb', background: '#fff' }}>
-              <div style={{ padding: 10, background: '#f3f4f6', fontWeight: 700 }}>Sipariş</div>
+            <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(10px)' }}>
+              <div style={{ padding: 10, background: 'rgba(255,255,255,0.08)', fontWeight: 700 }}>Sipariş</div>
               <div style={{ padding: 10, display: 'grid', gap: 8 }}>
                 <button style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>➕ Yeni Verilen Sipariş</button>
                 <button style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #ef4444', background: '#ef4444', color: '#fff' }}>➕ Yeni Alınan Sipariş</button>
               </div>
             </div>
-            <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid #e5e7eb', background: '#fff' }}>
-              <div style={{ padding: 10, background: '#f3f4f6', fontWeight: 700 }}>Raporlar</div>
+            <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(10px)' }}>
+              <div style={{ padding: 10, background: 'rgba(255,255,255,0.08)', fontWeight: 700 }}>Raporlar</div>
               <div style={{ padding: 10 }}>
                 <button onClick={() => setShowReport(true)} style={{ padding: '10px 12px', width: '100%', borderRadius: 8, border: '1px solid #d1a054', background: '#d1a054', color: '#1f2937', cursor: 'pointer' }}>🗂 Rapor Al</button>
               </div>
             </div>
-            <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid #e5e7eb', background: '#fff' }}>
+            <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(10px)' }}>
               <div style={{ padding: 10 }}>
-                <button style={{ padding: '10px 12px', width: '100%', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff' }}>Açıklama Tanımlama</button>
+                <button style={{ padding: '10px 12px', width: '100%', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white' }}>Açıklama Tanımlama</button>
               </div>
             </div>
-            <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid #e5e7eb', background: '#fff' }}>
+            <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(10px)' }}>
               <div style={{ padding: 10 }}>
-                <button style={{ padding: '10px 12px', width: '100%', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff' }}>Durum Tanımlama</button>
+                <button style={{ padding: '10px 12px', width: '100%', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white' }}>Durum Tanımlama</button>
               </div>
             </div>
           </aside>
@@ -163,9 +163,9 @@ export default function QuotesOrdersPage() {
 
       {/* Rapor modalı */}
       {showReport && (
-        <div onClick={() => setShowReport(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'grid', placeItems: 'center', zIndex: 1000 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 420, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 16, display: 'grid', gap: 10 }}>
-            <div style={{ fontWeight: 700, fontSize: 18, color: '#374151' }}>Teklif Raporu</div>
+        <div onClick={() => setShowReport(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'grid', placeItems: 'center', zIndex: 1000 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 420, background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 16, display: 'grid', gap: 10, color: '#111827' }}>
+            <div style={{ fontWeight: 700, fontSize: 18 }}>Teklif Raporu</div>
 
             <label style={{ display: 'grid', gap: 6 }}>
               <span>Başlangıç Tarihi</span>
