@@ -5,12 +5,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
 import { supabase } from '@/lib/supabaseClient';
-import { fetchCurrentCompanyId } from '@/lib/company';
 
 export default function EInvoicePage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
-  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -49,38 +47,6 @@ export default function EInvoicePage() {
     whiteSpace: 'nowrap',
   };
 
-  const createDemoAndOpen = async () => {
-    try {
-      setCreating(true);
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        router.replace('/login' as Route);
-        return;
-      }
-      const companyId = await fetchCurrentCompanyId();
-      const unique = Math.random().toString(36).slice(2, 7).toUpperCase();
-      const { data: ins, error } = await supabase
-        .from('accounts')
-        .insert({
-          company_id: companyId,
-          code: `DNM-${unique}`,
-          name: `Deneme Cari ${unique}`,
-          phone: null,
-          email: 'demo@example.com',
-          address: 'Merkez',
-        })
-        .select('id')
-        .single();
-      if (error) throw error;
-      const newId = (ins as any).id as string;
-      router.push((`/invoices/new?sales=1&account=${newId}`) as Route);
-    } catch {
-      // no-op: üretim dışı basit demo
-    } finally {
-      setCreating(false);
-    }
-  };
-
   return (
     <main style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
       {/* Üst menü (görseldeki buton şeridi) */}
@@ -93,9 +59,6 @@ export default function EInvoicePage() {
           <button style={navBtnStyle} onClick={() => void 0}>Mükellef Kontrol</button>
           <button style={navBtnStyle} onClick={() => void 0}>Ayarlar ▾</button>
           <button style={navBtnStyle} onClick={() => router.push('/accounts?selectFor=sales' as Route)}>Fatura Oluştur</button>
-          <button style={{ ...navBtnStyle, background: '#fbbf24', border: '1px solid #f59e0b' }} onClick={createDemoAndOpen} disabled={creating}>
-            {creating ? 'Oluşturuluyor…' : 'Deneme Cari ile Aç'}
-          </button>
           <button style={navBtnStyle} onClick={() => void 0}>Kontör Yükle</button>
         </div>
 
