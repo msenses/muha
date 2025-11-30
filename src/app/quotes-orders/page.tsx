@@ -20,14 +20,15 @@ export default function QuotesOrdersPage() {
   const [filter, setFilter] = useState<'Hepsi' | 'Teklif' | 'Sipariş'>('Hepsi');
   const [menu, setMenu] = useState<{
     id: number;
-    left: number;
-    top: number;
+    left: number; // legacy (fixed mode) — kullanılmıyor
+    top: number;  // legacy (fixed mode) — kullanılmıyor
     // Anchor buton konumu
     anchor?: { left: number; right: number; top: number; bottom: number };
     // Ölçülmüş menü boyutu
     w?: number;
     h?: number;
     caretX?: number;
+    up?: boolean; // yer darsa yukarı aç
   } | null>(null);
   const [showReport, setShowReport] = useState(false);
   const [reportStart, setReportStart] = useState('');
@@ -78,21 +79,13 @@ export default function QuotesOrdersPage() {
     const menuH = rect.height || 280;
     const anchor = menu.anchor;
 
-    // Varsayılan: butonun altına, sola hizalı (viewport koordinatları)
+    // Alttan taşarsa, butonun üstüne aç
+    const needUp = anchor.bottom + 6 + menuH > window.innerHeight - 8;
     let left = anchor.left;
-    let top = anchor.bottom + 6;
-
-    // Sağdan taşarsa, sağdan sola kaydır
+    // Sağdan taşarsa sola kaydır (caret hesaplaması için)
     if (left + menuW > window.innerWidth - 8) {
       left = Math.max(8, anchor.right - menuW);
     }
-    // Alttan taşarsa, butonun üstüne aç
-    if (top + menuH > window.innerHeight - 8) {
-      top = Math.max(8, anchor.top - (menuH + 6));
-    }
-    // Ekran içine sıkıştır
-    left = Math.max(8, Math.min(left, window.innerWidth - menuW - 8));
-    top = Math.max(8, Math.min(top, window.innerHeight - menuH - 8));
 
     // Caret (ok) konumu: butonun solundan itibaren ~16px içeride
     let caretX = (anchor.left + 16) - left;
@@ -100,8 +93,8 @@ export default function QuotesOrdersPage() {
     caretX = Math.max(14, Math.min(menuW - 14, caretX));
 
     // Eğer konum veya ölçüler değiştiyse state’i güncelle (sonsuz döngüyü engelle)
-    if (menu.left !== left || menu.top !== top || menu.w !== menuW || menu.h !== menuH || menu.caretX !== caretX) {
-      setMenu({ ...menu, left, top, w: menuW, h: menuH, caretX });
+    if (menu.left !== left || menu.w !== menuW || menu.h !== menuH || menu.caretX !== caretX || menu.up !== needUp) {
+      setMenu({ ...menu, left, w: menuW, h: menuH, caretX, up: needUp });
     }
   }, [menu]);
 
@@ -143,58 +136,61 @@ export default function QuotesOrdersPage() {
                     {filtered.map((r) => (
                       <tr key={r.id}>
                         <td style={{ padding: '8px' }}>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const btn = e.currentTarget as HTMLElement;
-                              const rect = btn.getBoundingClientRect();
-                              // İlk aşamada anchor ile komit et, kesin konumu ölçümden sonra hesaplayacağız
-                              setMenu((prev) =>
-                                prev && prev.id === r.id
-                                  ? null
-                                  : {
-                                      id: r.id,
-                                      left: rect.left,
-                                      top: rect.bottom + 6,
-                                      anchor: { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom },
-                                    }
-                              );
-                            }}
-                            style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid #16a34a', background: '#16a34a', color: 'white', cursor: 'pointer' }}
-                          >
-                            İŞLEM ▾
-                          </button>
-                          {menu?.id === r.id && (
-                            <div
-                              ref={menuRef}
-                              onClick={(e) => e.stopPropagation()}
-                              style={{
-                                position: 'fixed',
-                                top: menu.top,
-                                left: menu.left,
-                                minWidth: 260,
-                                maxHeight: 'calc(100vh - 16px)',
-                                overflow: 'auto',
-                                background: 'white',
-                                color: '#111827',
-                                border: '1px solid #e5e7eb',
-                                borderRadius: 6,
-                                boxShadow: '0 10px 24px rgba(0,0,0,0.18)',
-                                zIndex: 2000,
+                          <div style={{ position: 'relative', display: 'inline-block' }}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const btn = e.currentTarget as HTMLElement;
+                                const rect = btn.getBoundingClientRect();
+                                // Anchor bilgisini kaydet — yerleşim ölçümde kesinleşecek
+                                setMenu((prev) =>
+                                  prev && prev.id === r.id
+                                    ? null
+                                    : {
+                                        id: r.id,
+                                        left: rect.left,
+                                        top: rect.bottom + 6,
+                                        anchor: { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom },
+                                      }
+                                );
                               }}
+                              style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid #16a34a', background: '#16a34a', color: 'white', cursor: 'pointer' }}
                             >
-                              {/* üstte küçük üçgen ok */}
-                              <div style={{
-                                position: 'absolute',
-                                top: -6,
-                                left: (menu.caretX ?? 18) - 6,
-                                width: 12,
-                                height: 12,
-                                background: 'white',
-                                borderLeft: '1px solid #e5e7eb',
-                                borderTop: '1px solid #e5e7eb',
-                                transform: 'rotate(45deg)',
-                              }} />
+                              İŞLEM ▾
+                            </button>
+                            {menu?.id === r.id && (
+                              <div
+                                ref={menuRef}
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                  position: 'absolute',
+                                  left: 0,
+                                  top: menu.up ? 'auto' : 'calc(100% + 6px)',
+                                  bottom: menu.up ? 'calc(100% + 6px)' : 'auto',
+                                  minWidth: 260,
+                                  maxHeight: 'calc(100vh - 16px)',
+                                  overflow: 'auto',
+                                  background: 'white',
+                                  color: '#111827',
+                                  border: '1px solid #e5e7eb',
+                                  borderRadius: 6,
+                                  boxShadow: '0 10px 24px rgba(0,0,0,0.18)',
+                                  zIndex: 2000,
+                                }}
+                              >
+                                {/* küçük üçgen ok */}
+                                <div style={{
+                                  position: 'absolute',
+                                  top: menu.up ? 'auto' : -6,
+                                  bottom: menu.up ? -6 : 'auto',
+                                  left: (menu.caretX ?? 18) - 6,
+                                  width: 12,
+                                  height: 12,
+                                  background: 'white',
+                                  borderLeft: '1px solid #e5e7eb',
+                                  borderTop: '1px solid #e5e7eb',
+                                  transform: 'rotate(45deg)',
+                                }} />
                               {r.type === 'VERİLEN TEKLİF' && (
                                 <button onClick={() => { window.location.href = '/quotes-orders/convert/given-to-received-order'; }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}>Verilen Teklifi Alınan Siparişe Dönüştür</button>
                               )}
@@ -204,22 +200,23 @@ export default function QuotesOrdersPage() {
                               {r.type === 'ALINAN SİPARİŞ' && (
                                 <button onClick={() => { window.location.href = '/quotes-orders/convert/received-order-to-dispatch'; }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}>Alınan Siparişi İrsaliyeye Dönüştür</button>
                               )}
-                              {r.type === 'VERİLEN SİPARİŞ' && (
-                                <button onClick={() => { window.location.href = '/quotes-orders/convert/given-order-to-invoice'; }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}>Verilen Siparişi Faturaya Dönüştür</button>
-                              )}
-                              {(r.type !== 'VERİLEN TEKLİF' && r.type !== 'ALINAN TEKLİF' && r.type !== 'ALINAN SİPARİŞ' && r.type !== 'VERİLEN SİPARİŞ') && (
-                                <button disabled style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#9ca3af', cursor: 'not-allowed' }}>Dönüştür</button>
-                              )}
-                              <div style={{ height: 1, background: '#e5e7eb' }} />
-                              <button disabled style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#9ca3af', cursor: 'not-allowed' }}>🔒 Formu Bas</button>
-                              <div style={{ height: 1, background: '#e5e7eb' }} />
-                              <button style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}>✏ Düzelt</button>
-                              <div style={{ height: 1, background: '#e5e7eb' }} />
-                              <button style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#ef4444', cursor: 'pointer' }}>🗑 Sil</button>
-                              <div style={{ height: 1, background: '#e5e7eb' }} />
-                              <button style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#ef4444', cursor: 'pointer' }}>⛔ İptal Et</button>
-                            </div>
-                          )}
+                                {r.type === 'VERİLEN SİPARİŞ' && (
+                                  <button onClick={() => { window.location.href = '/quotes-orders/convert/given-order-to-invoice'; }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}>Verilen Siparişi Faturaya Dönüştür</button>
+                                )}
+                                {(r.type !== 'VERİLEN TEKLİF' && r.type !== 'ALINAN TEKLİF' && r.type !== 'ALINAN SİPARİŞ' && r.type !== 'VERİLEN SİPARİŞ') && (
+                                  <button disabled style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#9ca3af', cursor: 'not-allowed' }}>Dönüştür</button>
+                                )}
+                                <div style={{ height: 1, background: '#e5e7eb' }} />
+                                <button disabled style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#9ca3af', cursor: 'not-allowed' }}>🔒 Formu Bas</button>
+                                <div style={{ height: 1, background: '#e5e7eb' }} />
+                                <button style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}>✏ Düzelt</button>
+                                <div style={{ height: 1, background: '#e5e7eb' }} />
+                                <button style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#ef4444', cursor: 'pointer' }}>🗑 Sil</button>
+                                <div style={{ height: 1, background: '#e5e7eb' }} />
+                                <button style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#ef4444', cursor: 'pointer' }}>⛔ İptal Et</button>
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td style={{ padding: '8px' }}>{r.type}</td>
                         <td style={{ padding: '8px' }}>{r.date}</td>
