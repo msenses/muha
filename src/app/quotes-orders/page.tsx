@@ -78,24 +78,24 @@ export default function QuotesOrdersPage() {
     const menuH = rect.height || 280;
     const anchor = menu.anchor;
 
-    // Varsayılan: butonun altına, sola hizalı
-    let left = anchor.left + window.scrollX;
-    let top = anchor.bottom + 6 + window.scrollY;
+    // Varsayılan: butonun altına, sola hizalı (viewport koordinatları)
+    let left = anchor.left;
+    let top = anchor.bottom + 6;
 
     // Sağdan taşarsa, sağdan sola kaydır
-    if (left + menuW > window.scrollX + window.innerWidth - 8) {
-      left = Math.max(8 + window.scrollX, anchor.right + window.scrollX - menuW);
+    if (left + menuW > window.innerWidth - 8) {
+      left = Math.max(8, anchor.right - menuW);
     }
     // Alttan taşarsa, butonun üstüne aç
-    if (top + menuH > window.scrollY + window.innerHeight - 8) {
-      top = Math.max(8 + window.scrollY, anchor.top + window.scrollY - (menuH + 6));
+    if (top + menuH > window.innerHeight - 8) {
+      top = Math.max(8, anchor.top - (menuH + 6));
     }
     // Ekran içine sıkıştır
-    left = Math.max(8 + window.scrollX, Math.min(left, window.scrollX + window.innerWidth - menuW - 8));
-    top = Math.max(8 + window.scrollY, Math.min(top, window.scrollY + window.innerHeight - menuH - 8));
+    left = Math.max(8, Math.min(left, window.innerWidth - menuW - 8));
+    top = Math.max(8, Math.min(top, window.innerHeight - menuH - 8));
 
     // Caret (ok) konumu: butonun solundan itibaren ~16px içeride
-    let caretX = (anchor.left + 16 + window.scrollX) - left;
+    let caretX = (anchor.left + 16) - left;
     // menü kenarlarından taşmasın
     caretX = Math.max(14, Math.min(menuW - 14, caretX));
 
@@ -169,7 +169,7 @@ export default function QuotesOrdersPage() {
                               ref={menuRef}
                               onClick={(e) => e.stopPropagation()}
                               style={{
-                                position: 'absolute',
+                                position: 'fixed',
                                 top: menu.top,
                                 left: menu.left,
                                 minWidth: 260,
