@@ -98,17 +98,27 @@ export default function QuotesOrdersPage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              const native = (e as any).nativeEvent as MouseEvent;
-                              const estimatedWidth = 300;
-                              const estimatedHeight = 260;
-                              let left = native.clientX + 8;
-                              let top = native.clientY + 8;
-                              if (left + estimatedWidth > window.innerWidth - 8) {
-                                left = Math.max(8, window.innerWidth - estimatedWidth - 8);
+                              const btn = e.currentTarget as HTMLElement;
+                              const rect = btn.getBoundingClientRect();
+                              const menuWidth = 320;
+                              const menuHeight = 280;
+
+                              // Varsayılan: butonun altına, sola hizalı
+                              let left = rect.left;
+                              let top = rect.bottom + 6;
+
+                              // Sağdan taşarsa, butonun sağından sola kaydır
+                              if (left + menuWidth > window.innerWidth - 8) {
+                                left = Math.max(8, rect.right - menuWidth);
                               }
-                              if (top + estimatedHeight > window.innerHeight - 8) {
-                                top = Math.max(8, window.innerHeight - estimatedHeight - 8);
+                              // Alttan taşarsa, butonun üstüne aç
+                              if (top + menuHeight > window.innerHeight - 8) {
+                                top = Math.max(8, rect.top - (menuHeight + 6));
                               }
+                              // Son güvenlik: ekran sınırlarına sıkıştır
+                              left = Math.max(8, Math.min(left, window.innerWidth - menuWidth - 8));
+                              top = Math.max(8, Math.min(top, window.innerHeight - menuHeight - 8));
+
                               setMenu((prev) => (prev && prev.id === r.id ? null : { id: r.id, left, top }));
                             }}
                             style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid #16a34a', background: '#16a34a', color: 'white', cursor: 'pointer' }}
