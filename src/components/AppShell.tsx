@@ -12,7 +12,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
       {showSidebar && <Sidebar />}
-      <Topbar show={showTopbar} />
+      <Topbar show={showTopbar} leftOffset={showSidebar ? 240 : 0} />
       <div style={{ paddingLeft: showSidebar ? 240 : 0, paddingTop: showTopbar ? 60 : 0 }}>
         {children}
       </div>

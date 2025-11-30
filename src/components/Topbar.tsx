@@ -5,9 +5,10 @@ import { supabase } from '@/lib/supabaseClient';
 
 type Props = {
 	show?: boolean;
+	leftOffset?: number;
 };
 
-export default function Topbar({ show = true }: Props) {
+export default function Topbar({ show = true, leftOffset = 0 }: Props) {
 	const [userLabel, setUserLabel] = useState<string>('');
 	const [branch, setBranch] = useState<string>('');
 	const [period, setPeriod] = useState<string>('');
@@ -52,11 +53,11 @@ export default function Topbar({ show = true }: Props) {
 		setPeriod(savedPeriod || currentYear);
 	}, [show]);
 
-	const containerStyle = useMemo(
-		() => ({
+	const containerStyle = useMemo(() => {
+		return {
 			position: 'fixed' as const,
 			top: 0,
-			left: 0,
+			left: leftOffset,
 			right: 0,
 			height: 52,
 			display: 'flex',
@@ -69,9 +70,8 @@ export default function Topbar({ show = true }: Props) {
 			borderBottom: '1px solid rgba(255,255,255,0.12)',
 			color: 'white',
 			zIndex: 1100,
-		}),
-		[]
-	);
+		};
+	}, [leftOffset]);
 
 	if (!show) return null;
 
