@@ -27,6 +27,7 @@ export default function QuotesOrdersPage() {
     // Ölçülmüş menü boyutu
     w?: number;
     h?: number;
+    caretX?: number;
   } | null>(null);
   const [showReport, setShowReport] = useState(false);
   const [reportStart, setReportStart] = useState('');
@@ -93,9 +94,14 @@ export default function QuotesOrdersPage() {
     left = Math.max(8 + window.scrollX, Math.min(left, window.scrollX + window.innerWidth - menuW - 8));
     top = Math.max(8 + window.scrollY, Math.min(top, window.scrollY + window.innerHeight - menuH - 8));
 
+    // Caret (ok) konumu: butonun solundan itibaren ~16px içeride
+    let caretX = (anchor.left + 16 + window.scrollX) - left;
+    // menü kenarlarından taşmasın
+    caretX = Math.max(14, Math.min(menuW - 14, caretX));
+
     // Eğer konum veya ölçüler değiştiyse state’i güncelle (sonsuz döngüyü engelle)
-    if (menu.left !== left || menu.top !== top || menu.w !== menuW || menu.h !== menuH) {
-      setMenu({ ...menu, left, top, w: menuW, h: menuH });
+    if (menu.left !== left || menu.top !== top || menu.w !== menuW || menu.h !== menuH || menu.caretX !== caretX) {
+      setMenu({ ...menu, left, top, w: menuW, h: menuH, caretX });
     }
   }, [menu]);
 
@@ -166,17 +172,29 @@ export default function QuotesOrdersPage() {
                                 position: 'absolute',
                                 top: menu.top,
                                 left: menu.left,
-                                minWidth: 280,
+                                minWidth: 260,
                                 maxHeight: 'calc(100vh - 16px)',
                                 overflow: 'auto',
                                 background: 'white',
                                 color: '#111827',
                                 border: '1px solid #e5e7eb',
-                                borderRadius: 8,
-                                boxShadow: '0 10px 32px rgba(0,0,0,0.35)',
+                                borderRadius: 6,
+                                boxShadow: '0 10px 24px rgba(0,0,0,0.18)',
                                 zIndex: 2000,
                               }}
                             >
+                              {/* üstte küçük üçgen ok */}
+                              <div style={{
+                                position: 'absolute',
+                                top: -6,
+                                left: (menu.caretX ?? 18) - 6,
+                                width: 12,
+                                height: 12,
+                                background: 'white',
+                                borderLeft: '1px solid #e5e7eb',
+                                borderTop: '1px solid #e5e7eb',
+                                transform: 'rotate(45deg)',
+                              }} />
                               {r.type === 'VERİLEN TEKLİF' && (
                                 <button onClick={() => { window.location.href = '/quotes-orders/convert/given-to-received-order'; }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}>Verilen Teklifi Alınan Siparişe Dönüştür</button>
                               )}
