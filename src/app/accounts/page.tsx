@@ -30,6 +30,8 @@ function SelectionForSync({ onChange }: { onChange: (v: 'sales' | 'purchase' | '
 
 export default function AccountsPage() {
   const router = useRouter();
+  const sp = useSearchParams();
+  const eInvoiceMode = sp.get('eInvoice') === '1';
   const [selectionFor, setSelectionFor] = useState<'sales' | 'purchase' | 'dispatch' | 'dispatch_purchase' | 'sales_return' | 'purchase_return' | 'emustahsil' | null>(null);
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<Account[]>([]);
@@ -133,7 +135,8 @@ export default function AccountsPage() {
                 <button
                   onClick={() => {
                     if (selectionFor === 'sales') {
-                      router.push((`/invoices/new?sales=1&account=${r.id}`) as any);
+                      const url = `/invoices/new?sales=1&account=${r.id}${eInvoiceMode ? '&eInvoice=1' : ''}`;
+                      router.push((url) as any);
                     } else if (selectionFor === 'purchase') {
                       router.push((`/invoices/new?purchase=1&account=${r.id}`) as any);
                     } else if (selectionFor === 'dispatch') {

@@ -24,6 +24,7 @@ export default function InvoiceNewClientPage() {
   const router = useRouter();
   const search = useSearchParams();
   const defaultType = search.get('purchase') ? 'purchase' : 'sales';
+  const eInvoiceMode = search.get('eInvoice') === '1';
 
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [type, setType] = useState<'sales' | 'purchase'>(defaultType as any);
@@ -37,6 +38,9 @@ export default function InvoiceNewClientPage() {
   const [accountEmail, setAccountEmail] = useState<string>('');
   const [taxOffice, setTaxOffice] = useState<string>('');
   const [taxNo, setTaxNo] = useState<string>('');
+  const [eDocScenario, setEDocScenario] = useState<'TEMELFATURA' | 'TICARIFATURA' | 'KAMU' | 'EARSIVFATURA'>('TEMELFATURA');
+  const [taxpayerKind, setTaxpayerKind] = useState<'efatura' | 'earsiv' | null>(null);
+  const [taxWarn, setTaxWarn] = useState<string | null>(null);
   const [city, setCity] = useState<string>('');
   const [district, setDistrict] = useState<string>('');
   const [products, setProducts] = useState<Product[]>([]);
@@ -148,6 +152,28 @@ export default function InvoiceNewClientPage() {
     loadAccount();
   }, [accountId]);
 
+  // E-fatura modunda vergi numarası zorunluluğu ve basit senaryo seçimi
+  useEffect(() => {
+    if (!eInvoiceMode) {
+      setTaxWarn(null);
+      setTaxpayerKind(null);
+      return;
+    }
+    if (!taxNo?.trim()) {
+      setTaxWarn('E-fatura için vergi numarası zorunludur.');
+      setTaxpayerKind(null);
+    } else {
+      setTaxWarn(null);
+      // Basit demo kuralı (entegrasyon eklenince güncellenecek):
+      // 10 haneli (VKN) => e-Fatura mükellefi; 11 haneli (TCKN) => e-Arşiv
+      const digits = (taxNo ?? '').replace(/\D/g, '');
+      const isVKN = digits.length === 10;
+      const kind: 'efatura' | 'earsiv' = isVKN ? 'efatura' : 'earsiv';
+      setTaxpayerKind(kind);
+      setEDocScenario(isVKN ? 'TEMELFATURA' : 'EARSIVFATURA');
+    }
+  }, [eInvoiceMode, taxNo]);
+
   useEffect(() => {
     try {
       const raw = typeof window !== 'undefined' ? localStorage.getItem('saleSettings') : null;
@@ -245,6 +271,9 @@ export default function InvoiceNewClientPage() {
     setErr(null);
     setLoading(true);
     try {
+      if (eInvoiceMode && !(taxNo?.trim())) {
+        throw new Error('E-fatura işlemleri için vergi numarası giriniz.');
+      }
       if (!companyId) throw new Error('Şirket bilgisi alınamadı');
       if (!accountId) throw new Error('Cari seçin');
       if (lines.length === 0) throw new Error('En az bir satır ekleyin');
@@ -378,6 +407,25 @@ export default function InvoiceNewClientPage() {
               </div>
               {invoiceTab === 'info' ? (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  {eInvoiceMode && (
+                    <div style={{ gridColumn: '1 / span 2', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, alignItems: 'end', padding: '8px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                      <div>
+                        <div style={{ fontSize: 12, opacity: 0.8 }}>E-Fatura Senaryosu</div>
+                        {taxpayerKind === 'efatura' ? (
+                          <select value={eDocScenario} onChange={(e) => setEDocScenario(e.target.value as any)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontWeight: 700 }}>
+                            <option value="TEMELFATURA">TEMELFATURA</option>
+                            <option value="TICARIFATURA">TICARIFATURA</option>
+                            <option value="KAMU">KAMU</option>
+                          </select>
+                        ) : (
+                          <input readOnly value="EARSIVFATURA" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontWeight: 700 }} />
+                        )}
+                      </div>
+                      <div style={{ color: taxWarn ? '#ffb4b4' : '#cbd5e1' }}>
+                        {taxWarn ?? (taxpayerKind === 'efatura' ? 'E-fatura mükellefi (otomatik iletilir)' : taxpayerKind === 'earsiv' ? 'E-Arşiv mükellefi' : 'Vergi numarası bekleniyor')}
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <div style={{ fontSize: 12, opacity: 0.8 }}>Fatura Tarihi</div>
                     <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
