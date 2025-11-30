@@ -313,6 +313,20 @@ export default function InvoiceNewClientPage() {
       if (moveRows.every((m) => !!m.product_id)) {
         await supabase.from('stock_movements').insert(moveRows as any);
       }
+      // Demo: e-belge senaryosuna göre bilgilendirme
+      if (eInvoiceMode) {
+        if (taxpayerKind === 'efatura') {
+          if (eDocScenario === 'TEMELFATURA') {
+            if (typeof window !== 'undefined') window.alert('TEMELFATURA: Düzenlenen e‑fatura alıcıya otomatik onaylı şekilde iletilecektir.');
+          } else if (eDocScenario === 'TICARIFATURA') {
+            if (typeof window !== 'undefined') window.alert('TICARIFATURA: Fatura alıcının onayına sunuldu. 8 gün içinde onaylanmazsa sistem tarafından otomatik onaylanacaktır.');
+          } else if (eDocScenario === 'KAMU') {
+            if (typeof window !== 'undefined') window.alert('KAMU: Kamu senaryosu seçildi. İlgili entegrasyon kuralları uygulanacaktır.');
+          }
+        } else if (taxpayerKind === 'earsiv') {
+          if (typeof window !== 'undefined') window.alert('E‑Arşiv: Fatura EARSIVFATURA olarak düzenlenecektir.');
+        }
+      }
       router.push('/invoices');
     } catch (e: any) {
       setErr(e?.message ?? 'Kayıt oluşturulamadı');
