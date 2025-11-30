@@ -18,7 +18,7 @@ type Row = {
 export default function QuotesOrdersPage() {
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<'Hepsi' | 'Teklif' | 'Sipariş'>('Hepsi');
-  const [openRow, setOpenRow] = useState<number | null>(null);
+  const [menu, setMenu] = useState<{ id: number; left: number; top: number } | null>(null);
   const [showReport, setShowReport] = useState(false);
   const [reportStart, setReportStart] = useState('');
   const [reportEnd, setReportEnd] = useState('');
@@ -41,6 +41,13 @@ export default function QuotesOrdersPage() {
     if (filter === 'Sipariş') list = list.filter(r => r.type.includes('SİPARİŞ'));
     return list;
   }, [q, filter]);
+
+  // Menü açıkken dışarı tıklayınca kapat
+  useEffect(() => {
+    const onDown = () => setMenu(null);
+    window.addEventListener('mousedown', onDown);
+    return () => window.removeEventListener('mousedown', onDown);
+  }, []);
 
   return (
     <main style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
@@ -79,10 +86,41 @@ export default function QuotesOrdersPage() {
                   <tbody>
                     {filtered.map((r) => (
                       <tr key={r.id}>
-                        <td style={{ padding: '8px', position: 'relative' }}>
-                          <button onClick={() => setOpenRow(prev => prev === r.id ? null : r.id)} style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid #16a34a', background: '#16a34a', color: 'white', cursor: 'pointer' }}>İŞLEM ▾</button>
-                          {openRow === r.id && (
-                            <div style={{ position: 'absolute', top: 36, left: 8, minWidth: 280, background: 'white', color: '#111827', border: '1px solid #e5e7eb', borderRadius: 8, boxShadow: '0 10px 32px rgba(0,0,0,0.25)', zIndex: 50 }}>
+                        <td style={{ padding: '8px' }}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                              const estimatedHeight = 240; // menü yüksekliği tahmini
+                              let top = rect.bottom + 6;
+                              if (top + estimatedHeight > window.innerHeight - 8) {
+                                top = Math.max(8, rect.top - estimatedHeight - 6);
+                              }
+                              const left = Math.max(8, Math.min(rect.left + 8, window.innerWidth - 300));
+                              setMenu((prev) => (prev && prev.id === r.id ? null : { id: r.id, left, top }));
+                            }}
+                            style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid #16a34a', background: '#16a34a', color: 'white', cursor: 'pointer' }}
+                          >
+                            İŞLEM ▾
+                          </button>
+                          {menu?.id === r.id && (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                position: 'fixed',
+                                top: menu.top,
+                                left: menu.left,
+                                minWidth: 280,
+                                maxHeight: 320,
+                                overflow: 'auto',
+                                background: 'white',
+                                color: '#111827',
+                                border: '1px solid #e5e7eb',
+                                borderRadius: 8,
+                                boxShadow: '0 10px 32px rgba(0,0,0,0.35)',
+                                zIndex: 2000,
+                              }}
+                            >
                               {r.type === 'VERİLEN TEKLİF' && (
                                 <button onClick={() => { window.location.href = '/quotes-orders/convert/given-to-received-order'; }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}>Verilen Teklifi Alınan Siparişe Dönüştür</button>
                               )}
