@@ -329,7 +329,19 @@ export default function QuotesOrdersPage() {
             </label>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button onClick={() => setShowReport(false)} style={{ padding: '10px 14px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>🗂 Raporla</button>
+              <button
+                onClick={() => {
+                  setShowReport(false);
+                  const params = new URLSearchParams();
+                  if (reportStart) params.set('start', reportStart);
+                  if (reportEnd) params.set('end', reportEnd);
+                  params.set('list', reportListType);
+                  window.location.href = `/quotes-orders/reports/view?${params.toString()}`;
+                }}
+                style={{ padding: '10px 14px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}
+              >
+                🗂 Raporla
+              </button>
             </div>
           </div>
         </div>
