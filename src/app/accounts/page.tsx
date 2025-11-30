@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from '@/lib/supabaseClient';
 import { fetchCurrentCompanyId } from '@/lib/company';
 
@@ -14,9 +14,22 @@ type Account = {
   balance: number;
 };
 
+function SelectionForSync({ onChange }: { onChange: (v: 'sales' | 'purchase' | 'dispatch' | 'dispatch_purchase' | 'sales_return' | 'purchase_return' | 'emustahsil' | null) => void }) {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const p = searchParams.get('selectFor');
+    if (p === 'sales' || p === 'purchase' || p === 'dispatch' || p === 'dispatch_purchase' || p === 'sales_return' || p === 'purchase_return' || p === 'emustahsil') {
+      onChange(p);
+    } else {
+      onChange(null);
+    }
+    // searchParams objesi stable olduğundan dependency olarak yeterlidir
+  }, [searchParams, onChange]);
+  return null;
+}
+
 export default function AccountsPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [selectionFor, setSelectionFor] = useState<'sales' | 'purchase' | 'dispatch' | 'dispatch_purchase' | 'sales_return' | 'purchase_return' | 'emustahsil' | null>(null);
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<Account[]>([]);
@@ -29,14 +42,7 @@ export default function AccountsPage() {
   const [showReports, setShowReports] = useState(false);
   const reportsRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    const p = searchParams.get('selectFor');
-    if (p === 'sales' || p === 'purchase' || p === 'dispatch' || p === 'dispatch_purchase' || p === 'sales_return' || p === 'purchase_return' || p === 'emustahsil') {
-      setSelectionFor(p);
-    } else {
-      setSelectionFor(null);
-    }
-  }, [searchParams]);
+  // selectFor query senkronizasyonu — Suspense ile sarmalıyoruz
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -178,6 +184,9 @@ export default function AccountsPage() {
 
   return (
     <main style={{ minHeight: '100dvh', color: 'white' }}>
+      <Suspense fallback={null}>
+        <SelectionForSync onChange={setSelectionFor} />
+      </Suspense>
       {/* Üst Araç Çubuğu */}
       <div style={{ padding: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
         <button onClick={() => router.push('/accounts/new')} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: '#e74c3c', color: 'white', cursor: 'pointer' }}>+Yeni Cari</button>
