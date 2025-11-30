@@ -10,6 +10,12 @@ function formatCurrency(x: number) {
 	return x.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 });
 }
 
+function addDaysLabel(days: number) {
+	const d = new Date();
+	d.setDate(d.getDate() + days);
+	return d.toLocaleDateString('tr-TR');
+}
+
 function KpiCard(props: { title: string; value: string; sub?: string; accent?: string }) {
 	return (
 		<div style={{ padding: 16, borderRadius: 16, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
@@ -50,6 +56,7 @@ export default function DashboardPage() {
 	const [purchases30d, setPurchases30d] = useState<number | null>(null);
 	const [lastInvoices, setLastInvoices] = useState<InvoiceRow[]>([]);
 	const [sales12m, setSales12m] = useState<number[]>([]);
+	const [lowStock, setLowStock] = useState<Array<{ id: string; name: string; balance: number }>>([]);
 
 	useEffect(() => {
 		let active = true;
@@ -110,6 +117,31 @@ export default function DashboardPage() {
 					buckets[idx] += Number(r.total ?? 0);
 				}
 				setSales12m(buckets.map((v) => Math.round(v)));
+
+				// En az stokta kalan ürünler (ilk 5)
+				const { data: products } = await supabase
+					.from('products')
+					.select('id, name')
+					.order('name', { ascending: true })
+					.limit(400);
+				const { data: moves } = await supabase
+					.from('stock_movements')
+					.select('product_id, move_type, qty')
+					.limit(20000);
+				const bal: Record<string, number> = {};
+				for (const m of (moves ?? []) as any[]) {
+					const pid = m.product_id as string;
+					const qty = Number(m.qty ?? 0);
+					const sign = m.move_type === 'in' ? 1 : -1;
+					bal[pid] = (bal[pid] ?? 0) + sign * qty;
+				}
+				const list = ((products ?? []) as any[]).map((p) => ({
+					id: p.id as string,
+					name: p.name as string,
+					balance: bal[p.id as string] ?? 0,
+				}));
+				list.sort((a, b) => a.balance - b.balance);
+				setLowStock(list.slice(0, 5));
 			} catch (_e) {
 				if (!active) return;
 				setAccountCount((v) => v ?? 12);
@@ -121,6 +153,11 @@ export default function DashboardPage() {
 					{ id: 'd2', invoice_date: new Date().toISOString().slice(0, 10), type: 'purchase', total: 2400, accounts: { name: 'Demo Tedarikçi' } },
 				]);
 				setSales12m((v) => v.length ? v : [12000, 8000, 15000, 18000, 22000, 17000, 26000, 30000, 28000, 31000, 29000, 35000]);
+				setLowStock((v) => v.length ? v : [
+					{ id: 'p1', name: 'Demo Ürün A', balance: 2 },
+					{ id: 'p2', name: 'Demo Ürün B', balance: 3 },
+					{ id: 'p3', name: 'Demo Ürün C', balance: 5 },
+				]);
 			} finally {
 				if (active) setLoading(false);
 			}
@@ -142,6 +179,63 @@ export default function DashboardPage() {
 
 	return (
 		<section style={{ padding: 16, color: 'white' }}>
+			{/* İlk satır: 3 kare kutu */}
+			<div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(220px, 1fr))', gap: 12, marginBottom: 16 }}>
+				{/* 1) Ajanda */}
+				<div style={{ borderRadius: 16, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', padding: 12, aspectRatio: '1 / 1', display: 'flex', flexDirection: 'column' }}>
+					<div style={{ fontWeight: 700, marginBottom: 8 }}>Ajanda</div>
+					<div style={{ display: 'grid', gap: 8, overflow: 'auto' }}>
+						{[
+							{ t: '03.12 10:30', text: 'İşlemler kontrol edilecek. — Mustafa Bey' },
+							{ t: '03.12 10:10', text: 'Ödemeler kontrol edilecek. — Mustafa Bey' },
+							{ t: '02.12 10:10', text: 'Tahsilatlar kontrol edilecek. — Ahmet Bey' },
+						].map((e, i) => (
+							<div key={i} style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: 10, alignItems: 'center' }}>
+								<div style={{ fontSize: 12, opacity: 0.85 }}>{e.t}</div>
+								<div style={{ opacity: 0.95 }}>{e.text}</div>
+							</div>
+						))}
+						<button onClick={() => router.push('/agenda')} style={{ marginTop: 'auto', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white', cursor: 'pointer' }}>Ajandaya Git</button>
+					</div>
+				</div>
+
+				{/* 2) Son 1 haftadaki yaklaşan ödemeler */}
+				<div style={{ borderRadius: 16, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', padding: 12, aspectRatio: '1 / 1', display: 'flex', flexDirection: 'column' }}>
+					<div style={{ fontWeight: 700, marginBottom: 8 }}>Yaklaşan Ödemeler (7 gün)</div>
+					<div style={{ display: 'grid', gap: 8, overflow: 'auto' }}>
+						{[
+							{ d: addDaysLabel(1), name: 'Demo Tedarikçi', amount: 4800 },
+							{ d: addDaysLabel(3), name: 'XYZ Ltd.', amount: 9200 },
+							{ d: addDaysLabel(5), name: 'ABC A.Ş.', amount: 3500 },
+						].map((p, i) => (
+							<div key={i} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 10, alignItems: 'center' }}>
+								<div style={{ fontSize: 12, opacity: 0.85 }}>{p.d}</div>
+								<div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
+								<div style={{ fontWeight: 700, color: '#f59e0b' }}>{formatCurrency(p.amount)}</div>
+							</div>
+						))}
+						<button onClick={() => router.push('/cash')} style={{ marginTop: 'auto', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white', cursor: 'pointer' }}>Ödeme/Tahsilatlara Git</button>
+					</div>
+				</div>
+
+				{/* 3) En az stok */}
+				<div style={{ borderRadius: 16, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', padding: 12, aspectRatio: '1 / 1', display: 'flex', flexDirection: 'column' }}>
+					<div style={{ fontWeight: 700, marginBottom: 8 }}>Azalan Stoklar</div>
+					<div style={{ display: 'grid', gap: 8, overflow: 'auto' }}>
+						{lowStock.map((r) => (
+							<div key={r.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 10, alignItems: 'center' }}>
+								<div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
+								<div style={{ fontWeight: 700, color: r.balance <= 0 ? '#ef4444' : '#f59e0b' }}>{r.balance}</div>
+							</div>
+						))}
+						{!lowStock.length && <div style={{ opacity: 0.8, fontSize: 13 }}>Gösterilecek ürün yok.</div>}
+						<button onClick={() => router.push('/stock')} style={{ marginTop: 'auto', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white', cursor: 'pointer' }}>Stok Modülüne Git</button>
+					</div>
+				</div>
+			</div>
+
+			{/* 4. ve sonrası: en çok ihtiyaçtan en aza */}
+			{/* 4) KPI'lar */}
 			<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
 				<div style={{ fontWeight: 800, fontSize: 20 }}>Genel Bakış</div>
 				<div style={{ display: 'flex', gap: 8 }}>
@@ -155,17 +249,8 @@ export default function DashboardPage() {
 				{kpis.map((k) => <KpiCard key={k.title} title={k.title} value={k.value} sub={k.sub} accent={k.accent} />)}
 			</div>
 
-			<div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
-				<div style={{ padding: 16, borderRadius: 16, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
-					<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-						<div style={{ fontWeight: 700 }}>Aylık Satışlar</div>
-						<div style={{ fontSize: 12, opacity: 0.8 }}>Son 12 Ay</div>
-					</div>
-					<div style={{ marginTop: 8 }}>
-						<Sparkline points={sales12m} color="#22c55e" />
-					</div>
-				</div>
-
+			{/* 5) Son Faturalar + 6) Aylık Satışlar */}
+			<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
 				<div style={{ padding: 16, borderRadius: 16, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
 					<div style={{ fontWeight: 700, marginBottom: 8 }}>Son Faturalar</div>
 					<div style={{ display: 'grid', gap: 8 }}>
@@ -180,6 +265,16 @@ export default function DashboardPage() {
 						<div>
 							<button onClick={() => router.push('/invoices')} style={{ marginTop: 8, padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white', cursor: 'pointer' }}>Tüm Faturalar</button>
 						</div>
+					</div>
+				</div>
+
+				<div style={{ padding: 16, borderRadius: 16, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
+					<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+						<div style={{ fontWeight: 700 }}>Aylık Satışlar</div>
+						<div style={{ fontSize: 12, opacity: 0.8 }}>Son 12 Ay</div>
+					</div>
+					<div style={{ marginTop: 8 }}>
+						<Sparkline points={sales12m} color="#22c55e" />
 					</div>
 				</div>
 			</div>
