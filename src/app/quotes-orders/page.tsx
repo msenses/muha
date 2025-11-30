@@ -258,8 +258,8 @@ export default function QuotesOrdersPage() {
             <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(10px)' }}>
               <div style={{ padding: 10, background: 'rgba(255,255,255,0.08)', fontWeight: 700 }}>Sipariş</div>
               <div style={{ padding: 10, display: 'grid', gap: 8 }}>
-                <button style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>➕ Yeni Verilen Sipariş</button>
-                <button style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #ef4444', background: '#ef4444', color: '#fff' }}>➕ Yeni Alınan Sipariş</button>
+                <button onClick={() => { window.location.href = '/quotes-orders/new/given'; }} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>➕ Yeni Verilen Sipariş</button>
+                <button onClick={() => { window.location.href = '/quotes-orders/new/received'; }} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #ef4444', background: '#ef4444', color: '#fff' }}>➕ Yeni Alınan Sipariş</button>
               </div>
             </div>
             <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(10px)' }}>
