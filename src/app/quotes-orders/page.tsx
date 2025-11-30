@@ -1,7 +1,7 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 type Row = {
   id: number;
@@ -18,7 +18,16 @@ type Row = {
 export default function QuotesOrdersPage() {
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<'Hepsi' | 'Teklif' | 'Sipariş'>('Hepsi');
-  const [menu, setMenu] = useState<{ id: number; left: number; top: number } | null>(null);
+  const [menu, setMenu] = useState<{
+    id: number;
+    left: number;
+    top: number;
+    // Anchor buton konumu
+    anchor?: { left: number; right: number; top: number; bottom: number };
+    // Ölçülmüş menü boyutu
+    w?: number;
+    h?: number;
+  } | null>(null);
   const [showReport, setShowReport] = useState(false);
   const [reportStart, setReportStart] = useState('');
   const [reportEnd, setReportEnd] = useState('');
@@ -56,6 +65,39 @@ export default function QuotesOrdersPage() {
       window.removeEventListener('resize', onResize);
     };
   }, []);
+
+  // Menü boyutu ölçümü ve kesin yerleşim
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    if (!menu || !menu.anchor) return;
+    const el = menuRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const menuW = rect.width || 320;
+    const menuH = rect.height || 280;
+    const anchor = menu.anchor;
+
+    // Varsayılan: butonun altına, sola hizalı
+    let left = anchor.left;
+    let top = anchor.bottom + 6;
+
+    // Sağdan taşarsa, sağdan sola kaydır
+    if (left + menuW > window.innerWidth - 8) {
+      left = Math.max(8, anchor.right - menuW);
+    }
+    // Alttan taşarsa, butonun üstüne aç
+    if (top + menuH > window.innerHeight - 8) {
+      top = Math.max(8, anchor.top - (menuH + 6));
+    }
+    // Ekran içine sıkıştır
+    left = Math.max(8, Math.min(left, window.innerWidth - menuW - 8));
+    top = Math.max(8, Math.min(top, window.innerHeight - menuH - 8));
+
+    // Eğer konum veya ölçüler değiştiyse state’i güncelle (sonsuz döngüyü engelle)
+    if (menu.left !== left || menu.top !== top || menu.w !== menuW || menu.h !== menuH) {
+      setMenu({ ...menu, left, top, w: menuW, h: menuH });
+    }
+  }, [menu]);
 
   return (
     <main style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
@@ -100,26 +142,17 @@ export default function QuotesOrdersPage() {
                               e.stopPropagation();
                               const btn = e.currentTarget as HTMLElement;
                               const rect = btn.getBoundingClientRect();
-                              const menuWidth = 320;
-                              const menuHeight = 280;
-
-                              // Varsayılan: butonun altına, sola hizalı
-                              let left = rect.left;
-                              let top = rect.bottom + 6;
-
-                              // Sağdan taşarsa, butonun sağından sola kaydır
-                              if (left + menuWidth > window.innerWidth - 8) {
-                                left = Math.max(8, rect.right - menuWidth);
-                              }
-                              // Alttan taşarsa, butonun üstüne aç
-                              if (top + menuHeight > window.innerHeight - 8) {
-                                top = Math.max(8, rect.top - (menuHeight + 6));
-                              }
-                              // Son güvenlik: ekran sınırlarına sıkıştır
-                              left = Math.max(8, Math.min(left, window.innerWidth - menuWidth - 8));
-                              top = Math.max(8, Math.min(top, window.innerHeight - menuHeight - 8));
-
-                              setMenu((prev) => (prev && prev.id === r.id ? null : { id: r.id, left, top }));
+                              // İlk aşamada anchor ile komit et, kesin konumu ölçümden sonra hesaplayacağız
+                              setMenu((prev) =>
+                                prev && prev.id === r.id
+                                  ? null
+                                  : {
+                                      id: r.id,
+                                      left: rect.left,
+                                      top: rect.bottom + 6,
+                                      anchor: { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom },
+                                    }
+                              );
                             }}
                             style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid #16a34a', background: '#16a34a', color: 'white', cursor: 'pointer' }}
                           >
@@ -127,13 +160,14 @@ export default function QuotesOrdersPage() {
                           </button>
                           {menu?.id === r.id && (
                             <div
+                              ref={menuRef}
                               onClick={(e) => e.stopPropagation()}
                               style={{
                                 position: 'fixed',
                                 top: menu.top,
                                 left: menu.left,
                                 minWidth: 280,
-                                maxHeight: 320,
+                                maxHeight: 'calc(100vh - 16px)',
                                 overflow: 'auto',
                                 background: 'white',
                                 color: '#111827',
