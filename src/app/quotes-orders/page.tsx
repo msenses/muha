@@ -78,20 +78,20 @@ export default function QuotesOrdersPage() {
     const anchor = menu.anchor;
 
     // Varsayılan: butonun altına, sola hizalı
-    let left = anchor.left;
-    let top = anchor.bottom + 6;
+    let left = anchor.left + window.scrollX;
+    let top = anchor.bottom + 6 + window.scrollY;
 
     // Sağdan taşarsa, sağdan sola kaydır
-    if (left + menuW > window.innerWidth - 8) {
-      left = Math.max(8, anchor.right - menuW);
+    if (left + menuW > window.scrollX + window.innerWidth - 8) {
+      left = Math.max(8 + window.scrollX, anchor.right + window.scrollX - menuW);
     }
     // Alttan taşarsa, butonun üstüne aç
-    if (top + menuH > window.innerHeight - 8) {
-      top = Math.max(8, anchor.top - (menuH + 6));
+    if (top + menuH > window.scrollY + window.innerHeight - 8) {
+      top = Math.max(8 + window.scrollY, anchor.top + window.scrollY - (menuH + 6));
     }
     // Ekran içine sıkıştır
-    left = Math.max(8, Math.min(left, window.innerWidth - menuW - 8));
-    top = Math.max(8, Math.min(top, window.innerHeight - menuH - 8));
+    left = Math.max(8 + window.scrollX, Math.min(left, window.scrollX + window.innerWidth - menuW - 8));
+    top = Math.max(8 + window.scrollY, Math.min(top, window.scrollY + window.innerHeight - menuH - 8));
 
     // Eğer konum veya ölçüler değiştiyse state’i güncelle (sonsuz döngüyü engelle)
     if (menu.left !== left || menu.top !== top || menu.w !== menuW || menu.h !== menuH) {
@@ -163,7 +163,7 @@ export default function QuotesOrdersPage() {
                               ref={menuRef}
                               onClick={(e) => e.stopPropagation()}
                               style={{
-                                position: 'fixed',
+                                position: 'absolute',
                                 top: menu.top,
                                 left: menu.left,
                                 minWidth: 280,
