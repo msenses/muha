@@ -31,6 +31,7 @@ function SelectionForSync({ onChange }: { onChange: (v: 'sales' | 'purchase' | '
 export default function AccountsPage() {
   const router = useRouter();
   const [eInvoiceMode, setEInvoiceMode] = useState<boolean>(false);
+  const [showTempAccount, setShowTempAccount] = useState<boolean>(false);
   const [selectionFor, setSelectionFor] = useState<'sales' | 'purchase' | 'dispatch' | 'dispatch_purchase' | 'sales_return' | 'purchase_return' | 'emustahsil' | null>(null);
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<Account[]>([]);
@@ -48,6 +49,7 @@ export default function AccountsPage() {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     setEInvoiceMode(params.get('eInvoice') === '1');
+    setShowTempAccount(params.get('tempAccount') === '1');
   }, []);
 
   useEffect(() => {
@@ -122,7 +124,7 @@ export default function AccountsPage() {
         </tr>
       </thead>
       <tbody>
-        {rows.map((r, idx) => {
+        {(showTempAccount ? ([{ id: '__TEMP__', code: null, name: 'GEÇİCİ TEST CARİ', phone: null, email: null, balance: 0 }] as Account[]).concat(rows) : rows).map((r, idx) => {
           const balance = Number(r.balance ?? 0);
           const isCredit = balance < 0;
           const badgeStyle = {
@@ -139,7 +141,9 @@ export default function AccountsPage() {
                 <button
                   onClick={() => {
                     if (selectionFor === 'sales') {
-                      const url = `/invoices/new?sales=1&account=${r.id}${eInvoiceMode ? '&eInvoice=1' : ''}`;
+                      const url = r.id === '__TEMP__'
+                        ? `/invoices/new?sales=1${eInvoiceMode ? '&eInvoice=1' : ''}&tempAccount=1`
+                        : `/invoices/new?sales=1&account=${r.id}${eInvoiceMode ? '&eInvoice=1' : ''}`;
                       router.push((url) as any);
                     } else if (selectionFor === 'purchase') {
                       router.push((`/invoices/new?purchase=1&account=${r.id}`) as any);

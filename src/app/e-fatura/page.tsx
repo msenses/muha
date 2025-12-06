@@ -58,7 +58,7 @@ export default function EInvoicePage() {
           <button style={navBtnStyle} onClick={() => void 0}>Gelen Faturalar ▾</button>
           <button style={navBtnStyle} onClick={() => void 0}>Mükellef Kontrol</button>
           <button style={navBtnStyle} onClick={() => void 0}>Ayarlar ▾</button>
-          <button style={navBtnStyle} onClick={() => router.push('/accounts?selectFor=sales&eInvoice=1' as Route)}>Fatura Oluştur</button>
+          <button style={navBtnStyle} onClick={() => router.push('/accounts?selectFor=sales&eInvoice=1&tempAccount=1' as Route)}>Fatura Oluştur</button>
           <button style={navBtnStyle} onClick={() => void 0}>Kontör Yükle</button>
         </div>
 
