@@ -19,6 +19,17 @@ type Line = {
   otv_rate: number;     // ÖTV (%)
   discount_rate: number;  // İsk.%
   discount_amount: number; // İsk.TL
+  // İhracat için ek alanlar
+  teslimat_durumu?: string;
+  teslimat_orani?: number;
+  otv_secim?: string;
+  kdv_durumu?: string;
+  gonderim_sekli?: string;
+  teslim_sarti?: string;
+  kap_cinsi?: string;
+  kap_adedi?: number;
+  gis_no?: string;
+  kap_numarasi?: string;
 };
 
 export default function InvoiceNewClientPage() {
@@ -45,7 +56,7 @@ export default function InvoiceNewClientPage() {
   const [taxpayerKind, setTaxpayerKind] = useState<'efatura' | 'earsiv' | null>(null);
   const [taxWarn, setTaxWarn] = useState<string | null>(null);
   // Fatura Tipi (üst select) – ilk etapta örnek seçenekler; kullanıcıyla netleştirilecek
-  const [invoiceKind, setInvoiceKind] = useState<'SATIS' | 'IHRACKAYITLI'>('SATIS');
+  const [invoiceKind, setInvoiceKind] = useState<'SATIS' | 'IHRACKAYITLI' | 'ISTISNA'>('SATIS');
   const [isECommerce, setIsECommerce] = useState<boolean>(false);
   const [isEInvoiceFlag, setIsEInvoiceFlag] = useState<boolean>(eInvoiceMode);
   // KAMU senaryosu için banka bilgileri
@@ -104,6 +115,17 @@ export default function InvoiceNewClientPage() {
   const [draftDiscAmount, setDraftDiscAmount] = useState<number>(0);
   const [draftOtvRate, setDraftOtvRate] = useState<number>(0);
   const [draftOtvIncl, setDraftOtvIncl] = useState<'excluded' | 'included'>('excluded');
+  // İhracat için ek alanlar
+  const [draftTeslimatDurumu, setDraftTeslimatDurumu] = useState<string>('');
+  const [draftTeslimatOrani, setDraftTeslimatOrani] = useState<number>(0);
+  const [draftOtvSecim, setDraftOtvSecim] = useState<string>('');
+  const [draftKdvDurumu, setDraftKdvDurumu] = useState<string>('');
+  const [draftGonderimSekli, setDraftGonderimSekli] = useState<string>('');
+  const [draftTeslimSarti, setDraftTeslimSarti] = useState<string>('');
+  const [draftKapCinsi, setDraftKapCinsi] = useState<string>('');
+  const [draftKapAdedi, setDraftKapAdedi] = useState<number>(0);
+  const [draftGisNo, setDraftGisNo] = useState<string>('');
+  const [draftKapNumarasi, setDraftKapNumarasi] = useState<string>('');
   const [showStockModal, setShowStockModal] = useState(false);
   const [stockSearch, setStockSearch] = useState('');
 
@@ -194,6 +216,14 @@ export default function InvoiceNewClientPage() {
     }
   }, [eInvoiceMode, taxNo]);
 
+  // İhracat senaryosu seçildiğinde otomatik ayarlar
+  useEffect(() => {
+    if (eDocScenario === 'IHRACKAYITLI') {
+      setInvoiceKind('ISTISNA');
+      setTaxNo('2222222222');
+    }
+  }, [eDocScenario]);
+
   useEffect(() => {
     try {
       const raw = typeof window !== 'undefined' ? localStorage.getItem('saleSettings') : null;
@@ -270,6 +300,17 @@ export default function InvoiceNewClientPage() {
       otv_rate: Number(draftOtvRate || 0),
       discount_rate: Number(draftDiscRate || 0),
       discount_amount: Number(draftDiscAmount || 0),
+      // İhracat alanları
+      teslimat_durumu: draftTeslimatDurumu || undefined,
+      teslimat_orani: draftTeslimatOrani || undefined,
+      otv_secim: draftOtvSecim || undefined,
+      kdv_durumu: draftKdvDurumu || undefined,
+      gonderim_sekli: draftGonderimSekli || undefined,
+      teslim_sarti: draftTeslimSarti || undefined,
+      kap_cinsi: draftKapCinsi || undefined,
+      kap_adedi: draftKapAdedi || undefined,
+      gis_no: draftGisNo || undefined,
+      kap_numarasi: draftKapNumarasi || undefined,
     }]);
     // reset
     setDraftProductId('');
@@ -281,6 +322,16 @@ export default function InvoiceNewClientPage() {
     setDraftVatIncl('excluded');
     setDraftDiscRate(0);
     setDraftDiscAmount(0);
+    setDraftTeslimatDurumu('');
+    setDraftTeslimatOrani(0);
+    setDraftOtvSecim('');
+    setDraftKdvDurumu('');
+    setDraftGonderimSekli('');
+    setDraftTeslimSarti('');
+    setDraftKapCinsi('');
+    setDraftKapAdedi(0);
+    setDraftGisNo('');
+    setDraftKapNumarasi('');
     setDraftOtvRate(0);
     setDraftOtvIncl('excluded');
     setShowAddPanel(false);
@@ -501,6 +552,7 @@ export default function InvoiceNewClientPage() {
                           <select value={invoiceKind} onChange={(e) => setInvoiceKind(e.target.value as any)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 12 }}>
                             <option value="SATIS">SATIS</option>
                             <option value="IHRACKAYITLI">IHRACKAYITLI</option>
+                            <option value="ISTISNA">ISTISNA</option>
                           </select>
                         </div>
                         <div>
@@ -655,6 +707,79 @@ export default function InvoiceNewClientPage() {
                 {/* Genel Toplam */}
                 <input readOnly value={draftTotals.total.toFixed(2)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.06)', color: 'white' }} />
               </div>
+
+              {/* İhracat senaryosu seçiliyse ek alanlar */}
+              {eDocScenario === 'IHRACKAYITLI' && (
+                <div style={{ marginTop: 12, padding: 10, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.03)' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: '#22b8cf' }}>İhracat Bilgileri</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 11, opacity: 0.85, marginBottom: 4 }}>Teslimat Durumu</div>
+                      <select value={draftTeslimatDurumu} onChange={(e) => setDraftTeslimatDurumu(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }}>
+                        <option value="">Teslimat Seçiniz</option>
+                        <option value="TESLIMAT1">Teslimat 1</option>
+                        <option value="TESLIMAT2">Teslimat 2</option>
+                      </select>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, opacity: 0.85, marginBottom: 4 }}>Teslimat Oranı</div>
+                      <input type="number" value={draftTeslimatOrani} onChange={(e) => setDraftTeslimatOrani(parseFloat(e.target.value) || 0)} placeholder="0" style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, opacity: 0.85, marginBottom: 4 }}>ÖTV</div>
+                      <select value={draftOtvSecim} onChange={(e) => setDraftOtvSecim(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }}>
+                        <option value="">ÖTV Seçiniz</option>
+                        <option value="OTV1">ÖTV 1</option>
+                        <option value="OTV2">ÖTV 2</option>
+                      </select>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, opacity: 0.85, marginBottom: 4 }}>KDV Muafiyet Sebebi</div>
+                      <select value={draftKdvDurumu} onChange={(e) => setDraftKdvDurumu(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }}>
+                        <option value="">ÖTV Seçiniz</option>
+                        <option value="301">301 (1/1 - a Mal İhracatı)</option>
+                        <option value="302">302</option>
+                      </select>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, opacity: 0.85, marginBottom: 4 }}>Gönderime Şekli</div>
+                      <select value={draftGonderimSekli} onChange={(e) => setDraftGonderimSekli(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }}>
+                        <option value="">Gönderim Şekli Seçiniz</option>
+                        <option value="SEKIL1">Şekil 1</option>
+                        <option value="SEKIL2">Şekil 2</option>
+                      </select>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, opacity: 0.85, marginBottom: 4 }}>Teslim Şartı</div>
+                      <select value={draftTeslimSarti} onChange={(e) => setDraftTeslimSarti(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }}>
+                        <option value="">Teslim Şartı Seçiniz</option>
+                        <option value="SART1">Şart 1</option>
+                        <option value="SART2">Şart 2</option>
+                      </select>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, opacity: 0.85, marginBottom: 4 }}>Kap Cinsi</div>
+                      <select value={draftKapCinsi} onChange={(e) => setDraftKapCinsi(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }}>
+                        <option value="">Kap Cinsi Seçiniz</option>
+                        <option value="CINSI1">Cins 1</option>
+                        <option value="CINSI2">Cins 2</option>
+                      </select>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, opacity: 0.85, marginBottom: 4 }}>Kap Adedi</div>
+                      <input type="number" value={draftKapAdedi} onChange={(e) => setDraftKapAdedi(parseInt(e.target.value) || 0)} placeholder="0" style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, opacity: 0.85, marginBottom: 4 }}>Giş No</div>
+                      <input value={draftGisNo} onChange={(e) => setDraftGisNo(e.target.value)} placeholder="" style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, opacity: 0.85, marginBottom: 4 }}>Kap Numarası</div>
+                      <input value={draftKapNumarasi} onChange={(e) => setDraftKapNumarasi(e.target.value)} placeholder="" style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }} />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
                 <button type="button" onClick={() => setShowStockModal(true)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #22b8cf', background: '#22b8cf', color: 'white' }}>Stok Bul</button>
