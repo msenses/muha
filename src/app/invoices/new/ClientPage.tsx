@@ -480,7 +480,7 @@ export default function InvoiceNewClientPage() {
                         E‑Fatura Olarak İşle
                       </label>
                       {isEInvoiceFlag && (
-                        <div style={{ background: '#16a34a', color: '#fff', padding: '6px 12px', borderRadius: 6, fontWeight: 700, display: 'inline-block', alignSelf: 'start' }}>
+                        <div style={{ background: '#16a34a', color: '#fff', padding: '8px 12px', borderRadius: 6, fontWeight: 700, textAlign: 'center', fontSize: 14 }}>
                           E‑FATURA
                         </div>
                       )}
@@ -540,7 +540,7 @@ export default function InvoiceNewClientPage() {
                   </div>
 
                   {/* Alış Satış Ayarları butonu */}
-                  <button type="button" onClick={() => setShowSettings(true)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #1e40af', background: '#1e40af', color: 'white', fontWeight: 600 }}>
+                  <button type="button" onClick={() => setShowSettings(true)} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #1e40af', background: '#1e40af', color: 'white', fontWeight: 600 }}>
                     Alış Satış Ayarları
                   </button>
                 </div>
