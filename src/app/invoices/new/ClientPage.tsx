@@ -470,11 +470,11 @@ export default function InvoiceNewClientPage() {
                       {/* E-Ticaret/E-Fatura işaretleri, E-FATURA rozeti ve Para Birimi */}
                       <div style={{ gridColumn: '1 / span 2', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 12 }}>
                         <div style={{ display: 'grid', gap: 6 }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
                             <input type="checkbox" checked={isECommerce} onChange={(e) => setIsECommerce(e.target.checked)} />
                             E‑Ticaret Olarak İşle
                           </label>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
                             <input type="checkbox" checked={isEInvoiceFlag} onChange={(e) => setIsEInvoiceFlag(e.target.checked)} />
                             E‑Fatura Olarak İşle
                           </label>
@@ -486,12 +486,11 @@ export default function InvoiceNewClientPage() {
                         )}
                         <div style={{ display: 'grid', gap: 6 }}>
                           <div style={{ fontSize: 12, opacity: 0.8 }}>Para Birimleri :</div>
-                          <select value={currency} onChange={(e) => setCurrency(e.target.value as any)} style={{ width: 160, padding: 8, borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
+                          <select value={currency} onChange={(e) => setCurrency(e.target.value as any)} style={{ minWidth: 180, padding: 8, borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
                             <option value="TRY">Türk Lirası</option>
                             <option value="USD">ABD Doları</option>
                             <option value="EUR">Euro</option>
                           </select>
-                          <button type="button" onClick={() => setShowSettings(true)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid #1e40af', background: '#1e40af', color: 'white' }}>Alış Satış Ayarları</button>
                         </div>
                       </div>
                       <div style={{ gridColumn: '1 / span 2', color: taxWarn ? '#ffb4b4' : '#cbd5e1' }}>
