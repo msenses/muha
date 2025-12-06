@@ -413,7 +413,7 @@ export default function EInvoicePage() {
                       <tr key={draft.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                         <td style={{ padding: '12px 8px' }}>
                           <button
-                            onClick={() => router.push(`/invoices/${draft.id}/edit` as Route)}
+                            onClick={() => router.push(`/invoices/${draft.id}` as Route)}
                             style={{
                               width: 32,
                               height: 32,

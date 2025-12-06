@@ -531,25 +531,25 @@ export default function InvoiceNewClientPage() {
                 <div style={{ display: 'grid', gap: 8 }}>
                   {/* Tarih/Saat alanları */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                    <div>
+                  <div>
                       <div style={{ fontSize: 11, opacity: 0.8, marginBottom: 2 }}>Fatura Tarihi</div>
                       <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 12 }} />
-                    </div>
-                    <div>
+                  </div>
+                  <div>
                       <div style={{ fontSize: 11, opacity: 0.8, marginBottom: 2 }}>Sevk Tarihi</div>
                       <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 12 }} />
-                    </div>
-                    <div>
+                  </div>
+                  <div>
                       <div style={{ fontSize: 11, opacity: 0.8, marginBottom: 2 }}>Saat</div>
                       <input type="time" defaultValue="12:52" style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 12 }} />
-                    </div>
-                    <div>
+                  </div>
+                  <div>
                       <div style={{ fontSize: 11, opacity: 0.8, marginBottom: 2 }}>Fatura No</div>
                       <div style={{ display: 'flex', gap: 4 }}>
                         <input value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} placeholder="Otomatik" style={{ flex: 1, padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 12 }} />
                         <button type="button" title="Yeni numara üret" style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.12)', color: 'white', fontSize: 14, flexShrink: 0 }}>+</button>
-                      </div>
                     </div>
+                  </div>
                   </div>
 
                   {/* e‑fatura modunda ek alanlar */}
