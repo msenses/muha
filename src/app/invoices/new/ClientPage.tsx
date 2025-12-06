@@ -41,7 +41,7 @@ export default function InvoiceNewClientPage() {
   const [accountEmail, setAccountEmail] = useState<string>('');
   const [taxOffice, setTaxOffice] = useState<string>('');
   const [taxNo, setTaxNo] = useState<string>('');
-  const [eDocScenario, setEDocScenario] = useState<'TEMELFATURA' | 'TICARIFATURA' | 'KAMU' | 'EARSIVFATURA'>('TEMELFATURA');
+  const [eDocScenario, setEDocScenario] = useState<'TEMELFATURA' | 'TICARIFATURA' | 'KAMU' | 'EARSIVFATURA' | 'EARSIVATURA' | 'IHRACKAYITLI'>('TEMELFATURA');
   const [taxpayerKind, setTaxpayerKind] = useState<'efatura' | 'earsiv' | null>(null);
   const [taxWarn, setTaxWarn] = useState<string | null>(null);
   // Fatura Tipi (üst select) – ilk etapta örnek seçenekler; kullanıcıyla netleştirilecek
@@ -510,6 +510,12 @@ export default function InvoiceNewClientPage() {
                               <option value="TEMELFATURA">TEMELFATURA</option>
                               <option value="TICARIFATURA">TICARIFATURA</option>
                               <option value="KAMU">KAMU</option>
+                            </select>
+                          ) : taxpayerKind === 'earsiv' ? (
+                            <select value={eDocScenario} onChange={(e) => setEDocScenario(e.target.value as any)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }}>
+                              <option value="EARSIVFATURA">EARSIVFATURA</option>
+                              <option value="EARSIVATURA">EARSIVATURA</option>
+                              <option value="IHRACKAYITLI">IHRACKAYITLI</option>
                             </select>
                           ) : (
                             <input readOnly value="EARSIVFATURA" style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }} />
