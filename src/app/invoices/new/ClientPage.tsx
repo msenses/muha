@@ -470,7 +470,7 @@ export default function InvoiceNewClientPage() {
                               ? 'TEMELFATURA: fatura alıcıya otomatik onaylı iletilir.'
                               : eDocScenario === 'TICARIFATURA'
                                 ? 'TICARIFATURA: alıcının onayına sunulur; 8 gün içinde onaylanmazsa otomatik onaylanır.'
-                                : 'KAMU senaryosu')}
+                                : 'KAMU senaryosu')
                           : taxpayerKind === 'earsiv'
                             ? 'E-Arşiv mükellefi'
                             : 'Vergi numarası bekleniyor')}
