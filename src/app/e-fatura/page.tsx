@@ -9,10 +9,12 @@ import { supabase } from '@/lib/supabaseClient';
 export default function EInvoicePage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
-  const [activeTab, setActiveTab] = useState<'main' | 'drafts' | 'sent'>('main');
+  const [activeTab, setActiveTab] = useState<'main' | 'drafts' | 'sent' | 'received'>('main');
   const [drafts, setDrafts] = useState<any[]>([]);
   const [sentInvoices, setSentInvoices] = useState<any[]>([]);
+  const [receivedInvoices, setReceivedInvoices] = useState<any[]>([]);
   const [showSentSubmenu, setShowSentSubmenu] = useState(false);
+  const [showReceivedSubmenu, setShowReceivedSubmenu] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   // Arama filtreleri
   const [searchETTN, setSearchETTN] = useState('');
@@ -96,9 +98,21 @@ export default function EInvoicePage() {
       .from('invoices')
       .select('*, accounts(name, tax_id)')
       .in('status', ['sent', 'completed'])
+      .eq('type', 'sales')
       .order('created_at', { ascending: false });
     
     setSentInvoices(data || []);
+  };
+
+  const loadReceivedInvoices = async () => {
+    // Gelen faturaları yükle (type='purchase' olanlar)
+    const { data } = await supabase
+      .from('invoices')
+      .select('*, accounts(name, tax_id)')
+      .eq('type', 'purchase')
+      .order('created_at', { ascending: false });
+    
+    setReceivedInvoices(data || []);
   };
 
   if (!ready) {
@@ -138,7 +152,16 @@ export default function EInvoicePage() {
               </div>
             )}
           </div>
-          <button style={navBtnStyle} onClick={() => void 0}>Gelen Faturalar ▾</button>
+          <div style={{ position: 'relative' }}>
+            <button style={navBtnStyle} onClick={() => setShowReceivedSubmenu(!showReceivedSubmenu)}>Gelen Faturalar ▾</button>
+            {showReceivedSubmenu && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: '#2c5282', borderRadius: 6, boxShadow: '0 4px 6px rgba(0,0,0,0.2)', zIndex: 10, minWidth: 180 }}>
+                <button onClick={() => { setShowReceivedSubmenu(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 14px', background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', fontSize: 14 }}>Oluşmamış Faturalar</button>
+                <button onClick={() => { setShowReceivedSubmenu(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 14px', background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', fontSize: 14 }}>Onay Bekleyenler</button>
+                <button onClick={() => { setActiveTab('received'); setShowReceivedSubmenu(false); loadReceivedInvoices(); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 14px', background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', fontSize: 14 }}>Fatura Listesi</button>
+              </div>
+            )}
+          </div>
           <button style={navBtnStyle} onClick={() => void 0}>Mükellef Kontrol</button>
           <button style={navBtnStyle} onClick={() => void 0}>Ayarlar ▾</button>
           <button style={navBtnStyle} onClick={() => router.push('/accounts?selectFor=sales&eInvoice=1' as Route)}>Fatura Oluştur</button>
@@ -508,6 +531,115 @@ export default function EInvoicePage() {
                         </td>
                         <td style={{ padding: '12px 8px', fontSize: 12, textAlign: 'center' }}>
                           {invoice.invoice_kind || 'SATIŞ'}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : activeTab === 'received' ? (
+          <div
+            style={{
+              padding: 16,
+              borderRadius: 16,
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            {/* Gelen Faturalar Başlığı */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <div style={{ width: 6, height: 24, background: '#22b8cf', borderRadius: 2 }} />
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>GELEN - FATURA LİSTESİ</h2>
+            </div>
+
+            {/* Gelişmiş Arama Butonu */}
+            <button
+              style={{
+                padding: '10px 20px',
+                borderRadius: 8,
+                background: '#22b8cf',
+                border: 'none',
+                color: 'white',
+                fontWeight: 600,
+                cursor: 'pointer',
+                marginBottom: 16,
+              }}
+            >
+              Gelişmiş Arama
+            </button>
+
+            {/* Gelen Faturalar Tablosu */}
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid rgba(255,255,255,0.2)' }}>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: 13, fontWeight: 600 }}></th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: 13, fontWeight: 600 }}>Fatura No</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: 13, fontWeight: 600 }}>Tarih</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: 13, fontWeight: 600 }}>Ünvan</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'right', fontSize: 13, fontWeight: 600 }}>Toplam</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'right', fontSize: 13, fontWeight: 600 }}>Kdv</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'right', fontSize: 13, fontWeight: 600 }}>G.Toplam</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 13, fontWeight: 600 }}>Durum</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 13, fontWeight: 600 }}>Tip</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {receivedInvoices.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} style={{ padding: 32, textAlign: 'center', opacity: 0.7 }}>
+                        Gelen fatura bulunmamaktadır.
+                      </td>
+                    </tr>
+                  ) : (
+                    receivedInvoices.map((invoice) => (
+                      <tr key={invoice.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                        <td style={{ padding: '12px 8px' }}>
+                          <button
+                            onClick={() => router.push(`/invoices/${invoice.id}` as Route)}
+                            style={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: '50%',
+                              background: '#22b8cf',
+                              border: 'none',
+                              color: 'white',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            🔍
+                          </button>
+                        </td>
+                        <td style={{ padding: '12px 8px', fontSize: 13 }}>{invoice.invoice_no || '-'}</td>
+                        <td style={{ padding: '12px 8px', fontSize: 13 }}>
+                          {invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString('tr-TR') : '-'}
+                          <br />
+                          <span style={{ fontSize: 11, opacity: 0.7 }}>
+                            {invoice.created_at ? new Date(invoice.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 8px', fontSize: 13 }}>{invoice.accounts?.name || '-'}</td>
+                        <td style={{ padding: '12px 8px', fontSize: 13, textAlign: 'right' }}>{(invoice.subtotal || 0).toFixed(2)}</td>
+                        <td style={{ padding: '12px 8px', fontSize: 13, textAlign: 'right' }}>{((invoice.total || 0) - (invoice.subtotal || 0)).toFixed(2)}</td>
+                        <td style={{ padding: '12px 8px', fontSize: 13, textAlign: 'right', fontWeight: 600 }}>{(invoice.total || 0).toFixed(2)}</td>
+                        <td style={{ padding: '12px 8px', fontSize: 12, textAlign: 'center' }}>
+                          <span style={{ 
+                            padding: '4px 8px', 
+                            borderRadius: 4, 
+                            background: invoice.approval_status === 'approved' ? 'rgba(16, 185, 129, 0.2)' : invoice.approval_status === 'pending' ? 'rgba(251, 191, 36, 0.2)' : 'rgba(239, 68, 68, 0.2)', 
+                            color: invoice.approval_status === 'approved' ? '#10b981' : invoice.approval_status === 'pending' ? '#fbbf24' : '#ef4444'
+                          }}>
+                            {invoice.approval_status === 'approved' ? 'Onaylandı' : invoice.approval_status === 'pending' ? 'Onay Bekliyor' : 'Reddedildi'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 8px', fontSize: 12, textAlign: 'center' }}>
+                          {invoice.e_document_scenario || '-'}
                         </td>
                       </tr>
                     ))

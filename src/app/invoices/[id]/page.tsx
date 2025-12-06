@@ -94,6 +94,40 @@ export default function InvoiceDetailPage() {
     }
   };
 
+  const handleApproveReceived = async () => {
+    if (typeof window !== 'undefined' && window.confirm('Bu gelen faturayı onaylamak istediğinizden emin misiniz?')) {
+      const { error } = await supabase
+        .from('invoices')
+        .update({ approval_status: 'approved' })
+        .eq('id', invoiceId);
+
+      if (!error) {
+        alert('Fatura başarıyla onaylandı!');
+        loadInvoice();
+      }
+    }
+  };
+
+  const handleRejectReceived = async () => {
+    if (typeof window !== 'undefined' && window.confirm('Bu gelen faturayı reddetmek istediğinizden emin misiniz?')) {
+      const { error } = await supabase
+        .from('invoices')
+        .update({ approval_status: 'rejected' })
+        .eq('id', invoiceId);
+
+      if (!error) {
+        alert('Fatura reddedildi!');
+        loadInvoice();
+      }
+    }
+  };
+
+  const handleSaveAsPurchase = async () => {
+    if (typeof window !== 'undefined' && window.confirm('Bu fatura alış faturası olarak kaydedilecek. Onaylıyor musunuz?')) {
+      alert('Alış faturası kaydetme özelliği yakında eklenecek.');
+    }
+  };
+
   const handleCancel = async () => {
     if (typeof window !== 'undefined' && window.confirm('Bu faturayı iptal etmek istediğinizden emin misiniz?')) {
       const { error } = await supabase
@@ -128,20 +162,40 @@ export default function InvoiceDetailPage() {
     <main style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white', padding: 16 }}>
       {/* Üst Butonlar */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-        <button onClick={handlePrintInfo} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Bilgi Fişi</button>
-        <button onClick={handleView} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Görüntüle</button>
-        <button onClick={handleDownloadPDF} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>PDF İndir</button>
-        <button onClick={handleDownloadXML} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>XML İndir</button>
-        <button onClick={handleLogs} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Log Kayıtları</button>
-        {invoice.status === 'draft' && (
-          <button onClick={handleApprove} style={{ padding: '10px 20px', borderRadius: 6, background: '#10b981', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Onaya Gönder</button>
+        {invoice.type === 'purchase' ? (
+          <>
+            {/* Gelen Fatura Butonları */}
+            <button onClick={handleDownloadPDF} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>PDF İndir</button>
+            <button onClick={handleView} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Görüntüle</button>
+            {invoice.e_document_scenario === 'TICARIFATURA' && invoice.approval_status === 'pending' && (
+              <>
+                <button onClick={handleApproveReceived} style={{ padding: '10px 20px', borderRadius: 6, background: '#10b981', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Onayla</button>
+                <button onClick={handleRejectReceived} style={{ padding: '10px 20px', borderRadius: 6, background: '#ef4444', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Reddet</button>
+              </>
+            )}
+            <button onClick={handleSaveAsPurchase} style={{ padding: '10px 20px', borderRadius: 6, background: '#8b5cf6', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Kaydet</button>
+          </>
+        ) : (
+          <>
+            {/* Giden Fatura Butonları */}
+            <button onClick={handlePrintInfo} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Bilgi Fişi</button>
+            <button onClick={handleView} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Görüntüle</button>
+            <button onClick={handleDownloadPDF} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>PDF İndir</button>
+            <button onClick={handleDownloadXML} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>XML İndir</button>
+            <button onClick={handleLogs} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Log Kayıtları</button>
+            {invoice.status === 'draft' && (
+              <button onClick={handleApprove} style={{ padding: '10px 20px', borderRadius: 6, background: '#10b981', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Onaya Gönder</button>
+            )}
+            <button onClick={handlePrintReceipt} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Makbuz Bas</button>
+            <button onClick={handleSendMail} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Mail Gönder</button>
+          </>
         )}
-        <button onClick={handlePrintReceipt} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Makbuz Bas</button>
-        <button onClick={handleSendMail} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Mail Gönder</button>
       </div>
 
       {/* FATURA Başlığı */}
-      <h1 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16, color: '#94a3b8' }}>FATURA</h1>
+      <h1 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16, color: '#94a3b8' }}>
+        {invoice.type === 'purchase' ? 'ALIŞ FATURASI' : 'SATIŞ FATURASI'}
+      </h1>
 
       {/* İçerik Container */}
       <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: 16 }}>
@@ -199,7 +253,7 @@ export default function InvoiceDetailPage() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 8, alignItems: 'center' }}>
               <span style={{ fontSize: 13, color: '#94a3b8' }}>Fatura Türü :</span>
-              <span style={{ fontSize: 13 }}>{invoice.invoice_kind || 'SATIŞ FATURASI'}</span>
+              <span style={{ fontSize: 13 }}>{invoice.type === 'purchase' ? 'ALIŞ FATURASI' : 'SATIŞ FATURASI'}</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 8, alignItems: 'center' }}>
               <span style={{ fontSize: 13, color: '#94a3b8' }}>Ödeme Şekli :</span>
@@ -313,53 +367,111 @@ export default function InvoiceDetailPage() {
 
         {/* Alt Butonlar */}
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          {invoice.status === 'draft' && (
-            <button
-              onClick={handleApprove}
-              style={{
-                padding: '12px 40px',
-                borderRadius: 6,
-                background: '#10b981',
-                border: 'none',
-                color: 'white',
-                fontWeight: 600,
-                cursor: 'pointer',
-                fontSize: 14,
-              }}
-            >
-              ONAYLA
-            </button>
+          {invoice.type === 'purchase' ? (
+            <>
+              {/* Gelen Fatura Alt Butonları */}
+              {invoice.e_document_scenario === 'TICARIFATURA' && invoice.approval_status === 'pending' && (
+                <>
+                  <button
+                    onClick={handleApproveReceived}
+                    style={{
+                      padding: '12px 40px',
+                      borderRadius: 6,
+                      background: '#10b981',
+                      border: 'none',
+                      color: 'white',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontSize: 14,
+                    }}
+                  >
+                    ONAYLA
+                  </button>
+                  <button
+                    onClick={handleRejectReceived}
+                    style={{
+                      padding: '12px 40px',
+                      borderRadius: 6,
+                      background: '#ef4444',
+                      border: 'none',
+                      color: 'white',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontSize: 14,
+                    }}
+                  >
+                    REDDET
+                  </button>
+                </>
+              )}
+              <button
+                onClick={handleSaveAsPurchase}
+                style={{
+                  padding: '12px 40px',
+                  borderRadius: 6,
+                  background: '#8b5cf6',
+                  border: 'none',
+                  color: 'white',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontSize: 14,
+                }}
+              >
+                KAYDET
+              </button>
+            </>
+          ) : (
+            <>
+              {/* Giden Fatura Alt Butonları */}
+              {invoice.status === 'draft' && (
+                <button
+                  onClick={handleApprove}
+                  style={{
+                    padding: '12px 40px',
+                    borderRadius: 6,
+                    background: '#10b981',
+                    border: 'none',
+                    color: 'white',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontSize: 14,
+                  }}
+                >
+                  ONAYLA
+                </button>
+              )}
+              <button
+                onClick={() => router.push(`/invoices/${invoiceId}/edit` as Route)}
+                style={{
+                  padding: '12px 40px',
+                  borderRadius: 6,
+                  background: '#22b8cf',
+                  border: 'none',
+                  color: 'white',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontSize: 14,
+                }}
+              >
+                DÜZENLE
+              </button>
+              <button
+                onClick={handleCancel}
+                style={{
+                  padding: '12px 40px',
+                  borderRadius: 6,
+                  background: '#ef4444',
+                  border: 'none',
+                  color: 'white',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontSize: 14,
+                }}
+              >
+                FATURAYIIPTAL
+              </button>
+            </>
           )}
-          <button
-            onClick={() => router.push(`/invoices/${invoiceId}/edit` as Route)}
-            style={{
-              padding: '12px 40px',
-              borderRadius: 6,
-              background: '#22b8cf',
-              border: 'none',
-              color: 'white',
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontSize: 14,
-            }}
-          >
-            DÜZENLE
-          </button>
-          <button
-            onClick={handleCancel}
-            style={{
-              padding: '12px 40px',
-              borderRadius: 6,
-              background: '#ef4444',
-              border: 'none',
-              color: 'white',
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontSize: 14,
-            }}
-          >
-            FATURAYIIPTAL
-          </button>
         </div>
       </div>
     </main>
