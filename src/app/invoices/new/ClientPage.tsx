@@ -46,6 +46,9 @@ export default function InvoiceNewClientPage() {
   const [taxWarn, setTaxWarn] = useState<string | null>(null);
   // Fatura Tipi (üst select) – ilk etapta örnek seçenekler; kullanıcıyla netleştirilecek
   const [invoiceKind, setInvoiceKind] = useState<'SATIS' | 'IHRACKAYITLI'>('SATIS');
+  const [isECommerce, setIsECommerce] = useState<boolean>(false);
+  const [isEInvoiceFlag, setIsEInvoiceFlag] = useState<boolean>(eInvoiceMode);
+  const [currency, setCurrency] = useState<'TRY' | 'USD' | 'EUR'>('TRY');
   const [city, setCity] = useState<string>('');
   const [district, setDistrict] = useState<string>('');
   const [products, setProducts] = useState<Product[]>([]);
@@ -463,6 +466,33 @@ export default function InvoiceNewClientPage() {
                         ) : (
                           <input readOnly value="EARSIVFATURA" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
                         )}
+                      </div>
+                      {/* E-Ticaret/E-Fatura işaretleri, E-FATURA rozeti ve Para Birimi */}
+                      <div style={{ gridColumn: '1 / span 2', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 12 }}>
+                        <div style={{ display: 'grid', gap: 6 }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <input type="checkbox" checked={isECommerce} onChange={(e) => setIsECommerce(e.target.checked)} />
+                            E‑Ticaret Olarak İşle
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <input type="checkbox" checked={isEInvoiceFlag} onChange={(e) => setIsEInvoiceFlag(e.target.checked)} />
+                            E‑Fatura Olarak İşle
+                          </label>
+                        </div>
+                        {isEInvoiceFlag && (
+                          <div style={{ justifySelf: 'center', background: '#16a34a', color: '#fff', padding: '6px 10px', borderRadius: 6, fontWeight: 700 }}>
+                            E‑FATURA
+                          </div>
+                        )}
+                        <div style={{ display: 'grid', gap: 6 }}>
+                          <div style={{ fontSize: 12, opacity: 0.8 }}>Para Birimleri :</div>
+                          <select value={currency} onChange={(e) => setCurrency(e.target.value as any)} style={{ width: 160, padding: 8, borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
+                            <option value="TRY">Türk Lirası</option>
+                            <option value="USD">ABD Doları</option>
+                            <option value="EUR">Euro</option>
+                          </select>
+                          <button type="button" onClick={() => setShowSettings(true)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid #1e40af', background: '#1e40af', color: 'white' }}>Alış Satış Ayarları</button>
+                        </div>
                       </div>
                       <div style={{ gridColumn: '1 / span 2', color: taxWarn ? '#ffb4b4' : '#cbd5e1' }}>
                         {taxWarn ?? (taxpayerKind === 'efatura'
