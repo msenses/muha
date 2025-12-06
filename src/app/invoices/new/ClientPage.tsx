@@ -357,7 +357,7 @@ export default function InvoiceNewClientPage() {
   };
 
   function renderPage() {
-    return (
+  return (
     <Main style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16 }}>
         <strong>{type === 'sales' ? 'Satış Faturası' : 'Alış Faturası'}</strong>
@@ -442,59 +442,78 @@ export default function InvoiceNewClientPage() {
                 >
                   Fatura Ek Alanlar
                 </button>
-                <button type="button" onClick={() => setShowSettings(true)} style={{ marginLeft: 'auto', padding: '8px 10px', borderRadius: 8, border: '1px solid #1e40af', background: '#1e40af', color: 'white' }}>Alış Satış Ayarları</button>
               </div>
               {invoiceTab === 'info' ? (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div style={{ display: 'grid', gap: 10 }}>
+                  {/* Tarih/Saat alanları */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 12, opacity: 0.8 }}>Fatura Tarihi</div>
+                      <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, opacity: 0.8 }}>Sevk Tarihi</div>
+                      <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, opacity: 0.8 }}>Saat</div>
+                      <input type="time" defaultValue="12:52" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, opacity: 0.8 }}>Fatura No</div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <input value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} placeholder="Otomatik" style={{ flex: 1, padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                        <button type="button" title="Yeni numara üret" style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.12)', color: 'white' }}>+</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* e‑fatura modunda ek alanlar */}
                   {eInvoiceMode && (
-                    <div style={{ gridColumn: '1 / span 2', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div style={{ display: 'grid', gap: 8 }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <input type="checkbox" checked={isECommerce} onChange={(e) => setIsECommerce(e.target.checked)} />
+                        E‑Ticaret Olarak İşle
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <input type="checkbox" checked={isEInvoiceFlag} onChange={(e) => setIsEInvoiceFlag(e.target.checked)} />
+                        E‑Fatura Olarak İşle
+                      </label>
+                      {isEInvoiceFlag && (
+                        <div style={{ background: '#16a34a', color: '#fff', padding: '6px 12px', borderRadius: 6, fontWeight: 700, display: 'inline-block', alignSelf: 'start' }}>
+                          E‑FATURA
+                        </div>
+                      )}
                       <div>
-                        <div style={{ fontSize: 12, opacity: 0.8 }}>Fatura Tipi</div>
-                        <select value={invoiceKind} onChange={(e) => setInvoiceKind(e.target.value as any)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
-                          <option value="SATIS">SATIS</option>
-                          <option value="IHRACKAYITLI">IHRACKAYITLI</option>
+                        <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>Para Birimleri :</div>
+                        <select value={currency} onChange={(e) => setCurrency(e.target.value as any)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
+                          <option value="TRY">Türk Lirası</option>
+                          <option value="USD">ABD Doları</option>
+                          <option value="EUR">Euro</option>
                         </select>
                       </div>
-                      <div>
-                        <div style={{ fontSize: 12, opacity: 0.8 }}>Fatura Senaryosu</div>
-                        {taxpayerKind === 'efatura' ? (
-                          <select value={eDocScenario} onChange={(e) => setEDocScenario(e.target.value as any)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
-                            <option value="TEMELFATURA">TEMELFATURA</option>
-                            <option value="TICARIFATURA">TICARIFATURA</option>
-                            <option value="KAMU">KAMU</option>
-                          </select>
-                        ) : (
-                          <input readOnly value="EARSIVFATURA" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
-                        )}
-                      </div>
-                      {/* E-Ticaret/E-Fatura işaretleri, E-FATURA rozeti ve Para Birimi */}
-                      {/* Bu blok küçük panel içinde taşma yapmaması için tek sütunlu hale getirildi */}
-                      <div style={{ gridColumn: '1 / span 2', display: 'grid', gridTemplateColumns: '1fr', alignItems: 'start', gap: 10 }}>
-                        <div style={{ display: 'grid', gap: 6 }}>
-                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                            <input type="checkbox" checked={isECommerce} onChange={(e) => setIsECommerce(e.target.checked)} />
-                            E‑Ticaret Olarak İşle
-                          </label>
-                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                            <input type="checkbox" checked={isEInvoiceFlag} onChange={(e) => setIsEInvoiceFlag(e.target.checked)} />
-                            E‑Fatura Olarak İşle
-                          </label>
-                        </div>
-                        {isEInvoiceFlag && (
-                          <div style={{ justifySelf: 'start', background: '#16a34a', color: '#fff', padding: '6px 10px', borderRadius: 6, fontWeight: 700 }}>
-                            E‑FATURA
-                          </div>
-                        )}
-                        <div style={{ display: 'grid', gap: 6 }}>
-                          <div style={{ fontSize: 12, opacity: 0.8 }}>Para Birimleri :</div>
-                          <select value={currency} onChange={(e) => setCurrency(e.target.value as any)} style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
-                            <option value="TRY">Türk Lirası</option>
-                            <option value="USD">ABD Doları</option>
-                            <option value="EUR">Euro</option>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 6 }}>
+                        <div>
+                          <div style={{ fontSize: 12, opacity: 0.8 }}>Fatura Tipi</div>
+                          <select value={invoiceKind} onChange={(e) => setInvoiceKind(e.target.value as any)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
+                            <option value="SATIS">SATIS</option>
+                            <option value="IHRACKAYITLI">IHRACKAYITLI</option>
                           </select>
                         </div>
+                        <div>
+                          <div style={{ fontSize: 12, opacity: 0.8 }}>Fatura Senaryosu</div>
+                          {taxpayerKind === 'efatura' ? (
+                            <select value={eDocScenario} onChange={(e) => setEDocScenario(e.target.value as any)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
+                              <option value="TEMELFATURA">TEMELFATURA</option>
+                              <option value="TICARIFATURA">TICARIFATURA</option>
+                              <option value="KAMU">KAMU</option>
+                            </select>
+                          ) : (
+                            <input readOnly value="EARSIVFATURA" style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                          )}
+                        </div>
                       </div>
-                      <div style={{ gridColumn: '1 / span 2', color: taxWarn ? '#ffb4b4' : '#cbd5e1' }}>
+                      <div style={{ fontSize: 13, color: taxWarn ? '#ffb4b4' : '#cbd5e1', marginTop: 4 }}>
                         {taxWarn ?? (taxpayerKind === 'efatura'
                           ? (eDocScenario === 'TEMELFATURA'
                               ? 'TEMELFATURA: fatura alıcıya otomatik onaylı iletilir.'
@@ -507,26 +526,9 @@ export default function InvoiceNewClientPage() {
                       </div>
                     </div>
                   )}
-                  <div>
-                    <div style={{ fontSize: 12, opacity: 0.8 }}>Fatura Tarihi</div>
-                    <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 12, opacity: 0.8 }}>Sevk Tarihi</div>
-                    <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 12, opacity: 0.8 }}>Saat</div>
-                    <input type="time" defaultValue="12:52" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 12, opacity: 0.8 }}>Fatura No</div>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <input value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} placeholder="Otomatik" style={{ flex: 1, padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
-                      <button type="button" title="Yeni numara üret" style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.12)', color: 'white' }}>+</button>
-                    </div>
-                  </div>
-                  <div style={{ gridColumn: '1 / span 1', display: 'grid', gap: 6, marginTop: 4 }}>
+
+                  {/* Stok işleme seçenekleri */}
+                  <div style={{ display: 'grid', gap: 6 }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <input type="checkbox" checked={stockMode === 'avg'} onChange={() => setStockMode('avg')} />
                       Maliyet Ortalamasını Stoklara İşle
@@ -536,6 +538,11 @@ export default function InvoiceNewClientPage() {
                       Alış Fiyatını Stoklara İşle
                     </label>
                   </div>
+
+                  {/* Alış Satış Ayarları butonu */}
+                  <button type="button" onClick={() => setShowSettings(true)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #1e40af', background: '#1e40af', color: 'white', fontWeight: 600 }}>
+                    Alış Satış Ayarları
+                  </button>
                 </div>
               ) : (
                 <div style={{ padding: 8, border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, background: 'rgba(255,255,255,0.04)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -917,7 +924,7 @@ export default function InvoiceNewClientPage() {
         </div>
       )}
     </Main>
-    );
+  );
   }
   return renderPage();
 }
