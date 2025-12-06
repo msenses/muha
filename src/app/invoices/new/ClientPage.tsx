@@ -42,6 +42,8 @@ export default function InvoiceNewClientPage() {
   const [eDocScenario, setEDocScenario] = useState<'TEMELFATURA' | 'TICARIFATURA' | 'KAMU' | 'EARSIVFATURA'>('TEMELFATURA');
   const [taxpayerKind, setTaxpayerKind] = useState<'efatura' | 'earsiv' | null>(null);
   const [taxWarn, setTaxWarn] = useState<string | null>(null);
+  // Fatura Tipi (üst select) – ilk etapta örnek seçenekler; kullanıcıyla netleştirilecek
+  const [invoiceKind, setInvoiceKind] = useState<'SATIS' | 'IHRACKAYITLI'>('SATIS');
   const [city, setCity] = useState<string>('');
   const [district, setDistrict] = useState<string>('');
   const [products, setProducts] = useState<Product[]>([]);
@@ -439,21 +441,36 @@ export default function InvoiceNewClientPage() {
               {invoiceTab === 'info' ? (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   {eInvoiceMode && (
-                    <div style={{ gridColumn: '1 / span 2', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, alignItems: 'end', padding: '8px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                    <div style={{ gridColumn: '1 / span 2', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                       <div>
-                        <div style={{ fontSize: 12, opacity: 0.8 }}>E-Fatura Senaryosu</div>
+                        <div style={{ fontSize: 12, opacity: 0.8 }}>Fatura Tipi</div>
+                        <select value={invoiceKind} onChange={(e) => setInvoiceKind(e.target.value as any)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
+                          <option value="SATIS">SATIS</option>
+                          <option value="IHRACKAYITLI">IHRACKAYITLI</option>
+                        </select>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 12, opacity: 0.8 }}>Fatura Senaryosu</div>
                         {taxpayerKind === 'efatura' ? (
-                          <select value={eDocScenario} onChange={(e) => setEDocScenario(e.target.value as any)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontWeight: 700 }}>
+                          <select value={eDocScenario} onChange={(e) => setEDocScenario(e.target.value as any)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
                             <option value="TEMELFATURA">TEMELFATURA</option>
                             <option value="TICARIFATURA">TICARIFATURA</option>
                             <option value="KAMU">KAMU</option>
                           </select>
                         ) : (
-                          <input readOnly value="EARSIVFATURA" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontWeight: 700 }} />
+                          <input readOnly value="EARSIVFATURA" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
                         )}
                       </div>
-                      <div style={{ color: taxWarn ? '#ffb4b4' : '#cbd5e1' }}>
-                        {taxWarn ?? (taxpayerKind === 'efatura' ? 'E-fatura mükellefi (otomatik iletilir)' : taxpayerKind === 'earsiv' ? 'E-Arşiv mükellefi' : 'Vergi numarası bekleniyor')}
+                      <div style={{ gridColumn: '1 / span 2', color: taxWarn ? '#ffb4b4' : '#cbd5e1' }}>
+                        {taxWarn ?? (taxpayerKind === 'efatura'
+                          ? (eDocScenario === 'TEMELFATURA'
+                              ? 'TEMELFATURA: fatura alıcıya otomatik onaylı iletilir.'
+                              : eDocScenario === 'TICARIFATURA'
+                                ? 'TICARIFATURA: alıcının onayına sunulur; 8 gün içinde onaylanmazsa otomatik onaylanır.'
+                                : 'KAMU senaryosu')}
+                          : taxpayerKind === 'earsiv'
+                            ? 'E-Arşiv mükellefi'
+                            : 'Vergi numarası bekleniyor')}
                       </div>
                     </div>
                   )}
