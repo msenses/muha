@@ -56,7 +56,7 @@ export default function InvoiceNewClientPage() {
   const [taxpayerKind, setTaxpayerKind] = useState<'efatura' | 'earsiv' | null>(null);
   const [taxWarn, setTaxWarn] = useState<string | null>(null);
   // Fatura Tipi (üst select) – ilk etapta örnek seçenekler; kullanıcıyla netleştirilecek
-  const [invoiceKind, setInvoiceKind] = useState<'SATIS' | 'IHRACKAYITLI' | 'ISTISNA'>('SATIS');
+  const [invoiceKind, setInvoiceKind] = useState<'SATIS' | 'IADE' | 'ISTISNA' | 'TEVKIFAT' | 'IHRAC' | 'OIV' | 'OZELMATRAH' | 'IHRACKAYITLI' | 'DIGER'>('SATIS');
   const [isECommerce, setIsECommerce] = useState<boolean>(false);
   const [isEInvoiceFlag, setIsEInvoiceFlag] = useState<boolean>(eInvoiceMode);
   // KAMU senaryosu için banka bilgileri
@@ -550,9 +550,15 @@ export default function InvoiceNewClientPage() {
                         <div>
                           <div style={{ fontSize: 11, opacity: 0.8, marginBottom: 2 }}>Fatura Tipi</div>
                           <select value={invoiceKind} onChange={(e) => setInvoiceKind(e.target.value as any)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 12 }}>
-                            <option value="SATIS">SATIS</option>
-                            <option value="IHRACKAYITLI">IHRACKAYITLI</option>
-                            <option value="ISTISNA">ISTISNA</option>
+                            <option value="SATIS">SATIŞ</option>
+                            <option value="IADE">İADE</option>
+                            <option value="ISTISNA">İSTİSNA</option>
+                            <option value="TEVKIFAT">TEVKİFAT</option>
+                            <option value="IHRAC">İHRAÇ</option>
+                            <option value="OIV">ÖİV</option>
+                            <option value="OZELMATRAH">ÖZELMATRAH</option>
+                            <option value="IHRACKAYITLI">İHRACKAYITLI</option>
+                            <option value="DIGER">DİĞER</option>
                           </select>
                         </div>
                         <div>
@@ -745,24 +751,61 @@ export default function InvoiceNewClientPage() {
                       <div style={{ fontSize: 11, opacity: 0.85, marginBottom: 4 }}>Gönderime Şekli</div>
                       <select value={draftGonderimSekli} onChange={(e) => setDraftGonderimSekli(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }}>
                         <option value="">Gönderim Şekli Seçiniz</option>
-                        <option value="SEKIL1">Şekil 1</option>
-                        <option value="SEKIL2">Şekil 2</option>
+                        <option value="1">1 Deniz Taşımacılığı</option>
+                        <option value="2">2 Demiryolu Taşımacılığı</option>
+                        <option value="3">3 Karayolu Taşımacılığı</option>
+                        <option value="4">4 Hava Yolu Taşımacılığı</option>
+                        <option value="5">5 Posta</option>
+                        <option value="6">6 Çokrota Taşımacılık</option>
+                        <option value="7">7 Sabit Taşıma</option>
+                        <option value="8">8 İçsu İçi Su Taşımacılığı</option>
+                        <option value="9">9 Bilinmeyen Taşıma Şekli</option>
                       </select>
                     </div>
                     <div>
                       <div style={{ fontSize: 11, opacity: 0.85, marginBottom: 4 }}>Teslim Şartı</div>
                       <select value={draftTeslimSarti} onChange={(e) => setDraftTeslimSarti(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }}>
                         <option value="">Teslim Şartı Seçiniz</option>
-                        <option value="SART1">Şart 1</option>
-                        <option value="SART2">Şart 2</option>
+                        <option value="CIF">CIF Maliyet, Sigorta ve Navlun</option>
+                        <option value="CIP">CIP Taşıma ve Sigorta Ödenmiş</option>
+                        <option value="CPT">CPT Ödenen Taşıma Ücreti</option>
+                        <option value="DAF">DAF Sınırda Teslim</option>
+                        <option value="DAP">DAP Belirtilen Yerde Teslim</option>
+                        <option value="DAT">DAT Terminalde Teslim</option>
+                        <option value="DDP">DDP Teslim Gümrük Ödenmiş</option>
+                        <option value="DDU">DDU Gümrüğü Ödenmemiş Teslim</option>
+                        <option value="DEQ">DEQ Rıhtımda Teslim (Gümrük Ödenmiş)</option>
+                        <option value="DES">DES Gemiden Teslim</option>
+                        <option value="EXW">EXW Fabrikadan Teslim</option>
+                        <option value="FAS">FAS Gemide Ücretsiz</option>
+                        <option value="FCA">FCA Ücretsiz Taşıma</option>
+                        <option value="FOB">FOB Gemide Teslim</option>
                       </select>
                     </div>
                     <div>
                       <div style={{ fontSize: 11, opacity: 0.85, marginBottom: 4 }}>Kap Cinsi</div>
                       <select value={draftKapCinsi} onChange={(e) => setDraftKapCinsi(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }}>
                         <option value="">Kap Cinsi Seçiniz</option>
-                        <option value="CINSI1">Cins 1</option>
-                        <option value="CINSI2">Cins 2</option>
+                        <option value="Varil">Varil</option>
+                        <option value="Bohça">Bohça</option>
+                        <option value="Sandık">Sandık</option>
+                        <option value="Demet">Demet</option>
+                        <option value="Kap Kutusu">Kap Kutusu</option>
+                        <option value="Kova">Kova</option>
+                        <option value="Sepet">Sepet</option>
+                        <option value="Çuval">Çuval</option>
+                        <option value="Kutu">Kutu</option>
+                        <option value="Biza kadası">Biza kadası</option>
+                        <option value="Balya">Balya</option>
+                        <option value="Teneke Kutu">Teneke Kutu</option>
+                        <option value="Fıçı">Fıçı</option>
+                        <option value="Konteyner">Konteyner</option>
+                        <option value="Kasa">Kasa</option>
+                        <option value="Karton Kana">Karton Kana</option>
+                        <option value="Bidon">Bidon</option>
+                        <option value="Kangal">Kangal</option>
+                        <option value="Meyve Kasası">Meyve Kasası</option>
+                        <option value="Torba">Torba</option>
                       </select>
                     </div>
                     <div>
