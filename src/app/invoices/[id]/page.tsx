@@ -49,16 +49,48 @@ export default function InvoiceDetailPage() {
   };
 
   const handleApprove = async () => {
-    if (typeof window !== 'undefined' && window.confirm('Bu taslak faturayı onaylamak istediğinizden emin misiniz?')) {
+    if (typeof window !== 'undefined' && window.confirm('Bu taslak faturayı onaya göndermek istediğinizden emin misiniz? Fatura resmileştirilecek ve Giden Faturalar listesine taşınacaktır.')) {
       const { error } = await supabase
         .from('invoices')
-        .update({ status: 'completed' })
+        .update({ status: 'sent', sent_at: new Date().toISOString() })
         .eq('id', invoiceId);
 
       if (!error) {
-        alert('Fatura başarıyla onaylandı!');
+        alert('Fatura başarıyla onaya gönderildi! Artık Giden Faturalar menüsünden takip edebilirsiniz.');
         router.push('/e-fatura' as Route);
       }
+    }
+  };
+
+  const handlePrintInfo = () => {
+    if (typeof window !== 'undefined') {
+      window.print();
+    }
+  };
+
+  const handleView = () => {
+    alert('Fatura önizleme özelliği yakında eklenecek.');
+  };
+
+  const handleDownloadPDF = () => {
+    alert('PDF indirme özelliği yakında eklenecek.');
+  };
+
+  const handleDownloadXML = () => {
+    alert('XML indirme özelliği yakında eklenecek.');
+  };
+
+  const handleLogs = () => {
+    alert('Log kayıtları özelliği yakında eklenecek.');
+  };
+
+  const handlePrintReceipt = () => {
+    alert('Makbuz yazdırma özelliği yakında eklenecek.');
+  };
+
+  const handleSendMail = async () => {
+    if (typeof window !== 'undefined' && window.confirm(`Bu fatura ${invoice.accounts?.email || 'cari e-posta adresine'} gönderilecek. Onaylıyor musunuz?`)) {
+      alert('Mail gönderme özelliği yakında eklenecek.');
     }
   };
 
@@ -96,14 +128,16 @@ export default function InvoiceDetailPage() {
     <main style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white', padding: 16 }}>
       {/* Üst Butonlar */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-        <button onClick={() => router.push('/e-fatura' as Route)} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>İş Bilgi Formu</button>
-        <button style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Görüntüle</button>
-        <button style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>PDF İndir</button>
-        <button style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Excel İndir</button>
-        <button style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Log Kayıtları</button>
-        <button style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Onaya Gönder</button>
-        <button style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Ekteki Rast</button>
-        <button style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Mail Gönder</button>
+        <button onClick={handlePrintInfo} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Bilgi Fişi</button>
+        <button onClick={handleView} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Görüntüle</button>
+        <button onClick={handleDownloadPDF} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>PDF İndir</button>
+        <button onClick={handleDownloadXML} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>XML İndir</button>
+        <button onClick={handleLogs} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Log Kayıtları</button>
+        {invoice.status === 'draft' && (
+          <button onClick={handleApprove} style={{ padding: '10px 20px', borderRadius: 6, background: '#10b981', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Onaya Gönder</button>
+        )}
+        <button onClick={handlePrintReceipt} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Makbuz Bas</button>
+        <button onClick={handleSendMail} style={{ padding: '10px 20px', borderRadius: 6, background: '#22b8cf', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Mail Gönder</button>
       </div>
 
       {/* FATURA Başlığı */}

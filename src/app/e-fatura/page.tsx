@@ -9,8 +9,10 @@ import { supabase } from '@/lib/supabaseClient';
 export default function EInvoicePage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
-  const [activeTab, setActiveTab] = useState<'main' | 'drafts'>('main');
+  const [activeTab, setActiveTab] = useState<'main' | 'drafts' | 'sent'>('main');
   const [drafts, setDrafts] = useState<any[]>([]);
+  const [sentInvoices, setSentInvoices] = useState<any[]>([]);
+  const [showSentSubmenu, setShowSentSubmenu] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   // Arama filtreleri
   const [searchETTN, setSearchETTN] = useState('');
@@ -22,6 +24,17 @@ export default function EInvoicePage() {
   const [searchScenario, setSearchScenario] = useState('');
   const [searchStatus, setSearchStatus] = useState('');
   const [searchInvoiceType, setSearchInvoiceType] = useState('');
+  // Giden faturalar için arama
+  const [showSentAdvancedSearch, setShowSentAdvancedSearch] = useState(false);
+  const [sentSearchETTN, setSentSearchETTN] = useState('');
+  const [sentSearchInvoiceNo, setSentSearchInvoiceNo] = useState('');
+  const [sentSearchCustomer, setSentSearchCustomer] = useState('');
+  const [sentSearchTaxNo, setSentSearchTaxNo] = useState('');
+  const [sentSearchStartDate, setSentSearchStartDate] = useState('');
+  const [sentSearchEndDate, setSentSearchEndDate] = useState('');
+  const [sentSearchScenario, setSentSearchScenario] = useState('');
+  const [sentSearchStatus, setSentSearchStatus] = useState('');
+  const [sentSearchInvoiceType, setSentSearchInvoiceType] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -77,6 +90,17 @@ export default function EInvoicePage() {
     setDrafts(data || []);
   };
 
+  const loadSentInvoices = async () => {
+    // Giden faturaları yükle (status='sent' veya 'completed' olanlar)
+    const { data } = await supabase
+      .from('invoices')
+      .select('*, accounts(name, tax_id)')
+      .in('status', ['sent', 'completed'])
+      .order('created_at', { ascending: false });
+    
+    setSentInvoices(data || []);
+  };
+
   if (!ready) {
     return (
       <main style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', color: 'white' }}>
@@ -104,7 +128,16 @@ export default function EInvoicePage() {
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button style={navBtnStyle} onClick={() => router.push('/dashboard' as Route)}>Anasayfa</button>
           <button style={navBtnStyle} onClick={() => setActiveTab('drafts')}>Taslaklar</button>
-          <button style={navBtnStyle} onClick={() => void 0}>Giden Faturalar ▾</button>
+          <div style={{ position: 'relative' }}>
+            <button style={navBtnStyle} onClick={() => setShowSentSubmenu(!showSentSubmenu)}>Giden Faturalar ▾</button>
+            {showSentSubmenu && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: '#2c5282', borderRadius: 6, boxShadow: '0 4px 6px rgba(0,0,0,0.2)', zIndex: 10, minWidth: 180 }}>
+                <button onClick={() => { setActiveTab('sent'); setShowSentSubmenu(false); loadSentInvoices(); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 14px', background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', fontSize: 14 }}>Fatura Listesi</button>
+                <button onClick={() => { setShowSentSubmenu(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 14px', background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', fontSize: 14 }}>Gelişmiş Arama</button>
+                <button onClick={() => { setShowSentSubmenu(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 14px', background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', fontSize: 14 }}>Durum Güncelle</button>
+              </div>
+            )}
+          </div>
           <button style={navBtnStyle} onClick={() => void 0}>Gelen Faturalar ▾</button>
           <button style={navBtnStyle} onClick={() => void 0}>Mükellef Kontrol</button>
           <button style={navBtnStyle} onClick={() => void 0}>Ayarlar ▾</button>
@@ -131,7 +164,359 @@ export default function EInvoicePage() {
 
       {/* İçerik alanı */}
       <section style={{ padding: 16 }}>
-        {activeTab === 'drafts' ? (
+        {activeTab === 'sent' ? (
+          <div
+            style={{
+              padding: 16,
+              borderRadius: 16,
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            {/* Giden Faturalar Başlığı */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <div style={{ width: 6, height: 24, background: '#22b8cf', borderRadius: 2 }} />
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>GİDEN - FATURA LİSTESİ</h2>
+            </div>
+
+            {/* Alt Sekmeler */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              <button
+                onClick={() => setShowSentAdvancedSearch(!showSentAdvancedSearch)}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: 8,
+                  background: '#22b8cf',
+                  border: 'none',
+                  color: 'white',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Gelişmiş Arama
+              </button>
+              <button
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: 8,
+                  background: '#6b7280',
+                  border: 'none',
+                  color: 'white',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Durum Güncelle
+              </button>
+            </div>
+
+            {/* Gelişmiş Arama Formu */}
+            {showSentAdvancedSearch && (
+              <div
+                style={{
+                  marginBottom: 16,
+                  padding: 16,
+                  borderRadius: 8,
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                }}
+              >
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                  {/* ETTN */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.85 }}>ETTN:</label>
+                    <input
+                      type="text"
+                      value={sentSearchETTN}
+                      onChange={(e) => setSentSearchETTN(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: 6,
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        background: 'rgba(255,255,255,0.08)',
+                        color: 'white',
+                        fontSize: 13,
+                      }}
+                    />
+                  </div>
+
+                  {/* Başlangıç Tarihi */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.85 }}>Başlangıç Tarihi:</label>
+                    <input
+                      type="date"
+                      value={sentSearchStartDate}
+                      onChange={(e) => setSentSearchStartDate(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: 6,
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        background: 'rgba(255,255,255,0.08)',
+                        color: 'white',
+                        fontSize: 13,
+                      }}
+                    />
+                  </div>
+
+                  {/* Bitiş Tarihi */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.85 }}>Bitiş Tarihi:</label>
+                    <input
+                      type="date"
+                      value={sentSearchEndDate}
+                      onChange={(e) => setSentSearchEndDate(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: 6,
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        background: 'rgba(255,255,255,0.08)',
+                        color: 'white',
+                        fontSize: 13,
+                      }}
+                    />
+                  </div>
+
+                  {/* GİB/RES/Fatura NO */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.85 }}>GİB/RES/Fatura NO:</label>
+                    <input
+                      type="text"
+                      value={sentSearchInvoiceNo}
+                      onChange={(e) => setSentSearchInvoiceNo(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: 6,
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        background: 'rgba(255,255,255,0.08)',
+                        color: 'white',
+                        fontSize: 13,
+                      }}
+                    />
+                  </div>
+
+                  {/* Senaryo Türü */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.85 }}>Senaryo Türü:</label>
+                    <select
+                      value={sentSearchScenario}
+                      onChange={(e) => setSentSearchScenario(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: 6,
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        background: 'rgba(255,255,255,0.08)',
+                        color: 'white',
+                        fontSize: 13,
+                      }}
+                    >
+                      <option value="">Hepsi</option>
+                      <option value="TEMELFATURA">TEMELFATURA</option>
+                      <option value="TICARIFATURA">TICARIFATURA</option>
+                      <option value="KAMU">KAMU</option>
+                      <option value="EARSIVFATURA">EARSIVFATURA</option>
+                    </select>
+                  </div>
+
+                  {/* Fatura Durumu */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.85 }}>Fatura Durumu:</label>
+                    <select
+                      value={sentSearchStatus}
+                      onChange={(e) => setSentSearchStatus(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: 6,
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        background: 'rgba(255,255,255,0.08)',
+                        color: 'white',
+                        fontSize: 13,
+                      }}
+                    >
+                      <option value="">Hepsi</option>
+                      <option value="sent">Gönderildi</option>
+                      <option value="completed">Tamamlandı</option>
+                      <option value="cancelled">İptal</option>
+                    </select>
+                  </div>
+
+                  {/* Alıcı Ünvan */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.85 }}>Alıcı Ünvan:</label>
+                    <input
+                      type="text"
+                      value={sentSearchCustomer}
+                      onChange={(e) => setSentSearchCustomer(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: 6,
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        background: 'rgba(255,255,255,0.08)',
+                        color: 'white',
+                        fontSize: 13,
+                      }}
+                    />
+                  </div>
+
+                  {/* Fatura Tipi */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.85 }}>Fatura Tipi:</label>
+                    <select
+                      value={sentSearchInvoiceType}
+                      onChange={(e) => setSentSearchInvoiceType(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: 6,
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        background: 'rgba(255,255,255,0.08)',
+                        color: 'white',
+                        fontSize: 13,
+                      }}
+                    >
+                      <option value="">Hepsi</option>
+                      <option value="SATIS">SATIŞ</option>
+                      <option value="IADE">İADE</option>
+                      <option value="ISTISNA">İSTİSNA</option>
+                      <option value="TEVKIFAT">TEVKİFAT</option>
+                      <option value="OZELMATRAH">ÖZELMATRAH</option>
+                      <option value="IHRACKAYITLI">İHRACKAYITLI</option>
+                    </select>
+                  </div>
+
+                  {/* Alıcı VKN/TCKN */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, marginBottom: 4, opacity: 0.85 }}>Alıcı VKN/TCKN:</label>
+                    <input
+                      type="text"
+                      value={sentSearchTaxNo}
+                      onChange={(e) => setSentSearchTaxNo(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: 6,
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        background: 'rgba(255,255,255,0.08)',
+                        color: 'white',
+                        fontSize: 13,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Ara Butonu */}
+                <button
+                  onClick={() => loadSentInvoices()}
+                  style={{
+                    marginTop: 16,
+                    padding: '10px 40px',
+                    borderRadius: 8,
+                    background: '#4a5568',
+                    border: 'none',
+                    color: 'white',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    width: '100%',
+                  }}
+                >
+                  Ara
+                </button>
+              </div>
+            )}
+
+            {/* Giden Faturalar Tablosu */}
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid rgba(255,255,255,0.2)' }}>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: 13, fontWeight: 600 }}></th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: 13, fontWeight: 600 }}>Fatura No</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: 13, fontWeight: 600 }}>Tarih</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'left', fontSize: 13, fontWeight: 600 }}>Ünvan</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'right', fontSize: 13, fontWeight: 600 }}>Toplam</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'right', fontSize: 13, fontWeight: 600 }}>Kdv</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'right', fontSize: 13, fontWeight: 600 }}>G.Toplam</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 13, fontWeight: 600 }}>Durum</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 13, fontWeight: 600 }}>Tip</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 13, fontWeight: 600 }}>Senaryo</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'center', fontSize: 13, fontWeight: 600 }}>Fatura Tipi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sentInvoices.length === 0 ? (
+                    <tr>
+                      <td colSpan={11} style={{ padding: 32, textAlign: 'center', opacity: 0.7 }}>
+                        Giden fatura bulunmamaktadır.
+                      </td>
+                    </tr>
+                  ) : (
+                    sentInvoices.map((invoice) => (
+                      <tr key={invoice.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                        <td style={{ padding: '12px 8px' }}>
+                          <button
+                            onClick={() => router.push(`/invoices/${invoice.id}` as Route)}
+                            style={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: '50%',
+                              background: '#22b8cf',
+                              border: 'none',
+                              color: 'white',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            🔍
+                          </button>
+                        </td>
+                        <td style={{ padding: '12px 8px', fontSize: 13 }}>{invoice.invoice_no || '-'}</td>
+                        <td style={{ padding: '12px 8px', fontSize: 13 }}>
+                          {invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString('tr-TR') : '-'}
+                          <br />
+                          <span style={{ fontSize: 11, opacity: 0.7 }}>
+                            {invoice.created_at ? new Date(invoice.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 8px', fontSize: 13 }}>{invoice.accounts?.name || '-'}</td>
+                        <td style={{ padding: '12px 8px', fontSize: 13, textAlign: 'right' }}>{(invoice.subtotal || 0).toFixed(2)}</td>
+                        <td style={{ padding: '12px 8px', fontSize: 13, textAlign: 'right' }}>{((invoice.total || 0) - (invoice.subtotal || 0)).toFixed(2)}</td>
+                        <td style={{ padding: '12px 8px', fontSize: 13, textAlign: 'right', fontWeight: 600 }}>{(invoice.total || 0).toFixed(2)}</td>
+                        <td style={{ padding: '12px 8px', fontSize: 12, textAlign: 'center' }}>
+                          <span style={{ 
+                            padding: '4px 8px', 
+                            borderRadius: 4, 
+                            background: invoice.status === 'sent' || invoice.status === 'completed' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)', 
+                            color: invoice.status === 'sent' || invoice.status === 'completed' ? '#10b981' : '#ef4444' 
+                          }}>
+                            {invoice.status === 'sent' || invoice.status === 'completed' ? 'Onaylandı' : 'Hata'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 8px', fontSize: 12, textAlign: 'center' }}>
+                          {invoice.e_document_type === 'EARSIVFATURA' ? 'E-Arşiv' : 'E-Fatura'}
+                        </td>
+                        <td style={{ padding: '12px 8px', fontSize: 12, textAlign: 'center' }}>
+                          {invoice.e_document_scenario || '-'}
+                        </td>
+                        <td style={{ padding: '12px 8px', fontSize: 12, textAlign: 'center' }}>
+                          {invoice.invoice_kind || 'SATIŞ'}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : activeTab === 'drafts' ? (
           <div
             style={{
               padding: 16,
