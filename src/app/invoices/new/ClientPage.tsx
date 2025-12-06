@@ -48,6 +48,9 @@ export default function InvoiceNewClientPage() {
   const [invoiceKind, setInvoiceKind] = useState<'SATIS' | 'IHRACKAYITLI'>('SATIS');
   const [isECommerce, setIsECommerce] = useState<boolean>(false);
   const [isEInvoiceFlag, setIsEInvoiceFlag] = useState<boolean>(eInvoiceMode);
+  // KAMU senaryosu için banka bilgileri
+  const [kamuBank, setKamuBank] = useState<string>('');
+  const [kamuAccountNo, setKamuAccountNo] = useState<string>('');
   const [currency, setCurrency] = useState<'TRY' | 'USD' | 'EUR'>('TRY');
   const [city, setCity] = useState<string>('');
   const [district, setDistrict] = useState<string>('');
@@ -513,6 +516,34 @@ export default function InvoiceNewClientPage() {
                           )}
                         </div>
                       </div>
+                      
+                      {/* KAMU senaryosu seçildiğinde banka bilgileri */}
+                      {eDocScenario === 'KAMU' && taxpayerKind === 'efatura' && (
+                        <div style={{ display: 'grid', gap: 6, marginTop: 4 }}>
+                          <div>
+                            <div style={{ fontSize: 11, opacity: 0.8, marginBottom: 2 }}>Banka</div>
+                            <select value={kamuBank} onChange={(e) => setKamuBank(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 12 }}>
+                              <option value="">Seçiniz</option>
+                              <option value="Banka1">Banka1</option>
+                              <option value="Banka2">Banka2</option>
+                              <option value="Banka3">Banka3</option>
+                            </select>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 11, opacity: 0.8, marginBottom: 2 }}>Hesap No / IBAN</div>
+                            <input 
+                              value={kamuAccountNo} 
+                              onChange={(e) => setKamuAccountNo(e.target.value)} 
+                              placeholder="9380372827" 
+                              style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 12 }} 
+                            />
+                          </div>
+                          <div style={{ fontSize: 10, color: '#cbd5e1', lineHeight: '1.3', opacity: 0.8 }}>
+                            Kamu kurumları fatura kesiminde senaryoya göre banka seçilmesi gerekmesi
+                          </div>
+                        </div>
+                      )}
+                      
                       <div style={{ fontSize: 11, color: taxWarn ? '#ffb4b4' : '#cbd5e1', lineHeight: '1.4' }}>
                         {taxWarn ?? (taxpayerKind === 'efatura'
                           ? (eDocScenario === 'TEMELFATURA'
