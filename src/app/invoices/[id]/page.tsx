@@ -122,10 +122,8 @@ export default function InvoiceDetailPage() {
     }
   };
 
-  const handleSaveAsPurchase = async () => {
-    if (typeof window !== 'undefined' && window.confirm('Bu fatura alış faturası olarak kaydedilecek. Onaylıyor musunuz?')) {
-      alert('Alış faturası kaydetme özelliği yakında eklenecek.');
-    }
+  const handleSaveAsPurchase = () => {
+    router.push(`/invoices/${invoiceId}/edit-purchase` as Route);
   };
 
   const handleCancel = async () => {

@@ -15,6 +15,7 @@ export default function EInvoicePage() {
   const [receivedInvoices, setReceivedInvoices] = useState<any[]>([]);
   const [showSentSubmenu, setShowSentSubmenu] = useState(false);
   const [showReceivedSubmenu, setShowReceivedSubmenu] = useState(false);
+  const [showSettingsSubmenu, setShowSettingsSubmenu] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   // Arama filtreleri
   const [searchETTN, setSearchETTN] = useState('');
@@ -163,7 +164,16 @@ export default function EInvoicePage() {
             )}
           </div>
           <button style={navBtnStyle} onClick={() => void 0}>Mükellef Kontrol</button>
-          <button style={navBtnStyle} onClick={() => void 0}>Ayarlar ▾</button>
+          <div style={{ position: 'relative' }}>
+            <button style={navBtnStyle} onClick={() => setShowSettingsSubmenu(!showSettingsSubmenu)}>Ayarlar ▾</button>
+            {showSettingsSubmenu && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: '#2c5282', borderRadius: 6, boxShadow: '0 4px 6px rgba(0,0,0,0.2)', zIndex: 10, minWidth: 180 }}>
+                <button onClick={() => { setShowSettingsSubmenu(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 14px', background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', fontSize: 14 }}>Firma Bilgileri</button>
+                <button onClick={() => { setShowSettingsSubmenu(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 14px', background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', fontSize: 14 }}>Genel Ayarlar</button>
+                <button onClick={() => { setShowSettingsSubmenu(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '10px 14px', background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', fontSize: 14 }}>E-Mail Ayarları</button>
+              </div>
+            )}
+          </div>
           <button style={navBtnStyle} onClick={() => router.push('/accounts?selectFor=sales&eInvoice=1' as Route)}>Fatura Oluştur</button>
           <button style={navBtnStyle} onClick={() => void 0}>Kontör Yükle</button>
         </div>
