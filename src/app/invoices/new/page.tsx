@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
-import InvoiceNewClientPage from './ClientPage';
+// Geçici olarak minimal sürümü kullanıyoruz (derleme hatası geçene kadar)
+import InvoiceNewClientPage from './LiteClientPage';
 
 export default function InvoiceNewPage() {
   return <InvoiceNewClientPage />;
