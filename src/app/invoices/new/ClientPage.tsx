@@ -426,94 +426,94 @@ export default function InvoiceNewClientPage() {
             </div>
 
             {/* Fatura Bilgileri */}
-            <div style={{ padding: 16, borderRadius: 16, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
+            <div style={{ padding: 12, borderRadius: 12, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
                 <button
                   type="button"
                   onClick={() => setInvoiceTab('info')}
-                  style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: invoiceTab === 'info' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.12)', color: 'white' }}
+                  style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: invoiceTab === 'info' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.12)', color: 'white', fontSize: 12 }}
                 >
                   Fatura Bilgileri
                 </button>
                 <button
                   type="button"
                   onClick={() => setInvoiceTab('extra')}
-                  style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: invoiceTab === 'extra' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.12)', color: 'white' }}
+                  style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: invoiceTab === 'extra' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.12)', color: 'white', fontSize: 12 }}
                 >
                   Fatura Ek Alanlar
                 </button>
               </div>
               {invoiceTab === 'info' ? (
-                <div style={{ display: 'grid', gap: 10 }}>
+                <div style={{ display: 'grid', gap: 8 }}>
                   {/* Tarih/Saat alanları */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                     <div>
-                      <div style={{ fontSize: 12, opacity: 0.8 }}>Fatura Tarihi</div>
-                      <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                      <div style={{ fontSize: 11, opacity: 0.8, marginBottom: 2 }}>Fatura Tarihi</div>
+                      <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 12 }} />
                     </div>
                     <div>
-                      <div style={{ fontSize: 12, opacity: 0.8 }}>Sevk Tarihi</div>
-                      <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                      <div style={{ fontSize: 11, opacity: 0.8, marginBottom: 2 }}>Sevk Tarihi</div>
+                      <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 12 }} />
                     </div>
                     <div>
-                      <div style={{ fontSize: 12, opacity: 0.8 }}>Saat</div>
-                      <input type="time" defaultValue="12:52" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                      <div style={{ fontSize: 11, opacity: 0.8, marginBottom: 2 }}>Saat</div>
+                      <input type="time" defaultValue="12:52" style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 12 }} />
                     </div>
                     <div>
-                      <div style={{ fontSize: 12, opacity: 0.8 }}>Fatura No</div>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <input value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} placeholder="Otomatik" style={{ flex: 1, padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
-                        <button type="button" title="Yeni numara üret" style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.12)', color: 'white' }}>+</button>
+                      <div style={{ fontSize: 11, opacity: 0.8, marginBottom: 2 }}>Fatura No</div>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <input value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} placeholder="Otomatik" style={{ flex: 1, padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 12 }} />
+                        <button type="button" title="Yeni numara üret" style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.12)', color: 'white', fontSize: 14, flexShrink: 0 }}>+</button>
                       </div>
                     </div>
                   </div>
 
                   {/* e‑fatura modunda ek alanlar */}
                   {eInvoiceMode && (
-                    <div style={{ display: 'grid', gap: 8 }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ display: 'grid', gap: 6 }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
                         <input type="checkbox" checked={isECommerce} onChange={(e) => setIsECommerce(e.target.checked)} />
                         E‑Ticaret Olarak İşle
                       </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
                         <input type="checkbox" checked={isEInvoiceFlag} onChange={(e) => setIsEInvoiceFlag(e.target.checked)} />
                         E‑Fatura Olarak İşle
                       </label>
                       {isEInvoiceFlag && (
-                        <div style={{ background: '#16a34a', color: '#fff', padding: '8px 12px', borderRadius: 6, fontWeight: 700, textAlign: 'center', fontSize: 14 }}>
+                        <div style={{ background: '#16a34a', color: '#fff', padding: '6px 8px', borderRadius: 6, fontWeight: 700, textAlign: 'center', fontSize: 13 }}>
                           E‑FATURA
                         </div>
                       )}
                       <div>
-                        <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>Para Birimleri :</div>
-                        <select value={currency} onChange={(e) => setCurrency(e.target.value as any)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
+                        <div style={{ fontSize: 11, opacity: 0.8, marginBottom: 2 }}>Para Birimleri :</div>
+                        <select value={currency} onChange={(e) => setCurrency(e.target.value as any)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 12 }}>
                           <option value="TRY">Türk Lirası</option>
                           <option value="USD">ABD Doları</option>
                           <option value="EUR">Euro</option>
                         </select>
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 6 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                         <div>
-                          <div style={{ fontSize: 12, opacity: 0.8 }}>Fatura Tipi</div>
-                          <select value={invoiceKind} onChange={(e) => setInvoiceKind(e.target.value as any)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
+                          <div style={{ fontSize: 11, opacity: 0.8, marginBottom: 2 }}>Fatura Tipi</div>
+                          <select value={invoiceKind} onChange={(e) => setInvoiceKind(e.target.value as any)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 12 }}>
                             <option value="SATIS">SATIS</option>
                             <option value="IHRACKAYITLI">IHRACKAYITLI</option>
                           </select>
                         </div>
                         <div>
-                          <div style={{ fontSize: 12, opacity: 0.8 }}>Fatura Senaryosu</div>
+                          <div style={{ fontSize: 11, opacity: 0.8, marginBottom: 2 }}>Fatura Senaryosu</div>
                           {taxpayerKind === 'efatura' ? (
-                            <select value={eDocScenario} onChange={(e) => setEDocScenario(e.target.value as any)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
+                            <select value={eDocScenario} onChange={(e) => setEDocScenario(e.target.value as any)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }}>
                               <option value="TEMELFATURA">TEMELFATURA</option>
                               <option value="TICARIFATURA">TICARIFATURA</option>
                               <option value="KAMU">KAMU</option>
                             </select>
                           ) : (
-                            <input readOnly value="EARSIVFATURA" style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                            <input readOnly value="EARSIVFATURA" style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }} />
                           )}
                         </div>
                       </div>
-                      <div style={{ fontSize: 13, color: taxWarn ? '#ffb4b4' : '#cbd5e1', marginTop: 4 }}>
+                      <div style={{ fontSize: 11, color: taxWarn ? '#ffb4b4' : '#cbd5e1', lineHeight: '1.4' }}>
                         {taxWarn ?? (taxpayerKind === 'efatura'
                           ? (eDocScenario === 'TEMELFATURA'
                               ? 'TEMELFATURA: fatura alıcıya otomatik onaylı iletilir.'
@@ -528,19 +528,19 @@ export default function InvoiceNewClientPage() {
                   )}
 
                   {/* Stok işleme seçenekleri */}
-                  <div style={{ display: 'grid', gap: 6 }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ display: 'grid', gap: 4 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
                       <input type="checkbox" checked={stockMode === 'avg'} onChange={() => setStockMode('avg')} />
                       Maliyet Ortalamasını Stoklara İşle
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
                       <input type="checkbox" checked={stockMode === 'purchase'} onChange={() => setStockMode('purchase')} />
                       Alış Fiyatını Stoklara İşle
                     </label>
                   </div>
 
                   {/* Alış Satış Ayarları butonu */}
-                  <button type="button" onClick={() => setShowSettings(true)} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #1e40af', background: '#1e40af', color: 'white', fontWeight: 600 }}>
+                  <button type="button" onClick={() => setShowSettings(true)} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #1e40af', background: '#1e40af', color: 'white', fontWeight: 600, fontSize: 12 }}>
                     Alış Satış Ayarları
                   </button>
                 </div>
