@@ -367,6 +367,9 @@ export default function InvoiceNewClientPage() {
       if (!companyId) throw new Error('Şirket bilgisi alınamadı');
       if (!accountId) throw new Error('Cari seçin');
       if (lines.length === 0) throw new Error('En az bir satır ekleyin');
+      // İADE fatura tipi seçiliyse status='draft', diğer durumda 'completed'
+      const invoiceStatus = invoiceKind === 'IADE' ? 'draft' : 'completed';
+      
       const { data: invData, error: invErr } = await supabase
         .from('invoices')
         .insert({
@@ -378,6 +381,11 @@ export default function InvoiceNewClientPage() {
           net_total: totals.net,
           vat_total: totals.vat,
           total: totals.total,
+          subtotal: totals.net,
+          status: invoiceStatus,
+          invoice_kind: invoiceKind,
+          e_document_scenario: eDocScenario,
+          e_document_type: taxpayerKind === 'earsiv' ? 'EARSIVFATURA' : eDocScenario,
         })
         .select('id')
         .single();
@@ -403,8 +411,15 @@ export default function InvoiceNewClientPage() {
       if (moveRows.every((m) => !!m.product_id)) {
         await supabase.from('stock_movements').insert(moveRows as any);
       }
+      // İADE fatura tipi için bilgilendirme
+      if (invoiceKind === 'IADE') {
+        if (typeof window !== 'undefined') {
+          window.alert('İADE Faturası: Bu fatura taslak olarak kaydedildi. E-Fatura ekranındaki "Taslaklar" sekmesinden düzenleyebilir ve onaylayabilirsiniz. Taslak durumundayken resmi fatura olarak kabul edilmez.');
+        }
+      }
+      
       // Demo: e-belge senaryosuna göre bilgilendirme
-      if (eInvoiceMode) {
+      if (eInvoiceMode && invoiceKind !== 'IADE') {
         if (taxpayerKind === 'efatura') {
           if (eDocScenario === 'TEMELFATURA') {
             if (typeof window !== 'undefined') window.alert('TEMELFATURA: Düzenlenen e‑fatura alıcıya otomatik onaylı şekilde iletilecektir.');
