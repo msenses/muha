@@ -30,8 +30,7 @@ function SelectionForSync({ onChange }: { onChange: (v: 'sales' | 'purchase' | '
 
 export default function AccountsPage() {
   const router = useRouter();
-  const sp = useSearchParams();
-  const eInvoiceMode = sp.get('eInvoice') === '1';
+  const [eInvoiceMode, setEInvoiceMode] = useState<boolean>(false);
   const [selectionFor, setSelectionFor] = useState<'sales' | 'purchase' | 'dispatch' | 'dispatch_purchase' | 'sales_return' | 'purchase_return' | 'emustahsil' | null>(null);
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<Account[]>([]);
@@ -45,6 +44,11 @@ export default function AccountsPage() {
   const reportsRef = useRef<HTMLDivElement | null>(null);
 
   // selectFor query senkronizasyonu — Suspense ile sarmalıyoruz
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    setEInvoiceMode(params.get('eInvoice') === '1');
+  }, []);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
