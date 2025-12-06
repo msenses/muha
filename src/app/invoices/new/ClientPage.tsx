@@ -351,7 +351,7 @@ export default function InvoiceNewClientPage() {
     }
   };
 
-  return (<main style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
+  const page = (<main style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16 }}>
         <strong>{type === 'sales' ? 'Satış Faturası' : 'Alış Faturası'}</strong>
       </header>
@@ -883,6 +883,7 @@ export default function InvoiceNewClientPage() {
         </div>
       )}
     </main>);
+  return page;
 }
 
 function round2(n: number) { return Math.round((n + Number.EPSILON) * 100) / 100; }
