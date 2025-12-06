@@ -24,6 +24,7 @@ type Line = {
 export default function InvoiceNewClientPage() {
   const router = useRouter();
   const search = useSearchParams();
+  const Main = 'main' as any;
   const defaultType = search.get('purchase') ? 'purchase' : 'sales';
   const tempAccount = search.get('tempAccount') === '1';
   const eInvoiceMode = search.get('eInvoice') === '1';
@@ -354,7 +355,7 @@ export default function InvoiceNewClientPage() {
 
   function renderPage() {
     return (
-    <main style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
+    <Main style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16 }}>
         <strong>{type === 'sales' ? 'Satış Faturası' : 'Alış Faturası'}</strong>
       </header>
@@ -885,7 +886,7 @@ export default function InvoiceNewClientPage() {
           </div>
         </div>
       )}
-    </main>
+    </Main>
     );
   }
   return renderPage();
