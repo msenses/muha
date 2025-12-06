@@ -917,6 +917,39 @@ export default function InvoiceNewClientPage() {
                 </div>
               )}
 
+              {/* İhraç Kayıtlı fatura tipi seçiliyse Tevkifat Durumu */}
+              {invoiceKind === 'IHRACKAYITLI' && (
+                <div style={{ marginTop: 12, padding: 10, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.03)' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: '#10b981' }}>İhraç Kayıtlı Bilgileri</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 11, opacity: 0.85, marginBottom: 4 }}>Tevkifat Durumu</div>
+                      <select value={draftTevkifatDurumu} onChange={(e) => setDraftTevkifatDurumu(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }}>
+                        <option value="">Tevkifat Seçiniz</option>
+                        <option value="801">801 - Scrap İşlemleri</option>
+                        <option value="802">802 - Bakır Tellerin Teslimi</option>
+                        <option value="803">803 - Metal, Plastik, Lastik, Kauçuk, Kâğıt, Cam Hurda ve Atıklarının Teslimi</option>
+                        <option value="804">804 - Pamuk, Tiftik, Yün ve Yapağı ile Ham Post ve Deri Teslimi</option>
+                        <option value="805">805 - Ağaç ve Orman Ürünlerinin Teslimi</option>
+                        <option value="806">806 - Tekstil ve Konfeksiyon Ürünlerinin Teslimi</option>
+                        <option value="807">807 - Et, Yenilebilir Sakatat ve Hayvan Ürünlerinin Teslimi</option>
+                        <option value="808">808 - Çay, Fındık ve Diğer Tarım Ürünlerinin Teslimi</option>
+                        <option value="809">809 - Baklagiller, Yağlı Tohumlar ve Tahılların Teslimi</option>
+                        <option value="810">810 - Hububat, Bakliyat, Yağlı Tohum ve Yem Teslimi</option>
+                        <option value="811">811 - Hurdaya Ayrılan Altın ve Diğer Kıymetli Madenler</option>
+                      </select>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, opacity: 0.85, marginBottom: 4 }}>Tevkifat Oranı (%)</div>
+                      <input type="number" value={draftTevkifatOrani} onChange={(e) => setDraftTevkifatOrani(parseFloat(e.target.value) || 0)} placeholder="0" style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }} />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 10, color: '#cbd5e1', marginTop: 6, lineHeight: '1.3' }}>
+                    İhraç kayıtlı: Faturaya ürünler eklenirken KDV tutarı hesaplanır ancak resmi fatura üzerinde bu KDV tutarı dikkate alınmaz.
+                  </div>
+                </div>
+              )}
+
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
                 <button type="button" onClick={() => setShowStockModal(true)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #22b8cf', background: '#22b8cf', color: 'white' }}>Stok Bul</button>
                 <div style={{ display: 'flex', gap: 8 }}>
