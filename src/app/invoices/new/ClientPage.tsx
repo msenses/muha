@@ -30,6 +30,10 @@ type Line = {
   kap_adedi?: number;
   gis_no?: string;
   kap_numarasi?: string;
+  // İstisna ve Tevkifat için ek alanlar
+  kdv_muafiyet_sebebi?: string; // İstisna için
+  tevkifat_durumu?: string;     // Tevkifat için
+  tevkifat_orani?: number;      // Tevkifat için
 };
 
 export default function InvoiceNewClientPage() {
@@ -126,6 +130,10 @@ export default function InvoiceNewClientPage() {
   const [draftKapAdedi, setDraftKapAdedi] = useState<number>(0);
   const [draftGisNo, setDraftGisNo] = useState<string>('');
   const [draftKapNumarasi, setDraftKapNumarasi] = useState<string>('');
+  // İstisna ve Tevkifat için ek alanlar
+  const [draftKdvMuafiyetSebebi, setDraftKdvMuafiyetSebebi] = useState<string>('');
+  const [draftTevkifatDurumu, setDraftTevkifatDurumu] = useState<string>('');
+  const [draftTevkifatOrani, setDraftTevkifatOrani] = useState<number>(0);
   const [showStockModal, setShowStockModal] = useState(false);
   const [stockSearch, setStockSearch] = useState('');
 
@@ -311,6 +319,10 @@ export default function InvoiceNewClientPage() {
       kap_adedi: draftKapAdedi || undefined,
       gis_no: draftGisNo || undefined,
       kap_numarasi: draftKapNumarasi || undefined,
+      // İstisna ve Tevkifat alanları
+      kdv_muafiyet_sebebi: draftKdvMuafiyetSebebi || undefined,
+      tevkifat_durumu: draftTevkifatDurumu || undefined,
+      tevkifat_orani: draftTevkifatOrani || undefined,
     }]);
     // reset
     setDraftProductId('');
@@ -332,6 +344,9 @@ export default function InvoiceNewClientPage() {
     setDraftKapAdedi(0);
     setDraftGisNo('');
     setDraftKapNumarasi('');
+    setDraftKdvMuafiyetSebebi('');
+    setDraftTevkifatDurumu('');
+    setDraftTevkifatOrani(0);
     setDraftOtvRate(0);
     setDraftOtvIncl('excluded');
     setShowAddPanel(false);
@@ -819,6 +834,51 @@ export default function InvoiceNewClientPage() {
                     <div>
                       <div style={{ fontSize: 11, opacity: 0.85, marginBottom: 4 }}>Kap Numarası</div>
                       <input value={draftKapNumarasi} onChange={(e) => setDraftKapNumarasi(e.target.value)} placeholder="" style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* İstisna fatura tipi seçiliyse KDV Muafiyet Sebebi */}
+              {invoiceKind === 'ISTISNA' && (
+                <div style={{ marginTop: 12, padding: 10, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.03)' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: '#f59e0b' }}>İstisna Bilgileri</div>
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 11, opacity: 0.85, marginBottom: 4 }}>KDV Muafiyet Sebebi</div>
+                      <select value={draftKdvMuafiyetSebebi} onChange={(e) => setDraftKdvMuafiyetSebebi(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }}>
+                        <option value="">Kdv Muafiyet Seçiniz</option>
+                        <option value="301">301 (1/1 - a Mal İhracatı)</option>
+                        <option value="302">302</option>
+                        <option value="303">303</option>
+                        <option value="350">350 (17/4-c)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tevkifat fatura tipi seçiliyse Tevkifat Durumu */}
+              {invoiceKind === 'TEVKIFAT' && (
+                <div style={{ marginTop: 12, padding: 10, borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.03)' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: '#ef4444' }}>Tevkifat Bilgileri</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 11, opacity: 0.85, marginBottom: 4 }}>Tevkifat Durumu</div>
+                      <select value={draftTevkifatDurumu} onChange={(e) => setDraftTevkifatDurumu(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }}>
+                        <option value="">Tevkifat Seçiniz</option>
+                        <option value="601">601 - Makine, Teçhizat, Demirbaş ve Taşıtlara Ait Tadil, Bakım ve Onarım Hizmetleri</option>
+                        <option value="602">602 - Etüd, Plan-Proje, Danışmanlık, Denetim ve Benzeri Hizmetler</option>
+                        <option value="603">603 - Makine, Teçhizat, Demirbaş ve Taşıt Kiralama İşleri</option>
+                        <option value="604">604 - Yük Taşımacılığı Hizmeti</option>
+                        <option value="605">605 - Temizlik Hizmeti</option>
+                        <option value="606">606 - Özel Güvenlik Hizmeti</option>
+                        <option value="607">607 - Yapı Denetim Hizmetleri</option>
+                      </select>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, opacity: 0.85, marginBottom: 4 }}>Tevkifat Oranı (%)</div>
+                      <input type="number" value={draftTevkifatOrani} onChange={(e) => setDraftTevkifatOrani(parseFloat(e.target.value) || 0)} placeholder="0" style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontSize: 11 }} />
                     </div>
                   </div>
                 </div>
