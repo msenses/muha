@@ -24,6 +24,7 @@ export default function InvoiceNewClientPage() {
   const router = useRouter();
   const search = useSearchParams();
   const defaultType = search.get('purchase') ? 'purchase' : 'sales';
+  const tempAccount = search.get('tempAccount') === '1';
   const eInvoiceMode = search.get('eInvoice') === '1';
 
   const [companyId, setCompanyId] = useState<string | null>(null);
@@ -133,9 +134,18 @@ export default function InvoiceNewClientPage() {
       ]);
       setAccounts((accs ?? []) as any);
       setProducts((prods ?? []) as any);
+      if (tempAccount) {
+        setAccountId('');
+        setAccountName('GEÇİCİ TEST CARİ');
+        setAccountEmail('test@example.com');
+        setAccountAddress('Merkez / Test');
+        setTaxNo('1234567890'); // 10 haneli VKN varsayıldı
+        setTaxpayerKind('efatura');
+        setEDocScenario('TEMELFATURA');
+      }
     };
     init();
-  }, [router]);
+  }, [router, tempAccount]);
 
   // Seçilen cari için alanları doldur
   useEffect(() => {
@@ -271,6 +281,10 @@ export default function InvoiceNewClientPage() {
     setErr(null);
     setLoading(true);
     try {
+      if (tempAccount) {
+        if (typeof window !== 'undefined') window.alert('Geçici cari ile test modundasınız. Bu kayıt veritabanında olmadığı için fatura kaydetme devre dışıdır.');
+        return;
+      }
       if (eInvoiceMode && !(taxNo?.trim())) {
         throw new Error('E-fatura işlemleri için vergi numarası giriniz.');
       }
@@ -351,7 +365,9 @@ export default function InvoiceNewClientPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'end' }}>
                 <div>
                     <div style={{ fontSize: 12, opacity: 0.8 }}>Ünvan</div>
-                    {accountId ? (
+                    {tempAccount ? (
+                      <input readOnly value={accountName} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white', fontWeight: 700 }} />
+                    ) : accountId ? (
                       <input value={accountName} onChange={(e) => setAccountName(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
                     ) : (
                   <select value={accountId} onChange={(e) => setAccountId(e.target.value)} required style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
@@ -360,21 +376,22 @@ export default function InvoiceNewClientPage() {
                   </select>
                     )}
                 </div>
-                  <button type="button" onClick={() => { setAccountId(''); setAccountName(''); }} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white' }}>{accountId ? 'Değiştir' : 'Cari Seç'}</button>
+                  <button type="button" disabled={tempAccount} onClick={() => { setAccountId(''); setAccountName(''); }} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white', opacity: tempAccount ? 0.6 : 1 }}>{accountId ? 'Değiştir' : 'Cari Seç'}</button>
                 </div>
                 <div>
                   <div style={{ fontSize: 12, opacity: 0.8 }}>Yetkili</div>
-                  <input value={accountContact} onChange={(e) => setAccountContact(e.target.value)} placeholder="-" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                  <input value={accountContact} onChange={(e) => setAccountContact(e.target.value)} placeholder="-" readOnly={tempAccount} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
                 </div>
                 <div>
                   <div style={{ fontSize: 12, opacity: 0.8 }}>Adres</div>
-                  <input value={accountAddress} onChange={(e) => setAccountAddress(e.target.value)} placeholder="Adres" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                  <input value={accountAddress} onChange={(e) => setAccountAddress(e.target.value)} placeholder="Adres" readOnly={tempAccount} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
                 </div>
                 <div>
                   <div style={{ fontSize: 12, opacity: 0.8 }}>Mail</div>
-                  <input value={accountEmail} onChange={(e) => setAccountEmail(e.target.value)} placeholder="mail@example.com" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                  <input value={accountEmail} onChange={(e) => setAccountEmail(e.target.value)} placeholder="mail@example.com" readOnly={tempAccount} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
                 </div>
               </div>
+              {tempAccount && <div style={{ marginTop: 8, fontSize: 12, opacity: 0.8 }}>Bu, yalnızca ekran testi için geçici bir kayıttır; veritabanında oluşturulmaz.</div>}
             </div>
 
             {/* Vergi Bilgileri */}
