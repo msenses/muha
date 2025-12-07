@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
 
 import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
 
 type Product = {
   id: string;
@@ -34,10 +35,19 @@ export default function StockPage() {
         return;
       }
 
-      // Ürünleri çek
+      // Company ID'yi al
+      const companyId = await fetchCurrentCompanyId();
+      if (!companyId) {
+        console.warn('Company ID bulunamadı');
+        setLoading(false);
+        return;
+      }
+
+      // Ürünleri çek (sadece bu firmaya ait)
       const { data, error } = await supabase
         .from('products')
         .select('id, sku, name, unit, price')
+        .eq('company_id', companyId)
         .order('name', { ascending: true })
         .limit(200);
 

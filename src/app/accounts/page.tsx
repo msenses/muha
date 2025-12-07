@@ -71,9 +71,19 @@ export default function AccountsPage() {
         router.replace('/login');
         return;
       }
+      
+      // Company ID'yi al
+      const companyId = await fetchCurrentCompanyId();
+      if (!companyId) {
+        console.warn('Company ID bulunamadı');
+        setLoading(false);
+        return;
+      }
+      
       const query = supabase
         .from('accounts')
         .select('id, code, name, phone, email, balance', { count: 'exact' })
+        .eq('company_id', companyId)  // Sadece bu firmaya ait cariler
         .order('name', { ascending: true });
       if (q.trim()) {
         // Basit arama: name ilike veya code ilike

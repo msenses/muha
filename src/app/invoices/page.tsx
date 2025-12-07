@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
 import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
 
 type Invoice = {
   id: string;
@@ -38,9 +39,19 @@ export default function InvoicesPage() {
         router.replace('/login');
         return;
       }
+      
+      // Company ID'yi al
+      const companyId = await fetchCurrentCompanyId();
+      if (!companyId) {
+        console.warn('Company ID bulunamadı');
+        setLoading(false);
+        return;
+      }
+      
       const query = supabase
         .from('invoices')
         .select('id, invoice_no, invoice_date, type, net_total, vat_total, total, accounts(name)')
+        .eq('company_id', companyId)
         .order('invoice_date', { ascending: false })
         .limit(200);
       if (type !== 'all') {

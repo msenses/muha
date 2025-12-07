@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
 
 type InvoiceRow = { id: string; invoice_date: string; type: 'sales' | 'purchase'; total: number; accounts: { name: string } | null };
 
@@ -68,11 +69,20 @@ export default function DashboardPage() {
 					router.replace('/login');
 					return;
 				}
-				const accRes = await supabase.from('accounts').select('*', { count: 'exact', head: true });
+				
+				// Company ID'yi al
+				const companyId = await fetchCurrentCompanyId();
+				if (!companyId) {
+					console.warn('Company ID bulunamadı');
+					setLoading(false);
+					return;
+				}
+				
+				const accRes = await supabase.from('accounts').select('*', { count: 'exact', head: true }).eq('company_id', companyId);
 				if (!active) return;
 				setAccountCount(accRes.count ?? 0);
 
-				const prdRes = await supabase.from('products').select('*', { count: 'exact', head: true });
+				const prdRes = await supabase.from('products').select('*', { count: 'exact', head: true }).eq('company_id', companyId);
 				if (!active) return;
 				setProductCount(prdRes.count ?? 0);
 
@@ -86,6 +96,7 @@ export default function DashboardPage() {
 				const { data: invs } = await supabase
 					.from('invoices')
 					.select('id, invoice_date, type, total, accounts(name)')
+					.eq('company_id', companyId)
 					.order('invoice_date', { ascending: false })
 					.limit(500);
 				const invRows = (invs ?? []) as unknown as InvoiceRow[];
