@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabaseClient';
@@ -11,8 +11,27 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+
+  // Sayfa yüklendiğinde session kontrolü yap
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          // Kullanıcı zaten giriş yapmış, dashboard'a yönlendir
+          router.replace('/dashboard');
+        }
+      } catch (err) {
+        console.error('Session kontrolü hatası:', err);
+      } finally {
+        setChecking(false);
+      }
+    };
+    checkSession();
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +55,18 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  // Session kontrolü yapılırken loading göster
+  if (checking) {
+    return (
+      <main style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 18, marginBottom: 12 }}>⏳</div>
+          <div style={{ fontSize: 14, opacity: 0.8 }}>Kontrol ediliyor...</div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)' }}>
