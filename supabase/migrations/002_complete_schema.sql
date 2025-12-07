@@ -8,6 +8,24 @@
 -- 1. MEVCUT TABLOLARA EKSİK ALANLARI EKLE
 -- ============================================================
 
+-- COMPANIES tablosuna eksik alanlar (E-Fatura için gerekli)
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS trade_name TEXT; -- Ticari ünvan
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS tax_id TEXT; -- Vergi numarası / TCKN
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS tax_office TEXT; -- Vergi dairesi
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS address TEXT;
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS city TEXT;
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS district TEXT;
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS postal_code TEXT;
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS country TEXT DEFAULT 'Türkiye';
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS website TEXT;
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS logo_url TEXT;
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS mersis_no TEXT; -- Mersis numarası
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS kep_address TEXT; -- KEP adresi
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS e_invoice_enabled BOOLEAN DEFAULT false;
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS e_archive_enabled BOOLEAN DEFAULT false;
+
 -- ACCOUNTS tablosuna eksik alanlar
 ALTER TABLE public.accounts ADD COLUMN IF NOT EXISTS type TEXT; -- 'customer', 'supplier', 'both'
 ALTER TABLE public.accounts ADD COLUMN IF NOT EXISTS tax_office TEXT;

@@ -8,8 +8,40 @@
 -- 1. DEMO ŞİRKET OLUŞTUR
 -- ============================================================
 
-INSERT INTO public.companies (name) 
-VALUES ('Finova Demo Şirketi')
+INSERT INTO public.companies (
+    name, 
+    trade_name, 
+    tax_id, 
+    tax_office, 
+    address, 
+    city, 
+    district,
+    postal_code,
+    country,
+    phone, 
+    email,
+    mersis_no,
+    kep_address,
+    e_invoice_enabled,
+    e_archive_enabled
+) 
+VALUES (
+    'DEMO FİRMA A.Ş.',
+    'Demo Firma Anonim Şirketi',
+    '1234567890',
+    'Kadıköy Vergi Dairesi',
+    'Atatürk Cad. No:123 Kat:4',
+    'İstanbul',
+    'Kadıköy',
+    '34710',
+    'Türkiye',
+    '+90 216 123 45 67',
+    'info@demofirma.com.tr',
+    '0123456789012345',
+    'demofirma@hs01.kep.tr',
+    true,
+    true
+)
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
@@ -19,14 +51,14 @@ ON CONFLICT DO NOTHING;
 -- ============================================================
 
 -- İlk kullanıcı için profil (email'i güncelleyin)
--- INSERT INTO public.profiles (user_id, company_id, role)
--- SELECT u.id, c.id, 'admin'
+-- INSERT INTO public.user_profiles (user_id, company_id, role, status)
+-- SELECT u.id, c.id, 'admin', 'active'
 -- FROM auth.users u
 -- CROSS JOIN LATERAL (
---   SELECT id FROM public.companies WHERE name = 'Finova Demo Şirketi' LIMIT 1
+--   SELECT id FROM public.companies WHERE name = 'DEMO FİRMA A.Ş.' LIMIT 1
 -- ) c
 -- WHERE u.email = 'admin@finova.com'
--- ON CONFLICT DO NOTHING;
+-- ON CONFLICT (user_id) DO NOTHING;
 
 -- ============================================================
 -- 3. VARSAYILAN DEPOLAR
@@ -35,13 +67,13 @@ ON CONFLICT DO NOTHING;
 INSERT INTO public.warehouses (company_id, name, is_default)
 SELECT id, 'Merkez Depo', TRUE
 FROM public.companies
-WHERE name = 'Finova Demo Şirketi'
+WHERE name = 'DEMO FİRMA A.Ş.'
 ON CONFLICT DO NOTHING;
 
 INSERT INTO public.warehouses (company_id, name)
 SELECT id, 'Şube Depo'
 FROM public.companies
-WHERE name = 'Finova Demo Şirketi'
+WHERE name = 'DEMO FİRMA A.Ş.'
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
@@ -51,13 +83,13 @@ ON CONFLICT DO NOTHING;
 INSERT INTO public.cash_ledgers (company_id, name, balance, is_default)
 SELECT id, 'Varsayılan Kasa', 0, TRUE
 FROM public.companies
-WHERE name = 'Finova Demo Şirketi'
+WHERE name = 'DEMO FİRMA A.Ş.'
 ON CONFLICT DO NOTHING;
 
 INSERT INTO public.bank_accounts (company_id, bank_name, account_no, iban, balance, is_default)
 SELECT id, 'Ziraat Bankası', '12345678', 'TR330006100519786457841326', 0, TRUE
 FROM public.companies
-WHERE name = 'Finova Demo Şirketi'
+WHERE name = 'DEMO FİRMA A.Ş.'
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
@@ -85,7 +117,7 @@ CROSS JOIN (
         ('ŞİŞE', 'ŞŞ'),
         ('TENEKE', 'TN')
 ) AS units(unit_name, unit_short)
-WHERE c.name = 'Finova Demo Şirketi'
+WHERE c.name = 'DEMO FİRMA A.Ş.'
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
@@ -102,7 +134,7 @@ CROSS JOIN (
         ('Tedarikçiler', 'Ürün ve hizmet tedarikçileri'),
         ('Personel', 'Çalışanlar')
 ) AS groups(group_name, group_desc)
-WHERE name = 'Finova Demo Şirketi'
+WHERE name = 'DEMO FİRMA A.Ş.'
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
@@ -129,7 +161,7 @@ SELECT
     'Türkiye',
     0
 FROM public.companies c
-WHERE c.name = 'Finova Demo Şirketi'
+WHERE c.name = 'DEMO FİRMA A.Ş.'
 ON CONFLICT DO NOTHING;
 
 -- Müşteri 2
@@ -152,7 +184,7 @@ SELECT
     'Türkiye',
     0
 FROM public.companies c
-WHERE c.name = 'Finova Demo Şirketi'
+WHERE c.name = 'DEMO FİRMA A.Ş.'
 ON CONFLICT DO NOTHING;
 
 -- Tedarikçi 1
@@ -175,7 +207,7 @@ SELECT
     'Türkiye',
     0
 FROM public.companies c
-WHERE c.name = 'Finova Demo Şirketi'
+WHERE c.name = 'DEMO FİRMA A.Ş.'
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
@@ -192,7 +224,7 @@ CROSS JOIN (
         ('Tekstil', 'Tekstil ürünleri'),
         ('Hizmet', 'Hizmet kalemleri')
 ) AS groups(group_name, group_desc)
-WHERE name = 'Finova Demo Şirketi'
+WHERE name = 'DEMO FİRMA A.Ş.'
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
@@ -218,7 +250,7 @@ SELECT
     'Intel Core i7, 16GB RAM, 512GB SSD',
     'Elektronik'
 FROM public.companies c
-WHERE c.name = 'Finova Demo Şirketi'
+WHERE c.name = 'DEMO FİRMA A.Ş.'
 ON CONFLICT DO NOTHING;
 
 -- Ürün 2
@@ -240,7 +272,7 @@ SELECT
     'Ergonomik, kablosuz, şarj edilebilir',
     'Elektronik'
 FROM public.companies c
-WHERE c.name = 'Finova Demo Şirketi'
+WHERE c.name = 'DEMO FİRMA A.Ş.'
 ON CONFLICT DO NOTHING;
 
 -- Ürün 3
@@ -262,7 +294,7 @@ SELECT
     'RGB, hot-swap, Gateron switch',
     'Elektronik'
 FROM public.companies c
-WHERE c.name = 'Finova Demo Şirketi'
+WHERE c.name = 'DEMO FİRMA A.Ş.'
 ON CONFLICT DO NOTHING;
 
 -- Ürün 4 (Hizmet)
@@ -283,7 +315,7 @@ SELECT
     'Profesyonel web yazılım geliştirme',
     'Hizmet'
 FROM public.companies c
-WHERE c.name = 'Finova Demo Şirketi'
+WHERE c.name = 'DEMO FİRMA A.Ş.'
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
@@ -301,7 +333,7 @@ CROSS JOIN (
         ('Faiz Gelirleri', 'Banka ve mevduat faiz gelirleri'),
         ('Diğer Gelirler', 'Diğer çeşitli gelirler')
 ) AS cats(cat_name, cat_desc)
-WHERE name = 'Finova Demo Şirketi'
+WHERE name = 'DEMO FİRMA A.Ş.'
 ON CONFLICT DO NOTHING;
 
 -- Gider Kategorileri
@@ -326,7 +358,7 @@ CROSS JOIN (
         ('Sigorta', 'Sigorta primleri'),
         ('Diğer Giderler', 'Diğer çeşitli giderler')
 ) AS cats(cat_name, cat_desc)
-WHERE name = 'Finova Demo Şirketi'
+WHERE name = 'DEMO FİRMA A.Ş.'
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
@@ -346,7 +378,7 @@ CROSS JOIN (
         ('cheque', 'CEK-'),
         ('note', 'SNT-')
 ) AS schemes(doc_type, doc_prefix)
-WHERE name = 'Finova Demo Şirketi'
+WHERE name = 'DEMO FİRMA A.Ş.'
 ON CONFLICT (company_id, document_type) DO NOTHING;
 
 -- ============================================================
@@ -355,7 +387,7 @@ ON CONFLICT (company_id, document_type) DO NOTHING;
 
 INSERT INTO public.settings (company_id, key, value)
 SELECT id, 'general', jsonb_build_object(
-    'company_name', 'Finova Demo Şirketi',
+    'company_name', 'DEMO FİRMA A.Ş.',
     'company_title', 'Finova Yazılım Ltd. Şti.',
     'tax_office', 'Kadıköy',
     'tax_id', '1234567890',
@@ -366,7 +398,7 @@ SELECT id, 'general', jsonb_build_object(
     'logo_url', '/finova_logo.png'
 )
 FROM public.companies
-WHERE name = 'Finova Demo Şirketi'
+WHERE name = 'DEMO FİRMA A.Ş.'
 ON CONFLICT (company_id, key) DO UPDATE SET value = EXCLUDED.value;
 
 INSERT INTO public.settings (company_id, key, value)
@@ -380,7 +412,7 @@ SELECT id, 'invoice', jsonb_build_object(
     'default_note', 'Bizi tercih ettiğiniz için teşekkür ederiz.'
 )
 FROM public.companies
-WHERE name = 'Finova Demo Şirketi'
+WHERE name = 'DEMO FİRMA A.Ş.'
 ON CONFLICT (company_id, key) DO UPDATE SET value = EXCLUDED.value;
 
 INSERT INTO public.settings (company_id, key, value)
@@ -393,7 +425,7 @@ SELECT id, 'e_invoice', jsonb_build_object(
     'auto_approve', true
 )
 FROM public.companies
-WHERE name = 'Finova Demo Şirketi'
+WHERE name = 'DEMO FİRMA A.Ş.'
 ON CONFLICT (company_id, key) DO UPDATE SET value = EXCLUDED.value;
 
 -- ============================================================
@@ -420,7 +452,7 @@ ON CONFLICT (company_id, key) DO UPDATE SET value = EXCLUDED.value;
 --     'TRY'
 -- FROM public.companies c
 -- JOIN public.accounts a ON a.company_id = c.id AND a.code = 'CARI-001'
--- WHERE c.name = 'Finova Demo Şirketi';
+-- WHERE c.name = 'DEMO FİRMA A.Ş.';
 
 -- ============================================================
 -- COMPLETED: Seed data hazır!
