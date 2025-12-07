@@ -815,47 +815,56 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
+    -- Sadece completed invoicelar için bakiye güncelleme
     IF TG_OP = 'INSERT' THEN
-        IF NEW.type = 'sales' THEN
-            UPDATE public.accounts
-            SET balance = balance + NEW.net_total
-            WHERE id = NEW.account_id;
-        ELSIF NEW.type = 'purchase' THEN
-            UPDATE public.accounts
-            SET balance = balance - NEW.net_total
-            WHERE id = NEW.account_id;
+        IF NEW.status = 'completed' THEN
+            IF NEW.type = 'sales' THEN
+                UPDATE public.accounts
+                SET balance = balance + NEW.net_total
+                WHERE id = NEW.account_id;
+            ELSIF NEW.type = 'purchase' THEN
+                UPDATE public.accounts
+                SET balance = balance - NEW.net_total
+                WHERE id = NEW.account_id;
+            END IF;
         END IF;
     ELSIF TG_OP = 'UPDATE' THEN
-        -- Eski kaydı geri al
-        IF OLD.type = 'sales' THEN
-            UPDATE public.accounts
-            SET balance = balance - OLD.net_total
-            WHERE id = OLD.account_id;
-        ELSIF OLD.type = 'purchase' THEN
-            UPDATE public.accounts
-            SET balance = balance + OLD.net_total
-            WHERE id = OLD.account_id;
+        -- Eski durum completed ise geri al
+        IF OLD.status = 'completed' THEN
+            IF OLD.type = 'sales' THEN
+                UPDATE public.accounts
+                SET balance = balance - OLD.net_total
+                WHERE id = OLD.account_id;
+            ELSIF OLD.type = 'purchase' THEN
+                UPDATE public.accounts
+                SET balance = balance + OLD.net_total
+                WHERE id = OLD.account_id;
+            END IF;
         END IF;
         
-        -- Yeni kaydı uygula
-        IF NEW.type = 'sales' THEN
-            UPDATE public.accounts
-            SET balance = balance + NEW.net_total
-            WHERE id = NEW.account_id;
-        ELSIF NEW.type = 'purchase' THEN
-            UPDATE public.accounts
-            SET balance = balance - NEW.net_total
-            WHERE id = NEW.account_id;
+        -- Yeni durum completed ise uygula
+        IF NEW.status = 'completed' THEN
+            IF NEW.type = 'sales' THEN
+                UPDATE public.accounts
+                SET balance = balance + NEW.net_total
+                WHERE id = NEW.account_id;
+            ELSIF NEW.type = 'purchase' THEN
+                UPDATE public.accounts
+                SET balance = balance - NEW.net_total
+                WHERE id = NEW.account_id;
+            END IF;
         END IF;
     ELSIF TG_OP = 'DELETE' THEN
-        IF OLD.type = 'sales' THEN
-            UPDATE public.accounts
-            SET balance = balance - OLD.net_total
-            WHERE id = OLD.account_id;
-        ELSIF OLD.type = 'purchase' THEN
-            UPDATE public.accounts
-            SET balance = balance + OLD.net_total
-            WHERE id = OLD.account_id;
+        IF OLD.status = 'completed' THEN
+            IF OLD.type = 'sales' THEN
+                UPDATE public.accounts
+                SET balance = balance - OLD.net_total
+                WHERE id = OLD.account_id;
+            ELSIF OLD.type = 'purchase' THEN
+                UPDATE public.accounts
+                SET balance = balance + OLD.net_total
+                WHERE id = OLD.account_id;
+            END IF;
         END IF;
     END IF;
     
@@ -863,16 +872,11 @@ BEGIN
 END;
 $$;
 
--- Trigger oluştur (sadece completed invoicelar için)
+-- Trigger oluştur
 DROP TRIGGER IF EXISTS trigger_update_account_balance ON public.invoices;
 CREATE TRIGGER trigger_update_account_balance
 AFTER INSERT OR UPDATE OR DELETE ON public.invoices
 FOR EACH ROW
-WHEN (
-    (TG_OP = 'INSERT' AND NEW.status = 'completed') OR
-    (TG_OP = 'UPDATE' AND (OLD.status != 'completed' OR NEW.status != 'completed')) OR
-    (TG_OP = 'DELETE' AND OLD.status = 'completed')
-)
 EXECUTE FUNCTION public.update_account_balance();
 
 -- ============================================================
