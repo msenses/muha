@@ -13,7 +13,7 @@ from auth.users u
 cross join lateral (
   select id from public.companies order by created_at desc limit 1
 ) c
-where u.email = 'BURAYA_EMAIL_YAZIN';
+where u.email = 'mithatsenses@gmail.com';
 
 -- 3) Ornek cari ve urunler
 insert into public.accounts (company_id, code, name, tax_id, phone)
