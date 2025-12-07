@@ -92,7 +92,52 @@ ALTER TABLE public.invoice_items ADD COLUMN IF NOT EXISTS tevkifat_durumu TEXT;
 ALTER TABLE public.invoice_items ADD COLUMN IF NOT EXISTS tevkifat_orani NUMERIC(5,2);
 
 -- ============================================================
--- 2. YENİ TABLOLAR - CARİ HESAP
+-- 2. USER PROFILES TABLOSU (profiles'tan user_profiles'a geçiş)
+-- ============================================================
+
+-- Yeni user_profiles tablosu oluştur
+CREATE TABLE IF NOT EXISTS public.user_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID UNIQUE NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    company_id UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
+    role TEXT NOT NULL DEFAULT 'user', -- 'admin', 'manager', 'user'
+    status TEXT NOT NULL DEFAULT 'active', -- 'active', 'suspended', 'pending'
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Index'ler
+CREATE INDEX IF NOT EXISTS user_profiles_user_id_idx ON public.user_profiles(user_id);
+CREATE INDEX IF NOT EXISTS user_profiles_company_id_idx ON public.user_profiles(company_id);
+
+-- Eski profiles tablosundan veri migrate et (eğer varsa)
+INSERT INTO public.user_profiles (user_id, company_id, role, status, created_at)
+SELECT 
+    user_id, 
+    company_id, 
+    COALESCE(role, 'user'),
+    'active',
+    COALESCE(created_at, NOW())
+FROM public.profiles
+ON CONFLICT (user_id) DO NOTHING;
+
+-- Updated_at trigger'ı
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON public.user_profiles;
+CREATE TRIGGER update_user_profiles_updated_at
+    BEFORE UPDATE ON public.user_profiles
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
+
+-- ============================================================
+-- 3. YENİ TABLOLAR - CARİ HESAP
 -- ============================================================
 
 -- Cari Grupları
@@ -129,7 +174,7 @@ CREATE INDEX IF NOT EXISTS account_transactions_account_idx ON public.account_tr
 CREATE INDEX IF NOT EXISTS account_transactions_date_idx ON public.account_transactions(transaction_date);
 
 -- ============================================================
--- 3. YENİ TABLOLAR - STOK YÖNETİMİ
+-- 4. YENİ TABLOLAR - STOK YÖNETİMİ
 -- ============================================================
 
 -- Stok Grupları
@@ -367,7 +412,7 @@ CREATE INDEX IF NOT EXISTS cheques_notes_account_idx ON public.cheques_notes(acc
 CREATE INDEX IF NOT EXISTS cheques_notes_due_date_idx ON public.cheques_notes(due_date);
 
 -- ============================================================
--- 7. YENİ TABLOLAR - TAKSİT TAKİP
+-- 8. YENİ TABLOLAR - TAKSİT TAKİP
 -- ============================================================
 
 -- Taksit Planları
@@ -401,7 +446,7 @@ CREATE INDEX IF NOT EXISTS installments_plan_idx ON public.installments(installm
 CREATE INDEX IF NOT EXISTS installments_due_date_idx ON public.installments(due_date);
 
 -- ============================================================
--- 8. YENİ TABLOLAR - E-MÜSTAHSIL
+-- 9. YENİ TABLOLAR - E-MÜSTAHSIL
 -- ============================================================
 
 -- E-Müstahsil Makbuzları
@@ -443,7 +488,7 @@ CREATE TABLE IF NOT EXISTS public.e_mustahsil_items (
 CREATE INDEX IF NOT EXISTS e_mustahsil_items_receipt_idx ON public.e_mustahsil_items(receipt_id);
 
 -- ============================================================
--- 9. YENİ TABLOLAR - GELİR/GİDER
+-- 10. YENİ TABLOLAR - GELİR/GİDER
 -- ============================================================
 
 -- Gelir/Gider Tipi
@@ -896,6 +941,117 @@ CREATE TRIGGER trigger_update_account_balance
 AFTER INSERT OR UPDATE OR DELETE ON public.invoices
 FOR EACH ROW
 EXECUTE FUNCTION public.update_account_balance();
+
+-- ============================================================
+-- ROW LEVEL SECURITY (RLS) POLİCİES
+-- ============================================================
+
+-- Companies tablosu için RLS
+ALTER TABLE public.companies ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS companies_select ON public.companies;
+CREATE POLICY companies_select ON public.companies
+    FOR SELECT
+    USING (
+        id IN (
+            SELECT company_id FROM public.user_profiles WHERE user_id = auth.uid()
+        )
+    );
+
+DROP POLICY IF EXISTS companies_all ON public.companies;
+CREATE POLICY companies_all ON public.companies
+    FOR ALL
+    USING (
+        id IN (
+            SELECT company_id FROM public.user_profiles WHERE user_id = auth.uid() AND role = 'admin'
+        )
+    );
+
+-- User Profiles tablosu için RLS
+ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS user_profiles_self ON public.user_profiles;
+CREATE POLICY user_profiles_self ON public.user_profiles
+    FOR ALL
+    USING (user_id = auth.uid())
+    WITH CHECK (user_id = auth.uid());
+
+-- Accounts tablosu için RLS
+ALTER TABLE public.accounts ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS accounts_company ON public.accounts;
+CREATE POLICY accounts_company ON public.accounts
+    FOR ALL
+    USING (
+        company_id IN (
+            SELECT company_id FROM public.user_profiles WHERE user_id = auth.uid()
+        )
+    );
+
+-- Products tablosu için RLS
+ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS products_company ON public.products;
+CREATE POLICY products_company ON public.products
+    FOR ALL
+    USING (
+        company_id IN (
+            SELECT company_id FROM public.user_profiles WHERE user_id = auth.uid()
+        )
+    );
+
+-- Invoices tablosu için RLS
+ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS invoices_company ON public.invoices;
+CREATE POLICY invoices_company ON public.invoices
+    FOR ALL
+    USING (
+        company_id IN (
+            SELECT company_id FROM public.user_profiles WHERE user_id = auth.uid()
+        )
+    );
+
+-- Invoice Items tablosu için RLS
+ALTER TABLE public.invoice_items ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS invoice_items_company ON public.invoice_items;
+CREATE POLICY invoice_items_company ON public.invoice_items
+    FOR ALL
+    USING (
+        invoice_id IN (
+            SELECT id FROM public.invoices WHERE company_id IN (
+                SELECT company_id FROM public.user_profiles WHERE user_id = auth.uid()
+            )
+        )
+    );
+
+-- Diğer tablolar için RLS (company_id bazlı)
+DO $$ 
+DECLARE
+    tbl text;
+BEGIN
+    FOR tbl IN 
+        SELECT table_name 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND column_name = 'company_id'
+        AND table_name NOT IN ('companies', 'accounts', 'products', 'invoices', 'user_profiles')
+    LOOP
+        EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', tbl);
+        
+        EXECUTE format('DROP POLICY IF EXISTS %I_company ON public.%I', tbl, tbl);
+        
+        EXECUTE format('
+            CREATE POLICY %I_company ON public.%I
+            FOR ALL
+            USING (
+                company_id IN (
+                    SELECT company_id FROM public.user_profiles WHERE user_id = auth.uid()
+                )
+            )', tbl, tbl);
+    END LOOP;
+END $$;
 
 -- ============================================================
 -- COMPLETED: Tam veritabanı şeması hazır!
