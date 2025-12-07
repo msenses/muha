@@ -2,33 +2,42 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function middleware(req: NextRequest) {
-  // Public paths (login ve test sayfaları)
-  const publicPaths = ['/login', '/test-connection'];
-  const isPublicPath = publicPaths.some(path => req.nextUrl.pathname.startsWith(path));
+  const { pathname } = req.nextUrl;
 
-  // Static files ve API routes - direkt geç
+  // Public paths (izin verilen sayfalar)
+  const publicPaths = ['/login', '/test-connection', '/'];
+  const isPublicPath = publicPaths.includes(pathname) || publicPaths.some(path => pathname.startsWith(path + '/'));
+
+  // Static files, API routes ve özel path'ler - direkt geç
   if (
-    req.nextUrl.pathname.startsWith('/_next') ||
-    req.nextUrl.pathname.startsWith('/api') ||
-    req.nextUrl.pathname.startsWith('/static') ||
-    req.nextUrl.pathname.includes('.') ||
-    req.nextUrl.pathname === '/favicon.ico'
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/static') ||
+    pathname === '/favicon.ico' ||
+    pathname.endsWith('.png') ||
+    pathname.endsWith('.jpg') ||
+    pathname.endsWith('.svg') ||
+    pathname.endsWith('.ico')
   ) {
     return NextResponse.next();
   }
 
-  // Supabase session cookie kontrolü
-  const supabaseAuthToken = req.cookies.get('sb-ithjtcgfsyqfljwyaynw-auth-token');
-  const hasSession = !!supabaseAuthToken;
-
-  // Public path'te ve session varsa, dashboard'a yönlendir
-  if (isPublicPath && hasSession) {
-    return NextResponse.redirect(new URL('/dashboard', req.url));
+  // Public path ise direkt geç (redirect loop'u önlemek için)
+  if (isPublicPath) {
+    return NextResponse.next();
   }
 
-  // Private path'te ve session yoksa, login'e yönlendir
-  if (!isPublicPath && !hasSession) {
-    return NextResponse.redirect(new URL('/login', req.url));
+  // Private sayfalar için Supabase cookie kontrolü
+  // Supabase cookies format: sb-<project-ref>-auth-token
+  const cookies = req.cookies.getAll();
+  const hasAuthCookie = cookies.some(cookie => 
+    cookie.name.startsWith('sb-') && cookie.name.includes('auth-token')
+  );
+
+  // Session yoksa login'e yönlendir
+  if (!hasAuthCookie) {
+    const loginUrl = new URL('/login', req.url);
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();
