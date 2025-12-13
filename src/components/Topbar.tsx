@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchCurrentCompanyId } from '@/lib/company';
 
 export default function Topbar() {
+  const router = useRouter();
   const [companyName, setCompanyName] = useState<string>('');
   const [userEmail, setUserEmail] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -171,7 +173,7 @@ export default function Topbar() {
         </div>
       </div>
       
-      {/* Sağ - Kullanıcı Bilgisi */}
+      {/* Sağ - Kısayollar + Kullanıcı Bilgisi */}
       <div style={{
         flex: 1,
         display: 'flex',
@@ -179,10 +181,64 @@ export default function Topbar() {
         justifyContent: 'flex-end',
         gap: 12,
       }}>
+        {/* Geri Dön */}
+        <button
+          type="button"
+          onClick={() => router.back()}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 10px',
+            borderRadius: 999,
+            border: 'none',
+            background: 'transparent',
+            color: 'rgba(255,255,255,0.85)',
+            fontSize: 12,
+            cursor: 'pointer',
+          }}
+        >
+          <span style={{ fontSize: 13 }}>↩</span>
+          <span>Geri Dön</span>
+        </button>
+
+        {/* Merkez seçimi */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '6px 10px',
+          borderRadius: 999,
+          background: 'rgba(255,255,255,0.08)',
+          border: '1px solid rgba(255,255,255,0.18)',
+          fontSize: 12,
+          color: 'rgba(255,255,255,0.9)',
+        }}>
+          <span style={{ fontSize: 12 }}>⚙</span>
+          <span>Merkez</span>
+          <span style={{ fontSize: 10 }}>▾</span>
+        </div>
+
+        {/* Yıl seçimi (placeholder) */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '6px 10px',
+          borderRadius: 999,
+          background: 'rgba(255,255,255,0.08)',
+          border: '1px solid rgba(255,255,255,0.18)',
+          fontSize: 12,
+          color: 'rgba(255,255,255,0.9)',
+        }}>
+          <span>2025</span>
+          <span style={{ fontSize: 10 }}>▾</span>
+        </div>
+
         {userEmail && (
           <div style={{
             fontSize: 13,
-            opacity: 0.8,
+            opacity: 0.9,
             color: 'white',
             display: 'flex',
             alignItems: 'center',
@@ -202,7 +258,8 @@ export default function Topbar() {
             }}>
               {userEmail.charAt(0).toUpperCase()}
             </div>
-            <span>{userEmail}</span>
+            <span style={{ fontSize: 12 }}>{userEmail}</span>
+            <span style={{ fontSize: 10, opacity: 0.8 }}>▾</span>
           </div>
         )}
       </div>
