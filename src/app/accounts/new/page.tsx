@@ -83,9 +83,15 @@ export default function AccountNewPage() {
         code: code || null,
         name: name.trim(),
         tax_id: taxId || null,
+        tax_office: taxOffice || null,
         phone: phone || null,
         email: email || null,
         address: address || null,
+        city: city || null,
+        district: district || null,
+        country: country || null,
+        // Şimdilik risk ve grup bilgilerini sadece UI'de tutuyoruz;
+        // ileride account_groups ve risk limit alanlarına bağlanabilir.
       });
       if (error) throw error;
       router.push('/accounts');
