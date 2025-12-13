@@ -1,29 +1,80 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
+import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
+
+type AgendaItem = {
+  id: string;
+  title: string;
+  description: string | null;
+  reminder_date: string;
+  is_completed: boolean | null;
+};
 
 export default function AgendaPage() {
   const router = useRouter();
   const [q, setQ] = useState('');
-  const [start, setStart] = useState('27.10.2022');
-  const [end, setEnd] = useState('27.11.2022');
-  const [user, setUser] = useState<'Hepsi' | 'Ben' | 'Diğerleri'>('Hepsi');
+  const [start, setStart] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [end, setEnd] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [notif, setNotif] = useState<'Tüm Bildirimler' | 'Okunan' | 'Okunmayan'>('Tüm Bildirimler');
+  const [rows, setRows] = useState<AgendaItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const rows = [
-    { id: 1, fullName: 'Mustafa Bey', company: 'Mustafa Bey', phone: '5452542424', gsm: '5452542424', note: 'İşlemler kontrol edilecek.', dateTime: '03.12.2022 10:30:00' },
-    { id: 2, fullName: 'Mustafa Bey', company: 'Mustafa Bey', phone: '5452542424', gsm: '5452542424', note: 'Ödemeler kontrol edilecek.', dateTime: '03.12.2022 10:10:00' },
-    { id: 3, fullName: 'Ahmet Bey',   company: 'Mehmet Bey',  phone: '5428909590', gsm: '5428909590', note: 'Tahsilatlar kontrol edilecek.', dateTime: '02.12.2022 10:10:00' },
-  ];
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        router.replace('/login');
+        return;
+      }
+      const companyId = await fetchCurrentCompanyId();
+      if (!companyId) {
+        console.warn('Company ID bulunamadı');
+        setLoading(false);
+        return;
+      }
+      const query = supabase
+        .from('agenda_items')
+        .select('id, title, description, reminder_date, is_completed')
+        .eq('company_id', companyId)
+        .order('reminder_date', { ascending: true });
+      const { data, error } = await query;
+      if (!active) return;
+      if (error) {
+        console.error('Ajanda kayıtları yüklenemedi', error);
+        setRows([]);
+      } else {
+        setRows((data ?? []) as unknown as AgendaItem[]);
+      }
+      setLoading(false);
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
-  const filteredRows = rows.filter(r =>
-    `${r.fullName} ${r.company} ${r.phone} ${r.gsm} ${r.note} ${r.dateTime}`
-      .toLowerCase()
-      .includes(q.toLowerCase())
-  );
+  const filteredRows = useMemo(() => {
+    const text = q.trim().toLowerCase();
+    const startDate = start ? new Date(start) : null;
+    const endDate = end ? new Date(end) : null;
+
+    return rows.filter((r) => {
+      const hay = `${r.title} ${r.description ?? ''}`.toLowerCase();
+      if (text && !hay.includes(text)) return false;
+      const d = new Date(r.reminder_date);
+      if (startDate && d < startDate) return false;
+      if (endDate && d > endDate) return false;
+      if (notif === 'Okunan' && !r.is_completed) return false;
+      if (notif === 'Okunmayan' && r.is_completed) return false;
+      return true;
+    });
+  }, [rows, q, start, end, notif]);
 
   return (
     <main style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
@@ -48,23 +99,16 @@ export default function AgendaPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <label style={{ display: 'grid', gap: 4 }}>
                   <span style={{ fontSize: 12, opacity: 0.9 }}>Başlangıç Tarihi:</span>
-                  <input value={start} onChange={(e) => setStart(e.target.value)} placeholder="27.10.2022" style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid rgba(0,0,0,0.1)', background: '#fff', color: '#111827' }} />
+                  <input value={start} onChange={(e) => setStart(e.target.value)} type="date" style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid rgba(0,0,0,0.1)', background: '#fff', color: '#111827' }} />
                 </label>
                 <label style={{ display: 'grid', gap: 4 }}>
                   <span style={{ fontSize: 12, opacity: 0.9 }}>Bitiş Tarihi:</span>
-                  <input value={end} onChange={(e) => setEnd(e.target.value)} placeholder="27.11.2022" style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid rgba(0,0,0,0.1)', background: '#fff', color: '#111827' }} />
+                  <input value={end} onChange={(e) => setEnd(e.target.value)} type="date" style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid rgba(0,0,0,0.1)', background: '#fff', color: '#111827' }} />
                 </label>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <label style={{ display: 'grid', gap: 4 }}>
-                  <span style={{ fontSize: 12, opacity: 0.9 }}>Kullanıcı</span>
-                  <select value={user} onChange={(e) => setUser(e.target.value as any)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid rgba(0,0,0,0.1)', background: '#fff', color: '#111827' }}>
-                    <option>Hepsi</option>
-                    <option>Ben</option>
-                    <option>Diğerleri</option>
-                  </select>
-                </label>
+                <div />
                 <label style={{ display: 'grid', gap: 4 }}>
                   <span style={{ fontSize: 12, opacity: 0.9 }}>Bildirimler</span>
                   <select value={notif} onChange={(e) => setNotif(e.target.value as any)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid rgba(0,0,0,0.1)', background: '#fff', color: '#111827' }}>
@@ -89,29 +133,35 @@ export default function AgendaPage() {
                   <tr style={{ background: '#f3f4f6' }}>
                     <th style={{ textAlign: 'left', padding: '8px' }}></th>
                     <th style={{ textAlign: 'left', padding: '8px' }}>#</th>
-                    <th style={{ textAlign: 'left', padding: '8px' }}>Ad Soyad</th>
-                    <th style={{ textAlign: 'left', padding: '8px' }}>Firma Adı</th>
-                    <th style={{ textAlign: 'left', padding: '8px' }}>Telefon</th>
-                    <th style={{ textAlign: 'left', padding: '8px' }}>Cep Telefonu</th>
+                    <th style={{ textAlign: 'left', padding: '8px' }}>Başlık</th>
                     <th style={{ textAlign: 'left', padding: '8px' }}>Açıklama</th>
                     <th style={{ textAlign: 'left', padding: '8px' }}>Tarih / Saat</th>
+                    <th style={{ textAlign: 'left', padding: '8px' }}>Durum</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredRows.map((r) => (
+                  {filteredRows.map((r, idx) => (
                     <tr key={r.id}>
                       <td style={{ padding: '8px' }}>
                         <button onClick={() => router.push((`/agenda/${r.id}`) as Route)} style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}>🔍</button>
                       </td>
-                      <td style={{ padding: '8px' }}>{r.id}</td>
-                      <td style={{ padding: '8px' }}>{r.fullName}</td>
-                      <td style={{ padding: '8px' }}>{r.company}</td>
-                      <td style={{ padding: '8px' }}>{r.phone}</td>
-                      <td style={{ padding: '8px' }}>{r.gsm}</td>
-                      <td style={{ padding: '8px' }}>{r.note}</td>
-                      <td style={{ padding: '8px' }}>{r.dateTime}</td>
+                      <td style={{ padding: '8px' }}>{idx + 1}</td>
+                      <td style={{ padding: '8px' }}>{r.title}</td>
+                      <td style={{ padding: '8px' }}>{r.description ?? '-'}</td>
+                      <td style={{ padding: '8px' }}>{new Date(r.reminder_date).toLocaleString('tr-TR')}</td>
+                      <td style={{ padding: '8px' }}>{r.is_completed ? 'Tamamlandı' : 'Bekliyor'}</td>
                     </tr>
                   ))}
+                  {!loading && filteredRows.length === 0 && (
+                    <tr>
+                      <td colSpan={6} style={{ padding: 16, textAlign: 'center' }}>Kayıt yok</td>
+                    </tr>
+                  )}
+                  {loading && (
+                    <tr>
+                      <td colSpan={6} style={{ padding: 16, textAlign: 'center' }}>Yükleniyor…</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

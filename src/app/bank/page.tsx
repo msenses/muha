@@ -1,24 +1,29 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
+import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
 
 type BankRow = {
-  id: number;
-  name: string;
-  accountNo: string;
-  balance: number;
+  id: string;
+  bank_name: string | null;
+  account_no: string | null;
+  balance: number | null;
 };
 
 export default function BankPage() {
   const [q, setQ] = useState('');
   const router = useRouter();
 
+  const [rows, setRows] = useState<BankRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
   // Bankadan bankaya virman modal durumu
   const [showBankTransfer, setShowBankTransfer] = useState(false);
-  const [btDate, setBtDate] = useState('14.11.2022');
+  const [btDate, setBtDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [btSource, setBtSource] = useState('');
   const [btTarget, setBtTarget] = useState('');
   const [btDesc, setBtDesc] = useState('');
@@ -27,15 +32,49 @@ export default function BankPage() {
   // Detaylı rapor filtresi modalı
   const [showDetailReport, setShowDetailReport] = useState(false);
   const [repAllTime, setRepAllTime] = useState(true);
-  const [repStart, setRepStart] = useState('14.11.2022');
-  const [repEnd, setRepEnd] = useState('14.11.2022');
+  const [repStart, setRepStart] = useState(() => new Date().toISOString().slice(0, 10));
+  const [repEnd, setRepEnd] = useState(() => new Date().toISOString().slice(0, 10));
 
-  const rows: BankRow[] = [
-    { id: 1, name: 'Varsayılan - Merkez', accountNo: '', balance: 23423770 },
-  ];
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        router.replace('/login');
+        return;
+      }
+      const companyId = await fetchCurrentCompanyId();
+      if (!companyId) {
+        console.warn('Company ID bulunamadı');
+        setLoading(false);
+        return;
+      }
+      const { data, error } = await supabase
+        .from('bank_accounts')
+        .select('id, bank_name, account_no, balance')
+        .eq('company_id', companyId)
+        .order('bank_name', { ascending: true });
+      if (!active) return;
+      if (error) {
+        console.error('Banka listesi yüklenemedi', error);
+        setRows([]);
+      } else {
+        setRows((data ?? []) as unknown as BankRow[]);
+      }
+      setLoading(false);
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
-  const filtered = rows.filter(r =>
-    `${r.name} ${r.accountNo}`.toLowerCase().includes(q.toLowerCase())
+  const filtered = useMemo(
+    () =>
+      rows.filter((r) =>
+        `${r.bank_name ?? ''} ${r.account_no ?? ''}`.toLowerCase().includes(q.toLowerCase()),
+      ),
+    [rows, q],
   );
 
   return (
@@ -91,17 +130,27 @@ export default function BankPage() {
                       <td style={{ padding: '8px' }}></td>
                     </tr>
 
-                    {filtered.map((r) => (
+                    {filtered.map((r, idx) => (
                       <tr key={r.id}>
                         <td style={{ padding: '8px' }}>
-                          <button onClick={() => window.location.href = `/bank/${r.id}`} style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>🔍</button>
+                          <button onClick={() => router.push((`/bank/${r.id}`) as Route)} style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>🔍</button>
                         </td>
-                        <td style={{ padding: '8px' }}>{r.id}</td>
-                        <td style={{ padding: '8px' }}>{r.name}</td>
-                        <td style={{ padding: '8px' }}>{r.accountNo || '-'}</td>
-                        <td style={{ padding: '8px' }}>{r.balance.toLocaleString('tr-TR')}</td>
+                        <td style={{ padding: '8px' }}>{idx + 1}</td>
+                        <td style={{ padding: '8px' }}>{r.bank_name ?? '-'}</td>
+                        <td style={{ padding: '8px' }}>{r.account_no || '-'}</td>
+                        <td style={{ padding: '8px' }}>{Number(r.balance ?? 0).toLocaleString('tr-TR')}</td>
                       </tr>
                     ))}
+                    {!loading && filtered.length === 0 && (
+                      <tr>
+                        <td colSpan={5} style={{ padding: 16, textAlign: 'center' }}>Kayıt yok</td>
+                      </tr>
+                    )}
+                    {loading && (
+                      <tr>
+                        <td colSpan={5} style={{ padding: 16, textAlign: 'center' }}>Yükleniyor…</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -118,22 +167,24 @@ export default function BankPage() {
             <div style={{ padding: 12, display: 'grid', gap: 10 }}>
               <label style={{ display: 'grid', gap: 6 }}>
                 <span>Tarih :</span>
-                <input value={btDate} onChange={(e) => setBtDate(e.target.value)} style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }} />
+                <input type="date" value={btDate} onChange={(e) => setBtDate(e.target.value)} style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }} />
               </label>
               <label style={{ display: 'grid', gap: 6 }}>
                 <span>Kaynak Banka :</span>
                 <select value={btSource} onChange={(e) => setBtSource(e.target.value)} style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }}>
                   <option value="">Banka Seçiniz</option>
-                  <option>Varsayılan - Merkez</option>
-                  <option>Şube 1</option>
+                  {rows.map((r) => (
+                    <option key={r.id} value={r.id}>{r.bank_name ?? r.account_no ?? 'Banka'}</option>
+                  ))}
                 </select>
               </label>
               <label style={{ display: 'grid', gap: 6 }}>
                 <span>Hedef Banka :</span>
                 <select value={btTarget} onChange={(e) => setBtTarget(e.target.value)} style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }}>
                   <option value="">Banka Seçiniz</option>
-                  <option>Varsayılan - Merkez</option>
-                  <option>Şube 1</option>
+                  {rows.map((r) => (
+                    <option key={r.id} value={r.id}>{r.bank_name ?? r.account_no ?? 'Banka'}</option>
+                  ))}
                 </select>
               </label>
               <label style={{ display: 'grid', gap: 6 }}>
@@ -166,11 +217,11 @@ export default function BankPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <label style={{ display: 'grid', gap: 6 }}>
                   <span>Başlangıç Tarihi</span>
-                  <input value={repStart} onChange={(e) => setRepStart(e.target.value)} disabled={repAllTime} style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, background: repAllTime ? '#f3f4f6' : '#fff' }} />
+                  <input type="date" value={repStart} onChange={(e) => setRepStart(e.target.value)} disabled={repAllTime} style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, background: repAllTime ? '#f3f4f6' : '#fff' }} />
                 </label>
                 <label style={{ display: 'grid', gap: 6 }}>
                   <span>Bitiş Tarihi</span>
-                  <input value={repEnd} onChange={(e) => setRepEnd(e.target.value)} disabled={repAllTime} style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, background: repAllTime ? '#f3f4f6' : '#fff' }} />
+                  <input type="date" value={repEnd} onChange={(e) => setRepEnd(e.target.value)} disabled={repAllTime} style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, background: repAllTime ? '#f3f4f6' : '#fff' }} />
                 </label>
               </div>
 

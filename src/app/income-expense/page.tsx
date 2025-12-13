@@ -1,34 +1,77 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
+
+type Category = {
+  id: string;
+  name: string;
+  type: 'income' | 'expense';
+  description: string | null;
+};
 
 export default function IncomeExpensePage() {
   const router = useRouter();
-  const [showNew, setShowNew] = useState(false);
-  const [items, setItems] = useState<Array<{ name: string; code: string; accNo: string; desc: string; branch: string }>>([
-    { name: 'Elektrik', code: '0001', accNo: '123456789', desc: 'Deneme', branch: 'Merkez' },
-    { name: 'Su', code: '2', accNo: '54321', desc: '', branch: 'Merkez' },
-  ]);
-  const [name, setName] = useState('');
-  const [code, setCode] = useState('');
-  const [accNo, setAccNo] = useState('');
-  const [desc, setDesc] = useState('');
+  const [q, setQ] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
+  const [rows, setRows] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
   const [openReports, setOpenReports] = useState(false);
-  // Düzenle/Sil state
-  const [editIdx, setEditIdx] = useState<number | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editCode, setEditCode] = useState('');
-  const [editAccNo, setEditAccNo] = useState('');
-  const [editDesc, setEditDesc] = useState('');
-  const [deleteIdx, setDeleteIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        router.replace('/login');
+        return;
+      }
+      const companyId = await fetchCurrentCompanyId();
+      if (!companyId) {
+        console.warn('Company ID bulunamadı');
+        setLoading(false);
+        return;
+      }
+      const query = supabase
+        .from('income_expense_categories')
+        .select('id, name, type, description')
+        .eq('company_id', companyId)
+        .order('name', { ascending: true });
+      if (typeFilter !== 'all') {
+        query.eq('type', typeFilter);
+      }
+      const { data, error } = await query;
+      if (!active) return;
+      if (error) {
+        console.error('Gelir/gider kategorileri yüklenemedi', error);
+        setRows([]);
+      } else {
+        setRows((data ?? []) as unknown as Category[]);
+      }
+      setLoading(false);
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [router, typeFilter]);
+
+  const filteredRows = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    if (!t) return rows;
+    return rows.filter((r) =>
+      `${r.name} ${r.description ?? ''}`.toLowerCase().includes(t),
+    );
+  }, [rows, q]);
 
   return (
     <main style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
       {/* Üst araç çubuğu */}
       <header style={{ display: 'flex', gap: 8, padding: 16 }}>
-        <button onClick={() => setShowNew(true)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #22c55e', background: '#22c55e', color: '#fff', cursor: 'pointer' }}>+ Ekle</button>
+        <button disabled style={{ opacity: 0.6, cursor: 'not-allowed', padding: '10px 12px', borderRadius: 8, border: '1px solid #22c55e', background: '#22c55e', color: '#fff' }}>+ Ekle (yakında)</button>
         <div style={{ position: 'relative' }}>
           <button onClick={() => setOpenReports((v) => !v)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #f59e0b', background: '#f59e0b', color: '#fff', cursor: 'pointer' }}>Raporlar ▾</button>
           {openReports && (
@@ -42,161 +85,61 @@ export default function IncomeExpensePage() {
 
       <section style={{ padding: 16 }}>
         <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)' }}>
-          {/* Başlık şeridi */}
-          <div style={{ background: '#12b3c5', color: 'white', padding: '12px 16px', fontWeight: 700, letterSpacing: 0.2 }}>GELİR GİDER LİSTESİ</div>
+          {/* Başlık + filtreler */}
+          <div style={{ background: '#12b3c5', color: 'white', padding: '12px 16px', fontWeight: 700, letterSpacing: 0.2, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span>GELİR GİDER KATEGORİLERİ</span>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Ara..."
+                style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.6)', background: 'rgba(0,0,0,0.15)', color: 'white' }}
+              />
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value as any)}
+                style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.6)', background: 'rgba(0,0,0,0.15)', color: 'white' }}
+              >
+                <option value="all">Hepsi</option>
+                <option value="income">Gelir</option>
+                <option value="expense">Gider</option>
+              </select>
+            </div>
+          </div>
 
           {/* Tablo */}
           <div style={{ padding: 12 }}>
             <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
               <thead>
                 <tr style={{ textAlign: 'left', color: 'white', opacity: 0.9 }}>
-                  <th style={{ padding: '10px 8px' }}>İşlem</th>
                   <th style={{ padding: '10px 8px' }}>Ad</th>
-                  <th style={{ padding: '10px 8px' }}>Kod</th>
+                  <th style={{ padding: '10px 8px' }}>Tip</th>
                   <th style={{ padding: '10px 8px' }}>Açıklama</th>
-                  <th style={{ padding: '10px 8px' }}>No</th>
-                  <th style={{ padding: '10px 8px' }}>Şube</th>
-                  <th style={{ padding: '10px 8px' }}>Düzenle/Sil</th>
                 </tr>
               </thead>
               <tbody>
-                {items.map((it, i) => (
-                  <tr key={i} style={{ color: 'white' }}>
-                    <td style={{ padding: '8px' }}>
-                      <button onClick={() => router.push('/income-expense/electricity')} style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid #16a34a', background: '#16a34a', color: 'white', cursor: 'pointer' }}>➕ Detaya Git</button>
-                    </td>
+                {filteredRows.map((it) => (
+                  <tr key={it.id} style={{ color: 'white' }}>
                     <td style={{ padding: '8px' }}>{it.name}</td>
-                    <td style={{ padding: '8px' }}>{it.code}</td>
-                    <td style={{ padding: '8px' }}>{it.desc || '-'}</td>
-                    <td style={{ padding: '8px' }}>{it.accNo}</td>
-                    <td style={{ padding: '8px' }}>{it.branch}</td>
-                    <td style={{ padding: '8px' }}>
-                      <button
-                        title="Düzenle"
-                        onClick={() => {
-                          setEditIdx(i);
-                          setEditName(it.name);
-                          setEditCode(it.code);
-                          setEditAccNo(it.accNo);
-                          setEditDesc(it.desc);
-                        }}
-                        style={{ padding: 6, marginRight: 6, borderRadius: 6, border: '1px solid #f59e0b', background: '#f59e0b', color: '#fff', cursor: 'pointer' }}
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        title="Sil"
-                        onClick={() => setDeleteIdx(i)}
-                        style={{ padding: 6, borderRadius: 6, border: '1px solid #ef4444', background: '#ef4444', color: '#fff', cursor: 'pointer' }}
-                      >
-                        ✖
-                      </button>
-                    </td>
+                    <td style={{ padding: '8px' }}>{it.type === 'income' ? 'Gelir' : 'Gider'}</td>
+                    <td style={{ padding: '8px' }}>{it.description || '-'}</td>
                   </tr>
                 ))}
+                {!loading && filteredRows.length === 0 && (
+                  <tr>
+                    <td colSpan={3} style={{ padding: 16, color: 'white', opacity: 0.8 }}>Kayıt yok</td>
+                  </tr>
+                )}
+                {loading && (
+                  <tr>
+                    <td colSpan={3} style={{ padding: 16, color: 'white', opacity: 0.8 }}>Yükleniyor…</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
         </div>
       </section>
-
-      {/* Yeni Gelir/Gider Modal */}
-      {showNew && (
-        <div onClick={() => setShowNew(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'grid', placeItems: 'center', zIndex: 50 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: 560, maxWidth: '95%', borderRadius: 10, background: '#fff', color: '#111827', boxShadow: '0 20px 50px rgba(0,0,0,0.35)', border: '1px solid #e5e7eb' }}>
-            <div style={{ padding: 12, borderBottom: '1px solid #e5e7eb', fontWeight: 700 }}>Yeni Gelir / Gider Ekle</div>
-            <div style={{ padding: 12, display: 'grid', gap: 10 }}>
-              <label style={{ display: 'grid', gap: 4 }}>
-                <span>Ad:</span>
-                <input value={name} onChange={(e) => setName(e.target.value)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }} />
-              </label>
-              <label style={{ display: 'grid', gap: 4 }}>
-                <span>Kodu:</span>
-                <input value={code} onChange={(e) => setCode(e.target.value)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }} />
-              </label>
-              <label style={{ display: 'grid', gap: 4 }}>
-                <span>Abone/Hesap No:</span>
-                <input value={accNo} onChange={(e) => setAccNo(e.target.value)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }} />
-              </label>
-              <label style={{ display: 'grid', gap: 4 }}>
-                <span>Açıklama:</span>
-                <input value={desc} onChange={(e) => setDesc(e.target.value)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }} />
-              </label>
-            </div>
-            <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setShowNew(false)} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #d1d5db', background: '#fff' }}>Kapat</button>
-              <button onClick={() => setShowNew(false)} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #2563eb', background: '#2563eb', color: '#fff' }}>Ekle</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Düzenle Modal */}
-      {editIdx !== null && (
-        <div onClick={() => setEditIdx(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'grid', placeItems: 'center', zIndex: 60 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: 560, maxWidth: '95%', borderRadius: 10, background: '#fff', color: '#111827', boxShadow: '0 20px 50px rgba(0,0,0,0.35)', border: '1px solid #e5e7eb' }}>
-            <div style={{ padding: 12, borderBottom: '1px solid #e5e7eb', fontWeight: 700 }}>Düzenle</div>
-            <div style={{ padding: 12, display: 'grid', gap: 10 }}>
-              <label style={{ display: 'grid', gap: 4 }}>
-                <span>Ad:</span>
-                <input value={editName} onChange={(e) => setEditName(e.target.value)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }} />
-              </label>
-              <label style={{ display: 'grid', gap: 4 }}>
-                <span>Kodu:</span>
-                <input value={editCode} onChange={(e) => setEditCode(e.target.value)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }} />
-              </label>
-              <label style={{ display: 'grid', gap: 4 }}>
-                <span>Abone/Hesap No:</span>
-                <input value={editAccNo} onChange={(e) => setEditAccNo(e.target.value)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }} />
-              </label>
-              <label style={{ display: 'grid', gap: 4 }}>
-                <span>Açıklama:</span>
-                <input value={editDesc} onChange={(e) => setEditDesc(e.target.value)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }} />
-              </label>
-            </div>
-            <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setEditIdx(null)} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #d1d5db', background: '#fff' }}>Kapat</button>
-              <button
-                onClick={() => {
-                  if (editIdx === null) return;
-                  const next = items.slice();
-                  next[editIdx] = { ...next[editIdx], name: editName, code: editCode, accNo: editAccNo, desc: editDesc };
-                  setItems(next);
-                  setEditIdx(null);
-                }}
-                style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #2563eb', background: '#2563eb', color: '#fff' }}
-              >
-                Kaydet
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Sil Onayı */}
-      {deleteIdx !== null && (
-        <div onClick={() => setDeleteIdx(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'grid', placeItems: 'center', zIndex: 60 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: 420, maxWidth: '95%', borderRadius: 10, background: '#fff', color: '#111827', boxShadow: '0 20px 50px rgba(0,0,0,0.35)', border: '1px solid #e5e7eb' }}>
-            <div style={{ padding: 12, borderBottom: '1px solid #e5e7eb', fontWeight: 700 }}>Sil</div>
-            <div style={{ padding: 12 }}>Bu kaydı silmek istediğinize emin misiniz?</div>
-            <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setDeleteIdx(null)} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #d1d5db', background: '#fff' }}>Kapat</button>
-              <button
-                onClick={() => {
-                  if (deleteIdx === null) return;
-                  const next = items.slice();
-                  next.splice(deleteIdx, 1);
-                  setItems(next);
-                  setDeleteIdx(null);
-                }}
-                style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #ef4444', background: '#ef4444', color: '#fff' }}
-              >
-                Sil
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }
