@@ -4,20 +4,6 @@ const nextConfig = {
   swcMinify: false,
   experimental: {
   },
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/dashboard',
-        permanent: false
-      },
-      {
-        source: '/login',
-        destination: '/dashboard',
-        permanent: false
-      },
-    ];
-  }
 };
 
 module.exports = nextConfig;
