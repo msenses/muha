@@ -34,39 +34,52 @@ export default function InvoicesPage() {
   useEffect(() => {
     let active = true;
     const load = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        router.replace('/login');
-        return;
+      setLoading(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          if (active) setLoading(false);
+          router.replace('/login');
+          return;
+        }
+        
+        // Company ID'yi al
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) {
+          console.warn('Company ID bulunamadı');
+          if (active) {
+            setRows([]);
+          }
+          return;
+        }
+        
+        const query = supabase
+          .from('invoices')
+          .select('id, invoice_no, invoice_date, type, net_total, vat_total, total, accounts(name)')
+          .eq('company_id', companyId)
+          .order('invoice_date', { ascending: false })
+          .limit(200);
+        if (type !== 'all') {
+          query.eq('type', type);
+        }
+        if (startDate) query.gte('invoice_date', startDate);
+        if (endDate) query.lte('invoice_date', endDate);
+        const { data, error } = await query;
+        if (!active) return;
+        if (error) {
+          console.error('Fatura listesi yüklenemedi:', error);
+          setRows([]);
+        } else {
+          setRows((data ?? []) as unknown as Invoice[]);
+        }
+      } catch (err) {
+        console.error('Fatura listesi yüklenirken beklenmeyen hata:', err);
+        if (active) {
+          setRows([]);
+        }
+      } finally {
+        if (active) setLoading(false);
       }
-      
-      // Company ID'yi al
-      const companyId = await fetchCurrentCompanyId();
-      if (!companyId) {
-        console.warn('Company ID bulunamadı');
-        setLoading(false);
-        return;
-      }
-      
-      const query = supabase
-        .from('invoices')
-        .select('id, invoice_no, invoice_date, type, net_total, vat_total, total, accounts(name)')
-        .eq('company_id', companyId)
-        .order('invoice_date', { ascending: false })
-        .limit(200);
-      if (type !== 'all') {
-        query.eq('type', type);
-      }
-      if (startDate) query.gte('invoice_date', startDate);
-      if (endDate) query.lte('invoice_date', endDate);
-      const { data, error } = await query;
-      if (!active) return;
-      if (error) {
-        setRows([]);
-      } else {
-        setRows((data ?? []) as unknown as Invoice[]);
-      }
-      setLoading(false);
     };
     load();
     return () => {
