@@ -14,6 +14,81 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
+  // Oturum açan kullanıcı için user_profiles kaydı ve company bağlantısını garanti et
+  const ensureUserProfile = async () => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) return;
+      const user = sessionData.session.user;
+
+      // Mevcut profil var mı?
+      const { data: existingProfiles, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('id, company_id')
+        .eq('user_id', user.id);
+
+      if (profileError) {
+        console.error('User profile kontrolü hatası:', profileError);
+        return;
+      }
+
+      const existing = existingProfiles && existingProfiles.length > 0 ? existingProfiles[0] : null;
+      if (existing && existing.company_id) {
+        // Zaten bir firmaya bağlı profil varsa dokunma
+        return;
+      }
+
+      // Bir firma bul (veya gerekirse oluştur)
+      let companyId: string | null = null;
+
+      const { data: companies, error: companyError } = await supabase
+        .from('companies')
+        .select('id')
+        .order('created_at', { ascending: true })
+        .limit(1);
+
+      if (companyError) {
+        console.error('Company listesi alınamadı:', companyError);
+        return;
+      }
+
+      if (companies && companies.length > 0) {
+        companyId = companies[0].id as string;
+      }
+
+      if (!companyId) {
+        console.error('Hiç firma bulunamadı; lütfen Supabase üzerinde en az bir company kaydı oluşturun.');
+        return;
+      }
+
+      if (existing) {
+        // Profil var ama company_id yoksa güncelle
+        const { error: updateError } = await supabase
+          .from('user_profiles')
+          .update({ company_id: companyId })
+          .eq('id', existing.id);
+        if (updateError) {
+          console.error('User profile company_id güncellenemedi:', updateError);
+        }
+      } else {
+        // Profil hiç yoksa yeni oluştur
+        const { error: insertError } = await supabase
+          .from('user_profiles')
+          .insert({
+            user_id: user.id,
+            company_id: companyId,
+            role: 'admin',
+            status: 'active',
+          });
+        if (insertError) {
+          console.error('User profile oluşturulamadı:', insertError);
+        }
+      }
+    } catch (err) {
+      console.error('ensureUserProfile sırasında beklenmeyen hata:', err);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -23,6 +98,8 @@ export default function LoginPage() {
       if (mode === 'signin') {
         const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
+        // Kullanıcının bir firmaya bağlı profili olduğundan emin ol
+        await ensureUserProfile();
         router.push('/dashboard');
       } else {
         const { error: signUpError } = await supabase.auth.signUp({ email, password });
