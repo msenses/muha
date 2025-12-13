@@ -28,50 +28,71 @@ export default function StockPage() {
     let active = true;
 
     const load = async () => {
-      // Oturum kontrolü
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        router.replace('/login');
-        return;
-      }
+      setLoading(true);
+      try {
+        // Oturum kontrolü
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          if (active) setLoading(false);
+          router.replace('/login');
+          return;
+        }
 
-      // Company ID'yi al
-      const companyId = await fetchCurrentCompanyId();
-      if (!companyId) {
-        console.warn('Company ID bulunamadı');
-        setLoading(false);
-        return;
-      }
+        // Company ID'yi al
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) {
+          console.warn('Company ID bulunamadı');
+          if (active) {
+            setRows([]);
+            setBalances({});
+          }
+          return;
+        }
 
-      // Ürünleri çek (sadece bu firmaya ait)
-      const { data, error } = await supabase
-        .from('products')
-        .select('id, sku, name, unit, price')
-        .eq('company_id', companyId)
-        .order('name', { ascending: true })
-        .limit(200);
+        // Ürünleri çek (sadece bu firmaya ait)
+        const { data, error } = await supabase
+          .from('products')
+          .select('id, sku, name, unit, price')
+          .eq('company_id', companyId)
+          .order('name', { ascending: true })
+          .limit(200);
 
-      if (!active) return;
-      if (error) {
-        setRows([]);
-      } else {
-        setRows((data ?? []) as unknown as Product[]);
-      }
+        if (!active) return;
+        if (error) {
+          console.error('Stok listesi yüklenemedi:', error);
+          setRows([]);
+        } else {
+          setRows((data ?? []) as unknown as Product[]);
+        }
 
-      // Stok bakiyelerini (giriş-çıkış) hesapla — client tarafında gruplayalım
-      const { data: moves } = await supabase
-        .from('stock_movements')
-        .select('product_id, move_type, qty')
-        .limit(10000);
-      const map: Record<string, number> = {};
-      for (const m of (moves ?? []) as any[]) {
-        const pid = m.product_id as string;
-        const qty = Number(m.qty ?? 0);
-        const sign = m.move_type === 'in' ? 1 : -1;
-        map[pid] = (map[pid] ?? 0) + sign * qty;
+        // Stok bakiyelerini (giriş-çıkış) hesapla — client tarafında gruplayalım
+        const { data: moves, error: movesError } = await supabase
+          .from('stock_movements')
+          .select('product_id, move_type, qty')
+          .limit(10000);
+        if (!active) return;
+        if (movesError) {
+          console.error('Stok hareketleri yüklenemedi:', movesError);
+          setBalances({});
+        } else {
+          const map: Record<string, number> = {};
+          for (const m of (moves ?? []) as any[]) {
+            const pid = m.product_id as string;
+            const qty = Number(m.qty ?? 0);
+            const sign = m.move_type === 'in' ? 1 : -1;
+            map[pid] = (map[pid] ?? 0) + sign * qty;
+          }
+          setBalances(map);
+        }
+      } catch (err) {
+        console.error('Stoklar yüklenirken beklenmeyen hata:', err);
+        if (active) {
+          setRows([]);
+          setBalances({});
+        }
+      } finally {
+        if (active) setLoading(false);
       }
-      setBalances(map);
-      setLoading(false);
     };
 
     load();
