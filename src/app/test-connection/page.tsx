@@ -24,8 +24,29 @@ export default function TestConnectionPage() {
       // Test 2: Session kontrolü
       try {
         setStep('Auth Session kontrol ediliyor');
-        console.log('[TEST] 2) Auth Session alınıyor...');
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        console.log('[TEST] 2) Auth Session alınıyor... supabase client:', supabase);
+
+        // getSession'in takılması ihtimaline karşı timeout ile yarıştıralım
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((resolve) =>
+          setTimeout(() => resolve({ timeout: true }), 8000)
+        );
+
+        const sessionResult: any = await Promise.race([sessionPromise, timeoutPromise]);
+
+        if (sessionResult?.timeout) {
+          console.error('[TEST] 2) Auth Session TIMEOUT (8 saniyede cevap yok)');
+          tests.push({
+            test: 'Auth Session',
+            result: '❌ supabase.auth.getSession() 8 saniye içinde cevap vermedi (timeout)',
+            status: '❌'
+          });
+          setResults(tests);
+          setLoading(false);
+          return;
+        }
+
+        const { data: sessionData, error: sessionError } = sessionResult;
         console.log('[TEST] 2) Auth Session sonucu:', { sessionData, sessionError });
         tests.push({
           test: 'Auth Session',

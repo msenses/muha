@@ -68,13 +68,13 @@ export default function AccountsPage() {
     const load = async () => {
       setLoading(true);
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (!sessionData.session) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
           // Oturum yoksa login'e yönlendir ve yükleniyor durumunu kapat
           if (active) setLoading(false);
-          router.replace('/login');
-          return;
-        }
+        router.replace('/login');
+        return;
+      }
         
         // Company ID'yi al
         const companyId = await fetchCurrentCompanyId();
@@ -87,33 +87,33 @@ export default function AccountsPage() {
           return;
         }
         
-        const query = supabase
-          .from('accounts')
-          .select('id, code, name, phone, email, balance', { count: 'exact' })
+      const query = supabase
+        .from('accounts')
+        .select('id, code, name, phone, email, balance', { count: 'exact' })
           .eq('company_id', companyId)  // Sadece bu firmaya ait cariler
-          .order('name', { ascending: true });
-        if (q.trim()) {
-          // Basit arama: name ilike veya code ilike
-          // Supabase'de text search icin or kullanimi
-          // Not: filter zinciri OR ile string olarak kurulur
-          query.or(`name.ilike.%${q}%,code.ilike.%${q}%`);
-        }
-        if (scope === 'debt') {
-          query.gt('balance', 0);
-        } else if (scope === 'credit') {
-          query.lt('balance', 0);
-        }
-        const start = (page - 1) * pageSize;
-        const end = start + pageSize - 1;
-        const { data, error, count } = await query.range(start, end);
-        if (!active) return;
-        if (error) {
+        .order('name', { ascending: true });
+      if (q.trim()) {
+        // Basit arama: name ilike veya code ilike
+        // Supabase'de text search icin or kullanimi
+        // Not: filter zinciri OR ile string olarak kurulur
+        query.or(`name.ilike.%${q}%,code.ilike.%${q}%`);
+      }
+      if (scope === 'debt') {
+        query.gt('balance', 0);
+      } else if (scope === 'credit') {
+        query.lt('balance', 0);
+      }
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize - 1;
+      const { data, error, count } = await query.range(start, end);
+      if (!active) return;
+      if (error) {
           console.error('Cari listesi yüklenemedi:', error);
-          setRows([]);
+        setRows([]);
           setTotalRows(0);
-        } else {
-          setRows((data ?? []) as unknown as Account[]);
-          setTotalRows(count ?? 0);
+      } else {
+        setRows((data ?? []) as unknown as Account[]);
+      setTotalRows(count ?? 0);
         }
       } catch (err) {
         console.error('Cari listesi yüklenirken hata:', err);
