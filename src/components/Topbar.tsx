@@ -5,15 +5,27 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchCurrentCompanyId } from '@/lib/company';
 
+type Branch = {
+  id: string;
+  name: string;
+};
+
 export default function Topbar() {
   const router = useRouter();
   const [companyName, setCompanyName] = useState<string>('');
   const [userEmail, setUserEmail] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [activeBranchId, setActiveBranchId] = useState<string | null>(null);
+  const [branchMenuOpen, setBranchMenuOpen] = useState(false);
+
+  const [activeYear, setActiveYear] = useState<number | null>(null);
+  const [yearMenuOpen, setYearMenuOpen] = useState(false);
+
   useEffect(() => {
     let mounted = true;
-    
+
     const loadCompanyInfo = async () => {
       try {
         // Session kontrolü
@@ -42,6 +54,61 @@ export default function Topbar() {
         if (mounted && company) {
           setCompanyName(company.trade_name || company.name || '');
         }
+
+        // Şubeleri yükle
+        let { data: branchRows } = await supabase
+          .from('branches')
+          .select('id, name')
+          .eq('company_id', companyId)
+          .order('created_at', { ascending: true });
+
+        // Hiç şube yoksa otomatik "Merkez" oluştur
+        if (mounted && (!branchRows || branchRows.length === 0)) {
+          const { data: insertedBranch, error: insertErr } = await supabase
+            .from('branches')
+            .insert({ company_id: companyId, name: 'Merkez' })
+            .select('id, name')
+            .single();
+
+          if (!insertErr && insertedBranch) {
+            branchRows = [insertedBranch];
+          }
+        }
+
+        if (mounted && branchRows && branchRows.length > 0) {
+          setBranches(branchRows as Branch[]);
+
+          if (typeof window !== 'undefined') {
+            const storedBranchId = window.localStorage.getItem('activeBranchId');
+            const existing = branchRows.find((b) => b.id === storedBranchId);
+            const selected = existing || branchRows[0];
+
+            setActiveBranchId(selected.id);
+            window.localStorage.setItem('activeBranchId', selected.id);
+            window.localStorage.setItem('activeBranchName', selected.name);
+          } else {
+            setActiveBranchId(branchRows[0].id);
+          }
+        }
+
+        // Aktif yılı yükle
+        if (mounted) {
+          const now = new Date();
+          const currentYear = now.getFullYear();
+          let yearToUse = currentYear;
+
+          if (typeof window !== 'undefined') {
+            const storedYear = window.localStorage.getItem('activeYear');
+            const parsed = storedYear ? parseInt(storedYear, 10) : NaN;
+            if (!Number.isNaN(parsed)) {
+              yearToUse = parsed;
+            } else {
+              window.localStorage.setItem('activeYear', String(currentYear));
+            }
+          }
+
+          setActiveYear(yearToUse);
+        }
       } catch (error) {
         console.error('Company bilgisi yüklenirken hata:', error);
       } finally {
@@ -67,7 +134,7 @@ export default function Topbar() {
             .select('name, trade_name')
             .eq('id', companyId)
             .single();
-          
+
           if (company) {
             setCompanyName(company.trade_name || company.name || '');
           }
@@ -117,6 +184,31 @@ export default function Topbar() {
   if (!companyName) {
     return null;
   }
+
+  const years = (() => {
+    const now = new Date();
+    const base = now.getFullYear();
+    return [base - 1, base, base + 1];
+  })();
+
+  const activeBranch = branches.find((b) => b.id === activeBranchId) || null;
+
+  const handleSelectBranch = (branch: Branch) => {
+    setActiveBranchId(branch.id);
+    setBranchMenuOpen(false);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('activeBranchId', branch.id);
+      window.localStorage.setItem('activeBranchName', branch.name);
+    }
+  };
+
+  const handleSelectYear = (year: number) => {
+    setActiveYear(year);
+    setYearMenuOpen(false);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('activeYear', String(year));
+    }
+  };
 
   return (
     <div style={{
@@ -180,6 +272,7 @@ export default function Topbar() {
         alignItems: 'center',
         justifyContent: 'flex-end',
         gap: 12,
+        position: 'relative',
       }}>
         {/* Geri Dön */}
         <button
@@ -202,37 +295,131 @@ export default function Topbar() {
           <span>Geri Dön</span>
         </button>
 
-        {/* Merkez seçimi */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '6px 10px',
-          borderRadius: 999,
-          background: 'rgba(255,255,255,0.08)',
-          border: '1px solid rgba(255,255,255,0.18)',
-          fontSize: 12,
-          color: 'rgba(255,255,255,0.9)',
-        }}>
-          <span style={{ fontSize: 12 }}>⚙</span>
-          <span>Merkez</span>
-          <span style={{ fontSize: 10 }}>▾</span>
+        {/* Şube seçimi */}
+        <div style={{ position: 'relative' }}>
+          <button
+            type="button"
+            onClick={() => setBranchMenuOpen((v) => !v)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 10px',
+              borderRadius: 999,
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.18)',
+              fontSize: 12,
+              color: 'rgba(255,255,255,0.9)',
+              cursor: 'pointer',
+            }}
+          >
+            <span style={{ fontSize: 12 }}>🏢</span>
+            <span>{activeBranch?.name || 'Şube'}</span>
+            <span style={{ fontSize: 10 }}>▾</span>
+          </button>
+
+          {branchMenuOpen && branches.length > 0 && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 34,
+                right: 0,
+                minWidth: 140,
+                background: 'rgba(15,23,42,0.98)',
+                borderRadius: 10,
+                border: '1px solid rgba(148,163,184,0.5)',
+                boxShadow: '0 12px 30px rgba(15,23,42,0.6)',
+                padding: 6,
+                zIndex: 1000,
+              }}
+            >
+              {branches.map((branch) => (
+                <button
+                  key={branch.id}
+                  type="button"
+                  onClick={() => handleSelectBranch(branch)}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '6px 8px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background:
+                      activeBranchId === branch.id
+                        ? 'rgba(59,130,246,0.35)'
+                        : 'transparent',
+                    color: 'white',
+                    fontSize: 12,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {branch.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Yıl seçimi (placeholder) */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '6px 10px',
-          borderRadius: 999,
-          background: 'rgba(255,255,255,0.08)',
-          border: '1px solid rgba(255,255,255,0.18)',
-          fontSize: 12,
-          color: 'rgba(255,255,255,0.9)',
-        }}>
-          <span>2025</span>
-          <span style={{ fontSize: 10 }}>▾</span>
+        {/* Dönem (yıl) seçimi */}
+        <div style={{ position: 'relative' }}>
+          <button
+            type="button"
+            onClick={() => setYearMenuOpen((v) => !v)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 10px',
+              borderRadius: 999,
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.18)',
+              fontSize: 12,
+              color: 'rgba(255,255,255,0.9)',
+              cursor: 'pointer',
+            }}
+          >
+            <span>{activeYear ?? new Date().getFullYear()}</span>
+            <span style={{ fontSize: 10 }}>▾</span>
+          </button>
+
+          {yearMenuOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 34,
+                right: 0,
+                minWidth: 80,
+                background: 'rgba(15,23,42,0.98)',
+                borderRadius: 10,
+                border: '1px solid rgba(148,163,184,0.5)',
+                boxShadow: '0 12px 30px rgba(15,23,42,0.6)',
+                padding: 6,
+                zIndex: 1000,
+              }}
+            >
+              {years.map((year) => (
+                <button
+                  key={year}
+                  type="button"
+                  onClick={() => handleSelectYear(year)}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '6px 8px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background:
+                      activeYear === year ? 'rgba(59,130,246,0.35)' : 'transparent',
+                    color: 'white',
+                    fontSize: 12,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {year}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {userEmail && (
