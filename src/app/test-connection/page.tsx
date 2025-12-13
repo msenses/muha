@@ -7,12 +7,14 @@ import { fetchCurrentCompanyId } from '@/lib/company';
 export default function TestConnectionPage() {
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [step, setStep] = useState<string>('Başlatılıyor');
 
   useEffect(() => {
     const runTests = async () => {
       const tests: any[] = [];
 
       // Test 1: Supabase URL
+      console.log('[TEST] 1) Supabase URL kontrol ediliyor...');
       tests.push({
         test: 'Supabase URL',
         result: process.env.NEXT_PUBLIC_SUPABASE_URL || 'ENV variable tanımlı değil',
@@ -21,7 +23,10 @@ export default function TestConnectionPage() {
 
       // Test 2: Session kontrolü
       try {
+        setStep('Auth Session kontrol ediliyor');
+        console.log('[TEST] 2) Auth Session alınıyor...');
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        console.log('[TEST] 2) Auth Session sonucu:', { sessionData, sessionError });
         tests.push({
           test: 'Auth Session',
           result: sessionError 
@@ -39,12 +44,14 @@ export default function TestConnectionPage() {
 
         // Test 3: User Profile kontrolü
         if (sessionData.session) {
+          setStep('User profile kontrol ediliyor');
+          console.log('[TEST] 3) user_profiles sorgulanıyor...');
           const { data: profile, error: profileError } = await supabase
             .from('user_profiles')
             .select('id, company_id')
             .eq('user_id', sessionData.session.user.id)
             .single();
-
+          console.log('[TEST] 3) user_profiles sonucu:', { profile, profileError });
           tests.push({
             test: 'User Profile',
             result: profileError 
@@ -58,12 +65,14 @@ export default function TestConnectionPage() {
 
           // Test 4: Company kontrolü
           if (profile?.company_id) {
+            setStep('Company kaydı kontrol ediliyor');
+            console.log('[TEST] 4) companies sorgulanıyor...', profile.company_id);
             const { data: company, error: companyError } = await supabase
               .from('companies')
               .select('id, name, tax_id')
               .eq('id', profile.company_id)
               .single();
-
+            console.log('[TEST] 4) companies sonucu:', { company, companyError });
             tests.push({
               test: 'Company',
               result: companyError 
@@ -84,7 +93,10 @@ export default function TestConnectionPage() {
 
           // Test 5: fetchCurrentCompanyId fonksiyonu
           try {
+            setStep('fetchCurrentCompanyId() testi');
+            console.log('[TEST] 5) fetchCurrentCompanyId() çağrılıyor...');
             const companyId = await fetchCurrentCompanyId();
+            console.log('[TEST] 5) fetchCurrentCompanyId() sonucu:', companyId);
             tests.push({
               test: 'fetchCurrentCompanyId()',
               result: companyId ? `✅ Company ID: ${companyId}` : '❌ Null döndü',
@@ -99,11 +111,13 @@ export default function TestConnectionPage() {
           }
 
           // Test 6: Accounts tablosu okuma
+          setStep('Accounts tablosu okunuyor');
+          console.log('[TEST] 6) accounts sorgulanıyor...');
           const { data: accounts, error: accountsError, count } = await supabase
             .from('accounts')
             .select('*', { count: 'exact', head: false })
             .limit(5);
-
+          console.log('[TEST] 6) accounts sonucu:', { count, accountsError, sample: accounts });
           tests.push({
             test: 'Accounts Tablosu',
             result: accountsError 
@@ -114,11 +128,13 @@ export default function TestConnectionPage() {
           });
 
           // Test 7: Products tablosu okuma
+          setStep('Products tablosu okunuyor');
+          console.log('[TEST] 7) products sorgulanıyor...');
           const { data: products, error: productsError, count: pCount } = await supabase
             .from('products')
             .select('*', { count: 'exact', head: false })
             .limit(5);
-
+          console.log('[TEST] 7) products sonucu:', { pCount, productsError, sample: products });
           tests.push({
             test: 'Products Tablosu',
             result: productsError 
@@ -129,11 +145,13 @@ export default function TestConnectionPage() {
           });
 
           // Test 8: Companies tablosu okuma
+          setStep('Companies tablosu okunuyor');
+          console.log('[TEST] 8) companies (liste) sorgulanıyor...');
           const { data: companies, error: companiesError } = await supabase
             .from('companies')
             .select('*')
             .limit(5);
-
+          console.log('[TEST] 8) companies (liste) sonucu:', { companiesError, companies });
           tests.push({
             test: 'Companies Tablosu',
             result: companiesError 
@@ -146,6 +164,7 @@ export default function TestConnectionPage() {
           });
         }
       } catch (err: any) {
+        console.error('[TEST] Genel hata:', err);
         tests.push({
           test: 'Genel Hata',
           result: `❌ ${err.message}`,
@@ -153,6 +172,8 @@ export default function TestConnectionPage() {
         });
       }
 
+      console.log('[TEST] Tüm testler bitti, sonuçlar:', tests);
+      setStep('Tamamlandı');
       setResults(tests);
       setLoading(false);
     };
@@ -163,7 +184,9 @@ export default function TestConnectionPage() {
   if (loading) {
     return (
       <main style={{ padding: 24, paddingLeft: 264, minHeight: '100vh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
-        <h1 style={{ marginBottom: 24 }}>🔍 Bağlantı Testi Yapılıyor...</h1>
+        <h1 style={{ marginBottom: 8 }}>🔍 Bağlantı Testi Yapılıyor...</h1>
+        <div style={{ fontSize: 14, opacity: 0.85 }}>Adım: {step}</div>
+        <div style={{ marginTop: 16, fontSize: 12, opacity: 0.7 }}>Detaylı loglar için konsolu (F12 &gt; Console) açabilirsiniz.</div>
       </main>
     );
   }
