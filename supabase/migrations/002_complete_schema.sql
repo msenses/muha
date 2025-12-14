@@ -1027,17 +1027,20 @@ CREATE POLICY invoice_items_company ON public.invoice_items
         )
     );
 
--- Diğer tablolar için RLS (company_id bazlı)
-DO $$ 
+DO $$
 DECLARE
     tbl text;
 BEGIN
     FOR tbl IN 
-        SELECT table_name 
-        FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND column_name = 'company_id'
-        AND table_name NOT IN ('companies', 'accounts', 'products', 'invoices', 'user_profiles')
+        SELECT c.table_name
+        FROM information_schema.columns c
+        JOIN information_schema.tables t
+          ON c.table_name = t.table_name
+         AND c.table_schema = t.table_schema
+        WHERE c.table_schema = 'public'
+          AND c.column_name = 'company_id'
+          AND t.table_type = 'BASE TABLE'  -- Sadece gerçek tablolar, view'ler hariç
+          AND c.table_name NOT IN ('companies', 'accounts', 'products', 'invoices', 'user_profiles')
     LOOP
         EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', tbl);
         
