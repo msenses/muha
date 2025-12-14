@@ -2,6 +2,8 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useMemo, useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
 
 type Row = {
   title: string;
@@ -11,7 +13,6 @@ type Row = {
   grand: number;
   payment: string;
   type: 'VERİLEN TEKLİF' | 'ALINAN TEKLİF' | 'VERİLEN SİPARİŞ' | 'ALINAN SİPARİŞ';
-  place: string;
 };
 
 export default function QuotesOrdersReportViewPage() {
@@ -19,33 +20,97 @@ export default function QuotesOrdersReportViewPage() {
   const [end, setEnd] = useState<string>('');
   const [period, setPeriod] = useState<string>(new Date().getFullYear().toString());
   const [listType, setListType] = useState<'Hepsi' | 'Teklif' | 'Sipariş'>('Hepsi');
+  const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const sp = new URLSearchParams(window.location.search);
-    setStart(sp.get('start') ?? '');
-    setEnd(sp.get('end') ?? '');
-    setListType((sp.get('list') as any) ?? 'Hepsi');
-    const y = new Date().getFullYear().toString();
-    setPeriod(sp.get('period') ?? y);
+    let active = true;
+    const bootstrap = async () => {
+      if (typeof window === 'undefined') return;
+      const sp = new URLSearchParams(window.location.search);
+      const s = sp.get('start') ?? '';
+      const e = sp.get('end') ?? '';
+      setStart(s);
+      setEnd(e);
+      setListType((sp.get('list') as any) ?? 'Hepsi');
+      const y = new Date().getFullYear().toString();
+      setPeriod(sp.get('period') ?? y);
+
+      setLoading(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          if (active) setLoading(false);
+          return;
+        }
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) {
+          console.warn('Company ID bulunamadı');
+          if (active) setLoading(false);
+          return;
+        }
+
+        const q = supabase
+          .from('quotes_orders')
+          .select('id, quote_order_date, type, total, vat_total, net_total, accounts(name)')
+          .eq('company_id', companyId)
+          .order('quote_order_date', { ascending: true });
+
+        if (s) q.gte('quote_order_date', s);
+        if (e) q.lte('quote_order_date', e);
+
+        const { data, error } = await q;
+        if (!active) return;
+        if (error) {
+          console.error('Teklif/Sipariş raporu yüklenemedi:', error);
+          setRows([]);
+        } else {
+          const mapped: Row[] = (data ?? []).map((r: any) => {
+            let typeText: Row['type'];
+            if (r.type === 'quote_given') typeText = 'VERİLEN TEKLİF';
+            else if (r.type === 'quote_received') typeText = 'ALINAN TEKLİF';
+            else if (r.type === 'order_given') typeText = 'VERİLEN SİPARİŞ';
+            else typeText = 'ALINAN SİPARİŞ';
+
+            return {
+              title: r.accounts?.name ?? '-',
+              date: r.quote_order_date
+                ? new Date(r.quote_order_date).toLocaleDateString('tr-TR')
+                : '',
+              total: Number(r.total ?? 0),
+              vat: Number(r.vat_total ?? 0),
+              grand: Number(r.net_total ?? 0),
+              payment: '-', // Şimdilik ödeme şekli alanı yok
+              type: typeText,
+            };
+          });
+          setRows(mapped);
+        }
+      } catch (err) {
+        console.error('Teklif/Sipariş raporu yüklenirken beklenmeyen hata:', err);
+        if (active) setRows([]);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    bootstrap();
+    return () => {
+      active = false;
+    };
   }, []);
 
-  // Demo veri — görseldeki yapıyı temsil eder
-  const rows = useMemo<Row[]>(() => {
-    const demo: Row[] = [
-      { title: 'Mehmet Bey', date: '27.11.2022', total: 14.00, vat: 0.00, grand: 14.00, payment: 'Nakit', type: 'VERİLEN TEKLİF', place: 'Depo' },
-      { title: 'Patates', date: '27.11.2022', total: 52.45, vat: 6.46, grand: 58.91, payment: 'Nakit', type: 'VERİLEN TEKLİF', place: 'Merkez' },
-      { title: 'Buğday Ekmek', date: '27.11.2022', total: 5.24, vat: 0.94, grand: 6.18, payment: 'Nakit', type: 'ALINAN TEKLİF', place: 'Depo' },
-      { title: 'Çubuk Kraker', date: '27.11.2022', total: 12.34, vat: 2.22, grand: 14.56, payment: 'Kredi Kartı', type: 'ALINAN SİPARİŞ', place: 'Depo' },
-      { title: 'Mehmet Bey', date: '28.10.2022', total: 8.05, vat: 1.45, grand: 9.50, payment: 'Nakit', type: 'VERİLEN SİPARİŞ', place: 'Depo' },
-    ];
-    if (listType === 'Teklif') return demo.filter(d => d.type.includes('TEKLİF'));
-    if (listType === 'Sipariş') return demo.filter(d => d.type.includes('SİPARİŞ'));
-    return demo;
-  }, [listType]);
+  const filteredRows = useMemo(() => {
+    if (listType === 'Teklif') {
+      return rows.filter((d) => d.type.includes('TEKLİF'));
+    }
+    if (listType === 'Sipariş') {
+      return rows.filter((d) => d.type.includes('SİPARİŞ'));
+    }
+    return rows;
+  }, [rows, listType]);
 
   const sum = (filter: (r: Row) => boolean) =>
-    rows.filter(filter).reduce((s, r) => s + r.grand, 0);
+    filteredRows.filter(filter).reduce((s, r) => s + r.grand, 0);
 
   const fmt = (n: number) => n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -85,7 +150,7 @@ export default function QuotesOrdersReportViewPage() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r, i) => (
+                {filteredRows.map((r, i) => (
                   <tr key={i} style={{ background: i % 2 ? '#fbfdff' : 'white' }}>
                     <td style={{ padding: 6, border: '1px solid #eef0f3' }}>{r.title}</td>
                     <td style={{ padding: 6, border: '1px solid #eef0f3' }}>{r.date}</td>
@@ -96,6 +161,20 @@ export default function QuotesOrdersReportViewPage() {
                     <td style={{ padding: 6, border: '1px solid #eef0f3' }}>{r.type}</td>
                   </tr>
                 ))}
+                {!loading && filteredRows.length === 0 && (
+                  <tr>
+                    <td colSpan={7} style={{ padding: 8, textAlign: 'center', fontSize: 13 }}>
+                      Kayıt bulunamadı.
+                    </td>
+                  </tr>
+                )}
+                {loading && (
+                  <tr>
+                    <td colSpan={7} style={{ padding: 8, textAlign: 'center', fontSize: 13 }}>
+                      Yükleniyor…
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
 

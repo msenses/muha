@@ -1,18 +1,16 @@
- 'use client';
+'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
 
 type InvoiceRow = { id: string; invoice_date: string; type: 'sales' | 'purchase'; total: number; accounts: { name: string } | null };
 
+type AgendaSummary = { id: string; title: string; reminder_date: string };
+
 function formatCurrency(x: number) {
 	return x.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 });
-}
-
-function addDaysLabel(days: number) {
-	const d = new Date();
-	d.setDate(d.getDate() + days);
-	return d.toLocaleDateString('tr-TR');
 }
 
 function KpiCard(props: { title: string; value: string; sub?: string; accent?: string }) {
@@ -26,6 +24,9 @@ function KpiCard(props: { title: string; value: string; sub?: string; accent?: s
 }
 
 function Sparkline({ points, color = '#22c55e' }: { points: number[]; color?: string }) {
+	if (!points.length) {
+		return <div style={{ fontSize: 12, opacity: 0.8 }}>Veri yok</div>;
+	}
 	const max = Math.max(1, ...points);
 	const min = Math.min(0, ...points);
 	const range = Math.max(1, max - min);
@@ -48,20 +49,141 @@ function Sparkline({ points, color = '#22c55e' }: { points: number[]; color?: st
 
 export default function DashboardPage() {
 	const router = useRouter();
-	const [accountCount] = useState<number>(12);
-	const [productCount] = useState<number>(58);
-	const [sales30d] = useState<number>(126000);
-	const [purchases30d] = useState<number>(84000);
-	const [lastInvoices] = useState<InvoiceRow[]>([
-		{ id: 'd1', invoice_date: new Date().toISOString().slice(0, 10), type: 'sales', total: 5800, accounts: { name: 'Demo Müşteri' } },
-		{ id: 'd2', invoice_date: new Date().toISOString().slice(0, 10), type: 'purchase', total: 2400, accounts: { name: 'Demo Tedarikçi' } },
-	]);
-	const [sales12m] = useState<number[]>([12000, 8000, 15000, 18000, 22000, 17000, 26000, 30000, 28000, 31000, 29000, 35000]);
-	const [lowStock] = useState<Array<{ id: string; name: string; balance: number }>>([
-		{ id: 'p1', name: 'Demo Ürün A', balance: 2 },
-		{ id: 'p2', name: 'Demo Ürün B', balance: 3 },
-		{ id: 'p3', name: 'Demo Ürün C', balance: 5 },
-	]);
+
+	const [accountCount, setAccountCount] = useState<number>(0);
+	const [productCount, setProductCount] = useState<number>(0);
+	const [sales30d, setSales30d] = useState<number>(0);
+	const [purchases30d, setPurchases30d] = useState<number>(0);
+	const [lastInvoices, setLastInvoices] = useState<InvoiceRow[]>([]);
+	const [sales12m, setSales12m] = useState<number[]>([]);
+	const [lowStock, setLowStock] = useState<Array<{ id: string; name: string; balance: number }>>([]);
+	const [agendaItems, setAgendaItems] = useState<AgendaSummary[]>([]);
+
+	useEffect(() => {
+		let active = true;
+		const load = async () => {
+			try {
+				const { data: sessionData } = await supabase.auth.getSession();
+				if (!sessionData.session) {
+					if (active) router.replace('/login');
+					return;
+				}
+
+				const companyId = await fetchCurrentCompanyId();
+				if (!companyId) {
+					console.warn('Company ID bulunamadı');
+					return;
+				}
+
+				// 1) Cari ve ürün sayıları
+				const [{ count: accCount }, { count: prodCount }] = await Promise.all([
+					supabase.from('accounts').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+					supabase.from('products').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+				]);
+
+				// 2) Son 30 gün satış/alış tutarları
+				const since = new Date();
+				since.setDate(since.getDate() - 30);
+				const sinceStr = since.toISOString().slice(0, 10);
+				const { data: last30Invoices } = await supabase
+					.from('invoices')
+					.select('type, net_total, invoice_date')
+					.eq('company_id', companyId)
+					.gte('invoice_date', sinceStr);
+
+				let salesSum = 0;
+				let purchaseSum = 0;
+				(last30Invoices ?? []).forEach((inv: any) => {
+					const amt = Number(inv.net_total ?? 0);
+					if (inv.type === 'sales') salesSum += amt;
+					if (inv.type === 'purchase') purchaseSum += amt;
+				});
+
+				// 3) Son faturalar
+				const { data: lastInv } = await supabase
+					.from('invoices')
+					.select('id, invoice_date, type, total, accounts(name)')
+					.eq('company_id', companyId)
+					.order('invoice_date', { ascending: false })
+					.limit(5);
+
+				// 4) Azalan stoklar
+				const { data: lowStockRows } = await supabase
+					.from('products')
+					.select('id, name, stock_balance, min_stock')
+					.eq('company_id', companyId)
+					.order('stock_balance', { ascending: true })
+					.limit(10);
+
+				// 5) Aylık satışlar (son 12 ay)
+				const since12 = new Date();
+				since12.setMonth(since12.getMonth() - 11);
+				const since12Str = since12.toISOString().slice(0, 10);
+				const { data: last12Sales } = await supabase
+					.from('invoices')
+					.select('invoice_date, net_total, type')
+					.eq('company_id', companyId)
+					.eq('type', 'sales')
+					.gte('invoice_date', since12Str);
+
+				const monthly: Record<string, number> = {};
+				(last12Sales ?? []).forEach((inv: any) => {
+					const d = inv.invoice_date?.slice(0, 7); // yyyy-MM
+					if (!d) return;
+					monthly[d] = (monthly[d] ?? 0) + Number(inv.net_total ?? 0);
+				});
+				const months: string[] = [];
+				const now = new Date();
+				for (let i = 11; i >= 0; i--) {
+					const d = new Date(now);
+					d.setMonth(d.getMonth() - i);
+					months.push(d.toISOString().slice(0, 7));
+				}
+				const sales12 = months.map((m) => monthly[m] ?? 0);
+
+				// 6) Ajanda'dan yaklaşan 3 kayıt
+				const { data: agendaRows } = await supabase
+					.from('agenda_items')
+					.select('id, title, reminder_date')
+					.eq('company_id', companyId)
+					.order('reminder_date', { ascending: true })
+					.limit(3);
+
+				if (!active) return;
+
+				setAccountCount(accCount ?? 0);
+				setProductCount(prodCount ?? 0);
+				setSales30d(salesSum);
+				setPurchases30d(purchaseSum);
+				setLastInvoices((lastInv ?? []) as unknown as InvoiceRow[]);
+				setSales12m(sales12);
+				setLowStock(
+					(lowStockRows ?? [])
+						.map((p: any) => ({
+							id: p.id,
+							name: p.name,
+							balance: Number(p.stock_balance ?? 0),
+							min: Number(p.min_stock ?? 0),
+						}))
+						// En az stok olanları öne al, stok seviyesi 0 veya min stok altında olanları göster
+						.filter((p) => p.balance <= p.min || p.balance <= 0)
+				);
+				setAgendaItems(
+					(agendaRows ?? []).map((a: any) => ({
+						id: a.id,
+						title: a.title,
+						reminder_date: a.reminder_date,
+					}))
+				);
+			} catch (err) {
+				console.error('Dashboard verileri yüklenemedi:', err);
+			}
+		};
+		load();
+		return () => {
+			active = false;
+		};
+	}, [router]);
 
 	const kpis = useMemo(() => {
 		return [
@@ -80,40 +202,20 @@ export default function DashboardPage() {
 				<div style={{ borderRadius: 16, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', padding: 12, aspectRatio: '1 / 1', display: 'flex', flexDirection: 'column' }}>
 					<div style={{ fontWeight: 700, marginBottom: 8 }}>Ajanda</div>
 					<div style={{ display: 'grid', gap: 8, overflow: 'auto' }}>
-						{[
-							{ t: '03.12 10:30', text: 'İşlemler kontrol edilecek. — Mustafa Bey' },
-							{ t: '03.12 10:10', text: 'Ödemeler kontrol edilecek. — Mustafa Bey' },
-							{ t: '02.12 10:10', text: 'Tahsilatlar kontrol edilecek. — Ahmet Bey' },
-						].map((e, i) => (
-							<div key={i} style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: 10, alignItems: 'center' }}>
-								<div style={{ fontSize: 12, opacity: 0.85 }}>{e.t}</div>
-								<div style={{ opacity: 0.95 }}>{e.text}</div>
+						{agendaItems.map((a) => (
+							<div key={a.id} style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: 10, alignItems: 'center' }}>
+								<div style={{ fontSize: 12, opacity: 0.85 }}>{new Date(a.reminder_date).toLocaleString('tr-TR')}</div>
+								<div style={{ opacity: 0.95 }}>{a.title}</div>
 							</div>
 						))}
+						{!agendaItems.length && (
+							<div style={{ fontSize: 13, opacity: 0.8 }}>Yaklaşan ajanda kaydı bulunamadı.</div>
+						)}
 						<button onClick={() => router.push('/agenda')} style={{ marginTop: 'auto', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white', cursor: 'pointer' }}>Ajandaya Git</button>
 					</div>
 				</div>
 
-				{/* 2) Son 1 haftadaki yaklaşan ödemeler */}
-				<div style={{ borderRadius: 16, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', padding: 12, aspectRatio: '1 / 1', display: 'flex', flexDirection: 'column' }}>
-					<div style={{ fontWeight: 700, marginBottom: 8 }}>Yaklaşan Ödemeler (7 gün)</div>
-					<div style={{ display: 'grid', gap: 8, overflow: 'auto' }}>
-						{[
-							{ d: addDaysLabel(1), name: 'Demo Tedarikçi', amount: 4800 },
-							{ d: addDaysLabel(3), name: 'XYZ Ltd.', amount: 9200 },
-							{ d: addDaysLabel(5), name: 'ABC A.Ş.', amount: 3500 },
-						].map((p, i) => (
-							<div key={i} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 10, alignItems: 'center' }}>
-								<div style={{ fontSize: 12, opacity: 0.85 }}>{p.d}</div>
-								<div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
-								<div style={{ fontWeight: 700, color: '#f59e0b' }}>{formatCurrency(p.amount)}</div>
-							</div>
-						))}
-						<button onClick={() => router.push('/cash')} style={{ marginTop: 'auto', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white', cursor: 'pointer' }}>Ödeme/Tahsilatlara Git</button>
-					</div>
-				</div>
-
-				{/* 3) En az stok */}
+				{/* 2) En az stok */}
 				<div style={{ borderRadius: 16, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', padding: 12, aspectRatio: '1 / 1', display: 'flex', flexDirection: 'column' }}>
 					<div style={{ fontWeight: 700, marginBottom: 8 }}>Azalan Stoklar</div>
 					<div style={{ display: 'grid', gap: 8, overflow: 'auto' }}>
