@@ -1,17 +1,18 @@
- 'use client';
+'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
 
 type Branch = {
   id: string;
   name: string;
 };
 
-// Topbar artık Supabase veya veritabanına bağlanmıyor; statik/demo değerler kullanılıyor
 export default function Topbar() {
   const router = useRouter();
-  const [companyName] = useState<string>('Finova Yazılım');
+  const [companyName, setCompanyName] = useState<string>('Firma');
   const [branches] = useState<Branch[]>([
     { id: '1', name: 'Merkez' },
     { id: '2', name: 'Şube 2' },
@@ -20,7 +21,53 @@ export default function Topbar() {
   const [branchMenuOpen, setBranchMenuOpen] = useState(false);
   const [activeYear, setActiveYear] = useState<number>(new Date().getFullYear());
   const [yearMenuOpen, setYearMenuOpen] = useState(false);
-  const [userEmail] = useState<string>('demo@finova.local');
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          if (active) setUserEmail(null);
+        } else {
+          if (active) setUserEmail(sessionData.session.user.email ?? null);
+        }
+
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) {
+          console.warn('Topbar: company_id bulunamadı');
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('companies')
+          .select('name, trade_name')
+          .eq('id', companyId)
+          .single();
+
+        if (!active) return;
+        if (error) {
+          console.warn('Topbar: firma adı alınamadı', error);
+          return;
+        }
+
+        const resolved =
+          (data as any)?.trade_name ||
+          (data as any)?.name ||
+          companyName;
+        setCompanyName(resolved);
+      } catch (err) {
+        console.error('Topbar: firma bilgileri yüklenirken hata', err);
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+    // companyName bağımlılığı gereksiz tekrar set etmeyi tetikleyebilir, bu yüzden eklenmedi.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const years = (() => {
     const now = new Date();
