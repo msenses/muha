@@ -27,31 +27,39 @@ export default function AgendaPage() {
   useEffect(() => {
     let active = true;
     const load = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        router.replace('/login');
-        return;
+      setLoading(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          if (active) setLoading(false);
+          router.replace('/login');
+          return;
+        }
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) {
+          console.warn('Company ID bulunamadı');
+          if (active) setLoading(false);
+          return;
+        }
+        const query = supabase
+          .from('agenda_items')
+          .select('id, title, description, reminder_date, is_completed')
+          .eq('company_id', companyId)
+          .order('reminder_date', { ascending: true });
+        const { data, error } = await query;
+        if (!active) return;
+        if (error) {
+          console.error('Ajanda kayıtları yüklenemedi', error);
+          setRows([]);
+        } else {
+          setRows((data ?? []) as unknown as AgendaItem[]);
+        }
+      } catch (err) {
+        console.error('Ajanda kayıtları yüklenirken hata', err);
+        if (active) setRows([]);
+      } finally {
+        if (active) setLoading(false);
       }
-      const companyId = await fetchCurrentCompanyId();
-      if (!companyId) {
-        console.warn('Company ID bulunamadı');
-        setLoading(false);
-        return;
-      }
-      const query = supabase
-        .from('agenda_items')
-        .select('id, title, description, reminder_date, is_completed')
-        .eq('company_id', companyId)
-        .order('reminder_date', { ascending: true });
-      const { data, error } = await query;
-      if (!active) return;
-      if (error) {
-        console.error('Ajanda kayıtları yüklenemedi', error);
-        setRows([]);
-      } else {
-        setRows((data ?? []) as unknown as AgendaItem[]);
-      }
-      setLoading(false);
     };
     load();
     return () => {

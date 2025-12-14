@@ -26,30 +26,38 @@ export default function CashListPage() {
   useEffect(() => {
     let active = true;
     const load = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        router.replace('/login');
-        return;
+      setLoading(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          if (active) setLoading(false);
+          router.replace('/login');
+          return;
+        }
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) {
+          console.warn('Company ID bulunamadı');
+          if (active) setLoading(false);
+          return;
+        }
+        const { data, error } = await supabase
+          .from('cash_ledgers')
+          .select('id, name, description, balance')
+          .eq('company_id', companyId)
+          .order('name', { ascending: true });
+        if (!active) return;
+        if (error) {
+          console.error('Kasa listesi yüklenemedi', error);
+          setRows([]);
+        } else {
+          setRows((data ?? []) as unknown as CashLedger[]);
+        }
+      } catch (err) {
+        console.error('Kasa listesi yüklenirken hata', err);
+        if (active) setRows([]);
+      } finally {
+        if (active) setLoading(false);
       }
-      const companyId = await fetchCurrentCompanyId();
-      if (!companyId) {
-        console.warn('Company ID bulunamadı');
-        setLoading(false);
-        return;
-      }
-      const { data, error } = await supabase
-        .from('cash_ledgers')
-        .select('id, name, description, balance')
-        .eq('company_id', companyId)
-        .order('name', { ascending: true });
-      if (!active) return;
-      if (error) {
-        console.error('Kasa listesi yüklenemedi', error);
-        setRows([]);
-      } else {
-        setRows((data ?? []) as unknown as CashLedger[]);
-      }
-      setLoading(false);
     };
     load();
     return () => {

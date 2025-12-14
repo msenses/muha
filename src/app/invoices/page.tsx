@@ -42,13 +42,14 @@ export default function InvoicesPage() {
           router.replace('/login');
           return;
         }
-        
+
         // Company ID'yi al
         const companyId = await fetchCurrentCompanyId();
         if (!companyId) {
           console.warn('Company ID bulunamadı');
           if (active) {
             setRows([]);
+            setLoading(false);
           }
           return;
         }

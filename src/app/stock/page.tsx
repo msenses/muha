@@ -45,6 +45,7 @@ export default function StockPage() {
           if (active) {
             setRows([]);
             setBalances({});
+            setLoading(false);
           }
           return;
         }

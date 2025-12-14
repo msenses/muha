@@ -24,34 +24,42 @@ export default function IncomeExpensePage() {
   useEffect(() => {
     let active = true;
     const load = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        router.replace('/login');
-        return;
+      setLoading(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          if (active) setLoading(false);
+          router.replace('/login');
+          return;
+        }
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) {
+          console.warn('Company ID bulunamadı');
+          if (active) setLoading(false);
+          return;
+        }
+        const query = supabase
+          .from('income_expense_categories')
+          .select('id, name, type, description')
+          .eq('company_id', companyId)
+          .order('name', { ascending: true });
+        if (typeFilter !== 'all') {
+          query.eq('type', typeFilter);
+        }
+        const { data, error } = await query;
+        if (!active) return;
+        if (error) {
+          console.error('Gelir/gider kategorileri yüklenemedi', error);
+          setRows([]);
+        } else {
+          setRows((data ?? []) as unknown as Category[]);
+        }
+      } catch (err) {
+        console.error('Gelir/gider kategorileri yüklenirken hata', err);
+        if (active) setRows([]);
+      } finally {
+        if (active) setLoading(false);
       }
-      const companyId = await fetchCurrentCompanyId();
-      if (!companyId) {
-        console.warn('Company ID bulunamadı');
-        setLoading(false);
-        return;
-      }
-      const query = supabase
-        .from('income_expense_categories')
-        .select('id, name, type, description')
-        .eq('company_id', companyId)
-        .order('name', { ascending: true });
-      if (typeFilter !== 'all') {
-        query.eq('type', typeFilter);
-      }
-      const { data, error } = await query;
-      if (!active) return;
-      if (error) {
-        console.error('Gelir/gider kategorileri yüklenemedi', error);
-        setRows([]);
-      } else {
-        setRows((data ?? []) as unknown as Category[]);
-      }
-      setLoading(false);
     };
     load();
     return () => {

@@ -38,30 +38,38 @@ export default function BankPage() {
   useEffect(() => {
     let active = true;
     const load = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        router.replace('/login');
-        return;
+      setLoading(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          if (active) setLoading(false);
+          router.replace('/login');
+          return;
+        }
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) {
+          console.warn('Company ID bulunamadı');
+          if (active) setLoading(false);
+          return;
+        }
+        const { data, error } = await supabase
+          .from('bank_accounts')
+          .select('id, bank_name, account_no, balance')
+          .eq('company_id', companyId)
+          .order('bank_name', { ascending: true });
+        if (!active) return;
+        if (error) {
+          console.error('Banka listesi yüklenemedi', error);
+          setRows([]);
+        } else {
+          setRows((data ?? []) as unknown as BankRow[]);
+        }
+      } catch (err) {
+        console.error('Banka listesi yüklenirken hata', err);
+        if (active) setRows([]);
+      } finally {
+        if (active) setLoading(false);
       }
-      const companyId = await fetchCurrentCompanyId();
-      if (!companyId) {
-        console.warn('Company ID bulunamadı');
-        setLoading(false);
-        return;
-      }
-      const { data, error } = await supabase
-        .from('bank_accounts')
-        .select('id, bank_name, account_no, balance')
-        .eq('company_id', companyId)
-        .order('bank_name', { ascending: true });
-      if (!active) return;
-      if (error) {
-        console.error('Banka listesi yüklenemedi', error);
-        setRows([]);
-      } else {
-        setRows((data ?? []) as unknown as BankRow[]);
-      }
-      setLoading(false);
     };
     load();
     return () => {
