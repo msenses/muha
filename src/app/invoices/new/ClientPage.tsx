@@ -191,12 +191,20 @@ export default function InvoiceNewClientPage() {
   useEffect(() => {
     const loadAccount = async () => {
       if (!accountId) return;
-      const { data } = await supabase.from('accounts').select('name, email, address, tax_id').eq('id', accountId).single();
+      const { data } = await supabase
+        .from('accounts')
+        .select('name, email, address, tax_id, tax_office, city, district, contact_name')
+        .eq('id', accountId)
+        .single();
       if (data) {
         setAccountName(data.name ?? '');
         setAccountEmail(data.email ?? '');
         setAccountAddress(data.address ?? '');
         setTaxNo(data.tax_id ?? '');
+        setTaxOffice((data as any).tax_office ?? '');
+        setCity((data as any).city ?? '');
+        setDistrict((data as any).district ?? '');
+        setAccountContact((data as any).contact_name ?? '');
       }
     };
     loadAccount();

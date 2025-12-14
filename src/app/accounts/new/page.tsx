@@ -84,6 +84,7 @@ export default function AccountNewPage() {
         name: name.trim(),
         tax_id: taxId || null,
         tax_office: taxOffice || null,
+        contact_name: authorized || null,
         phone: phone || null,
         email: email || null,
         address: address || null,

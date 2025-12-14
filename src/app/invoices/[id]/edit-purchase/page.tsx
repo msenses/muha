@@ -37,7 +37,7 @@ export default function EditPurchaseInvoicePage() {
     try {
       const { data: invoiceData } = await supabase
         .from('invoices')
-        .select('*, accounts(name, tax_id, tax_office, address, phone, email, city, district)')
+        .select('*, accounts(name, tax_id, tax_office, address, phone, email, city, district, contact_name)')
         .eq('id', invoiceId)
         .single();
 

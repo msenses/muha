@@ -17,6 +17,10 @@ export default function AccountEditPage() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
+  const [taxOffice, setTaxOffice] = useState('');
+  const [city, setCity] = useState('');
+  const [district, setDistrict] = useState('');
+  const [contactName, setContactName] = useState('');
 
   useEffect(() => {
     const init = async () => {
@@ -27,7 +31,7 @@ export default function AccountEditPage() {
       }
       const { data: rec, error } = await supabase
         .from('accounts')
-        .select('code, name, tax_id, phone, email, address')
+        .select('code, name, tax_id, phone, email, address, tax_office, city, district, contact_name')
         .eq('id', id)
         .single();
       if (error) {
@@ -39,6 +43,10 @@ export default function AccountEditPage() {
         setPhone((rec as any).phone ?? '');
         setEmail((rec as any).email ?? '');
         setAddress((rec as any).address ?? '');
+        setTaxOffice((rec as any).tax_office ?? '');
+        setCity((rec as any).city ?? '');
+        setDistrict((rec as any).district ?? '');
+        setContactName((rec as any).contact_name ?? '');
       }
       setLoading(false);
     };
@@ -57,9 +65,13 @@ export default function AccountEditPage() {
           code: code || null,
           name: name.trim(),
           tax_id: taxId || null,
+          tax_office: taxOffice || null,
+          contact_name: contactName || null,
           phone: phone || null,
           email: email || null,
           address: address || null,
+          city: city || null,
+          district: district || null,
         })
         .eq('id', id);
       if (error) throw error;
@@ -100,9 +112,29 @@ export default function AccountEditPage() {
                   <input value={phone} onChange={(e) => setPhone(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
                 </div>
               </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, opacity: 0.9 }}>Vergi Dairesi</label>
+                  <input value={taxOffice} onChange={(e) => setTaxOffice(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, opacity: 0.9 }}>Yetkili</label>
+                  <input value={contactName} onChange={(e) => setContactName(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                </div>
+              </div>
               <div>
                 <label style={{ display: 'block', fontSize: 13, opacity: 0.9 }}>E-posta</label>
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, opacity: 0.9 }}>İl</label>
+                  <input value={city} onChange={(e) => setCity(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, opacity: 0.9 }}>İlçe</label>
+                  <input value={district} onChange={(e) => setDistrict(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
+                </div>
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 13, opacity: 0.9 }}>Adres</label>

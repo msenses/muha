@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import type { Route } from 'next';
 
-type Account = { id: string; name: string; code: string | null; phone: string | null; email: string | null; balance: number | null; tax_id?: string | null; address?: string | null };
+type Account = { id: string; name: string; code: string | null; phone: string | null; email: string | null; balance: number | null; tax_id?: string | null; address?: string | null; contact_name?: string | null; tax_office?: string | null; city?: string | null; district?: string | null };
 type Inv = { id: string; invoice_no: string | null; invoice_date: string; type: 'sales' | 'purchase'; total: number };
 
 export default function AccountDetailPage() {
@@ -34,7 +34,7 @@ export default function AccountDetailPage() {
           router.replace('/login');
           return;
         }
-        const { data: acc } = await supabase.from('accounts').select('id, name, code, phone, email, balance, tax_id, address').eq('id', accountId).single();
+        const { data: acc } = await supabase.from('accounts').select('id, name, code, phone, email, balance, tax_id, address, contact_name, tax_office, city, district').eq('id', accountId).single();
         if (!active) return;
         setAccount(acc as any);
         const { data: invs } = await supabase
@@ -124,7 +124,7 @@ export default function AccountDetailPage() {
                         <div>Grup :</div>
                         <div>{'MÜŞTERİLER'}</div>
                         <div>Yetkili :</div>
-                        <div>{'-'}</div>
+                        <div>{account?.contact_name ?? '-'}</div>
                       </div>
                     )}
                     {tab === 'ayr' && (

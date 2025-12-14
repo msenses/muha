@@ -28,6 +28,7 @@ ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS e_archive_enabled BOOLEAN 
 
 -- ACCOUNTS tablosuna eksik alanlar
 ALTER TABLE public.accounts ADD COLUMN IF NOT EXISTS type TEXT; -- 'customer', 'supplier', 'both'
+ALTER TABLE public.accounts ADD COLUMN IF NOT EXISTS contact_name TEXT; -- Yetkili kişi
 ALTER TABLE public.accounts ADD COLUMN IF NOT EXISTS tax_office TEXT;
 ALTER TABLE public.accounts ADD COLUMN IF NOT EXISTS district TEXT;
 ALTER TABLE public.accounts ADD COLUMN IF NOT EXISTS city TEXT;

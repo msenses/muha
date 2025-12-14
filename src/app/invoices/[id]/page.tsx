@@ -24,7 +24,7 @@ export default function InvoiceDetailPage() {
       // Fatura bilgilerini yükle
       const { data: invoiceData } = await supabase
         .from('invoices')
-        .select('*, accounts(name, tax_id, tax_office, address, phone, email, city, district)')
+        .select('*, accounts(name, tax_id, tax_office, address, phone, email, city, district, contact_name)')
         .eq('id', invoiceId)
         .single();
 
@@ -219,15 +219,18 @@ export default function InvoiceDetailPage() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 8, alignItems: 'start' }}>
               <span style={{ fontSize: 13, color: '#94a3b8' }}>Yetkili :</span>
-              <span style={{ fontSize: 13 }}>-</span>
+              <span style={{ fontSize: 13 }}>{invoice.accounts?.contact_name || '-'}</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 8, alignItems: 'start' }}>
               <span style={{ fontSize: 13, color: '#94a3b8' }}>Adres :</span>
               <span style={{ fontSize: 13 }}>{invoice.accounts?.address || '-'}</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 8, alignItems: 'center' }}>
-              <span style={{ fontSize: 13, color: '#94a3b8' }}>İlçeli :</span>
-              <span style={{ fontSize: 13 }}>{invoice.accounts?.city || '-'}</span>
+              <span style={{ fontSize: 13, color: '#94a3b8' }}>İl / İlçe :</span>
+              <span style={{ fontSize: 13 }}>
+                {invoice.accounts?.city || '-'}
+                {invoice.accounts?.district ? ` / ${invoice.accounts.district}` : ''}
+              </span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 8, alignItems: 'center' }}>
               <span style={{ fontSize: 13, color: '#94a3b8' }}>Vergi D./No :</span>
