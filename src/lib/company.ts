@@ -5,13 +5,7 @@ let cachedCompanyId: string | null = null;
 
 export async function fetchCurrentCompanyId(): Promise<string | null> {
   try {
-    // Önce session'dan user ID'yi al (oturum yoksa null döndür)
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData.session?.user?.id) {
-      return null;
-    }
-
-    // Tek firma modu: tüm kullanıcılar aynı firmaya bağlı kabul edilir
+    // Tek firma modu: login olup olmamasına bakmadan ilk company kaydını kullan
     if (SINGLE_COMPANY_MODE) {
       if (cachedCompanyId) {
         return cachedCompanyId;
@@ -31,6 +25,12 @@ export async function fetchCurrentCompanyId(): Promise<string | null> {
 
       cachedCompanyId = data.id;
       return cachedCompanyId;
+    }
+
+    // Çoklu firma modu: kullanıcı zorunlu, user_profiles üzerinden company_id çöz
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session?.user?.id) {
+      return null;
     }
 
     // Çoklu firma modu: user_profiles üzerinden company_id çöz
