@@ -25,48 +25,33 @@ export default function Topbar() {
 
   useEffect(() => {
     let active = true;
+
     const load = async () => {
       try {
+        // 1) Login'de localStorage'a yazılan tenant adını oku
+        if (typeof window !== 'undefined') {
+          const storedName = window.localStorage.getItem('currentTenantName');
+          if (storedName) {
+            setCompanyName(storedName);
+          }
+        }
+
+        // 2) (Opsiyonel) Uygulama Supabase oturumundan kullanıcı mailini al
         const { data: sessionData } = await supabase.auth.getSession();
         if (!sessionData.session) {
           if (active) setUserEmail(null);
         } else {
           if (active) setUserEmail(sessionData.session.user.email ?? null);
         }
-
-        const companyId = await fetchCurrentCompanyId();
-        if (!companyId) {
-          console.warn('Topbar: company_id bulunamadı');
-          return;
-        }
-
-        const { data, error } = await supabase
-          .from('companies')
-          .select('name, trade_name')
-          .eq('id', companyId)
-          .single();
-
-        if (!active) return;
-        if (error) {
-          console.warn('Topbar: firma adı alınamadı', error);
-          return;
-        }
-
-        const resolved =
-          (data as any)?.trade_name ||
-          (data as any)?.name ||
-          companyName;
-        setCompanyName(resolved);
       } catch (err) {
-        console.error('Topbar: firma bilgileri yüklenirken hata', err);
+        console.error('Topbar: bilgiler yüklenirken hata', err);
       }
     };
+
     load();
     return () => {
       active = false;
     };
-    // companyName bağımlılığı gereksiz tekrar set etmeyi tetikleyebilir, bu yüzden eklenmedi.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const years = (() => {
