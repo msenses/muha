@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
-import { fetchCurrentCompanyId } from '@/lib/company';
+import { directorySupabase } from '@/lib/directorySupabaseClient';
 
 type Branch = {
   id: string;
@@ -36,12 +35,12 @@ export default function Topbar() {
           }
         }
 
-        // 2) (Opsiyonel) Uygulama Supabase oturumundan kullanıcı mailini al
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (!sessionData.session) {
-          if (active) setUserEmail(null);
-        } else {
-          if (active) setUserEmail(sessionData.session.user.email ?? null);
+        // 2) Merkezi (directory) Supabase oturumundan kullanıcı mailini al
+        const { data: userData, error } = await directorySupabase.auth.getUser();
+        if (error) {
+          console.warn('Topbar: kullanıcı bilgisi alınamadı', error);
+        } else if (active) {
+          setUserEmail(userData.user?.email ?? null);
         }
       } catch (err) {
         console.error('Topbar: bilgiler yüklenirken hata', err);
