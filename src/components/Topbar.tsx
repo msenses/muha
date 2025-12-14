@@ -1,189 +1,26 @@
-'use client';
+ 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
-import { fetchCurrentCompanyId } from '@/lib/company';
 
 type Branch = {
   id: string;
   name: string;
 };
 
+// Topbar artık Supabase veya veritabanına bağlanmıyor; statik/demo değerler kullanılıyor
 export default function Topbar() {
   const router = useRouter();
-  const [companyName, setCompanyName] = useState<string>('');
-  const [userEmail, setUserEmail] = useState<string>('');
-  const [loading, setLoading] = useState(true);
-
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [activeBranchId, setActiveBranchId] = useState<string | null>(null);
+  const [companyName] = useState<string>('Finova Yazılım');
+  const [branches] = useState<Branch[]>([
+    { id: '1', name: 'Merkez' },
+    { id: '2', name: 'Şube 2' },
+  ]);
+  const [activeBranchId, setActiveBranchId] = useState<string>('1');
   const [branchMenuOpen, setBranchMenuOpen] = useState(false);
-
-  const [activeYear, setActiveYear] = useState<number | null>(null);
+  const [activeYear, setActiveYear] = useState<number>(new Date().getFullYear());
   const [yearMenuOpen, setYearMenuOpen] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-
-    const loadCompanyInfo = async () => {
-      try {
-        // Session kontrolü
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (!mounted || !sessionData.session) {
-          setLoading(false);
-          return;
-        }
-
-        setUserEmail(sessionData.session.user.email || '');
-
-        // Company ID'yi al
-        const companyId = await fetchCurrentCompanyId();
-        if (!mounted || !companyId) {
-          setLoading(false);
-          return;
-        }
-
-        // Company bilgilerini çek
-        const { data: company } = await supabase
-          .from('companies')
-          .select('name, trade_name')
-          .eq('id', companyId)
-          .single();
-
-        if (mounted && company) {
-          setCompanyName(company.trade_name || company.name || '');
-        }
-
-        // Şubeleri yükle
-        let { data: branchRows } = await supabase
-          .from('branches')
-          .select('id, name')
-          .eq('company_id', companyId)
-          .order('created_at', { ascending: true });
-
-        // Hiç şube yoksa otomatik "Merkez" oluştur
-        if (mounted && (!branchRows || branchRows.length === 0)) {
-          const { data: insertedBranch, error: insertErr } = await supabase
-            .from('branches')
-            .insert({ company_id: companyId, name: 'Merkez' })
-            .select('id, name')
-            .single();
-
-          if (!insertErr && insertedBranch) {
-            branchRows = [insertedBranch];
-          }
-        }
-
-        if (mounted && branchRows && branchRows.length > 0) {
-          setBranches(branchRows as Branch[]);
-
-          if (typeof window !== 'undefined') {
-            const storedBranchId = window.localStorage.getItem('activeBranchId');
-            const existing = branchRows.find((b) => b.id === storedBranchId);
-            const selected = existing || branchRows[0];
-
-            setActiveBranchId(selected.id);
-            window.localStorage.setItem('activeBranchId', selected.id);
-            window.localStorage.setItem('activeBranchName', selected.name);
-          } else {
-            setActiveBranchId(branchRows[0].id);
-          }
-        }
-
-        // Aktif yılı yükle
-        if (mounted) {
-          const now = new Date();
-          const currentYear = now.getFullYear();
-          let yearToUse = currentYear;
-
-          if (typeof window !== 'undefined') {
-            const storedYear = window.localStorage.getItem('activeYear');
-            const parsed = storedYear ? parseInt(storedYear, 10) : NaN;
-            if (!Number.isNaN(parsed)) {
-              yearToUse = parsed;
-            } else {
-              window.localStorage.setItem('activeYear', String(currentYear));
-            }
-          }
-
-          setActiveYear(yearToUse);
-        }
-      } catch (error) {
-        console.error('Company bilgisi yüklenirken hata:', error);
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    loadCompanyInfo();
-
-    // Auth state değişikliklerini dinle
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!mounted) return;
-      
-      if (session?.user?.email) {
-        setUserEmail(session.user.email);
-        // Company bilgisini yeniden yükle
-        const companyId = await fetchCurrentCompanyId();
-        if (companyId) {
-          const { data: company } = await supabase
-            .from('companies')
-            .select('name, trade_name')
-            .eq('id', companyId)
-            .single();
-
-          if (company) {
-            setCompanyName(company.trade_name || company.name || '');
-          }
-        }
-      } else {
-        setUserEmail('');
-        setCompanyName('');
-      }
-    });
-
-    return () => {
-      mounted = false;
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
-
-  // Login ve test-connection sayfalarında topbar gösterme
-  if (typeof window !== 'undefined') {
-    const path = window.location.pathname;
-    if (path === '/login' || path === '/test-connection') {
-      return null;
-    }
-  }
-
-  if (loading) {
-    return (
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 240,
-        right: 0,
-        height: 60,
-        background: 'rgba(0,0,0,0.2)',
-        borderBottom: '1px solid rgba(255,255,255,0.12)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingLeft: 24,
-        paddingRight: 24,
-        zIndex: 999,
-      }}>
-        <div style={{ fontSize: 14, opacity: 0.6, color: 'white' }}>Yükleniyor...</div>
-      </div>
-    );
-  }
-
-  if (!companyName) {
-    return null;
-  }
+  const [userEmail] = useState<string>('demo@finova.local');
 
   const years = (() => {
     const now = new Date();
@@ -191,23 +28,16 @@ export default function Topbar() {
     return [base - 1, base, base + 1];
   })();
 
-  const activeBranch = branches.find((b) => b.id === activeBranchId) || null;
+  const activeBranch = branches.find((b) => b.id === activeBranchId) || branches[0];
 
   const handleSelectBranch = (branch: Branch) => {
     setActiveBranchId(branch.id);
     setBranchMenuOpen(false);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('activeBranchId', branch.id);
-      window.localStorage.setItem('activeBranchName', branch.name);
-    }
   };
 
   const handleSelectYear = (year: number) => {
     setActiveYear(year);
     setYearMenuOpen(false);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('activeYear', String(year));
-    }
   };
 
   return (
@@ -378,7 +208,7 @@ export default function Topbar() {
               cursor: 'pointer',
             }}
           >
-            <span>{activeYear ?? new Date().getFullYear()}</span>
+            <span>{activeYear}</span>
             <span style={{ fontSize: 10 }}>▾</span>
           </button>
 

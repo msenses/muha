@@ -1,9 +1,7 @@
-'use client';
+ 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
-import { fetchCurrentCompanyId } from '@/lib/company';
 
 type InvoiceRow = { id: string; invoice_date: string; type: 'sales' | 'purchase'; total: number; accounts: { name: string } | null };
 
@@ -50,141 +48,27 @@ function Sparkline({ points, color = '#22c55e' }: { points: number[]; color?: st
 
 export default function DashboardPage() {
 	const router = useRouter();
-	const [loading, setLoading] = useState(true);
-	const [accountCount, setAccountCount] = useState<number | null>(null);
-	const [productCount, setProductCount] = useState<number | null>(null);
-	const [sales30d, setSales30d] = useState<number | null>(null);
-	const [purchases30d, setPurchases30d] = useState<number | null>(null);
-	const [lastInvoices, setLastInvoices] = useState<InvoiceRow[]>([]);
-	const [sales12m, setSales12m] = useState<number[]>([]);
-	const [lowStock, setLowStock] = useState<Array<{ id: string; name: string; balance: number }>>([]);
-
-	useEffect(() => {
-		let active = true;
-		const load = async () => {
-			setLoading(true);
-			try {
-				const { data: sessionData } = await supabase.auth.getSession();
-				if (!sessionData.session) {
-					router.replace('/login');
-					return;
-				}
-				
-				// Company ID'yi al
-				const companyId = await fetchCurrentCompanyId();
-				if (!companyId) {
-					console.warn('Company ID bulunamadı');
-					setLoading(false);
-					return;
-				}
-				
-				const accRes = await supabase.from('accounts').select('*', { count: 'exact', head: true }).eq('company_id', companyId);
-				if (!active) return;
-				setAccountCount(accRes.count ?? 0);
-
-				const prdRes = await supabase.from('products').select('*', { count: 'exact', head: true }).eq('company_id', companyId);
-				if (!active) return;
-				setProductCount(prdRes.count ?? 0);
-
-				const today = new Date();
-				const day30 = new Date();
-				day30.setDate(today.getDate() - 30);
-				const yearBack = new Date();
-				yearBack.setMonth(today.getMonth() - 11);
-				yearBack.setDate(1);
-
-				const { data: invs } = await supabase
-					.from('invoices')
-					.select('id, invoice_date, type, total, accounts(name)')
-					.eq('company_id', companyId)
-					.order('invoice_date', { ascending: false })
-					.limit(500);
-				const invRows = (invs ?? []) as unknown as InvoiceRow[];
-				if (!active) return;
-				setLastInvoices(invRows.slice(0, 6));
-
-				const within30d = invRows.filter((r) => {
-					const d = new Date(r.invoice_date);
-					return d >= day30;
-				});
-				setSales30d(
-					Math.round(
-						within30d.filter((r) => r.type === 'sales').reduce((s, r) => s + Number(r.total ?? 0), 0)
-					)
-				);
-				setPurchases30d(
-					Math.round(
-						within30d.filter((r) => r.type === 'purchase').reduce((s, r) => s + Number(r.total ?? 0), 0)
-					)
-				);
-
-				const buckets = new Array(12).fill(0);
-				for (const r of invRows) {
-					if (r.type !== 'sales') continue;
-					const d = new Date(r.invoice_date);
-					if (d < yearBack) continue;
-					const monthsDiff = (today.getFullYear() - d.getFullYear()) * 12 + (today.getMonth() - d.getMonth());
-					const idx = 11 - Math.min(11, Math.max(0, monthsDiff));
-					buckets[idx] += Number(r.total ?? 0);
-				}
-				setSales12m(buckets.map((v) => Math.round(v)));
-
-				// En az stokta kalan ürünler (ilk 5)
-				const { data: products } = await supabase
-					.from('products')
-					.select('id, name')
-					.order('name', { ascending: true })
-					.limit(400);
-				const { data: moves } = await supabase
-					.from('stock_movements')
-					.select('product_id, move_type, qty')
-					.limit(20000);
-				const bal: Record<string, number> = {};
-				for (const m of (moves ?? []) as any[]) {
-					const pid = m.product_id as string;
-					const qty = Number(m.qty ?? 0);
-					const sign = m.move_type === 'in' ? 1 : -1;
-					bal[pid] = (bal[pid] ?? 0) + sign * qty;
-				}
-				const list = ((products ?? []) as any[]).map((p) => ({
-					id: p.id as string,
-					name: p.name as string,
-					balance: bal[p.id as string] ?? 0,
-				}));
-				list.sort((a, b) => a.balance - b.balance);
-				setLowStock(list.slice(0, 5));
-			} catch (_e) {
-				if (!active) return;
-				setAccountCount((v) => v ?? 12);
-				setProductCount((v) => v ?? 58);
-				setSales30d((v) => v ?? 126000);
-				setPurchases30d((v) => v ?? 84000);
-				setLastInvoices((v) => v.length ? v : [
-					{ id: 'd1', invoice_date: new Date().toISOString().slice(0, 10), type: 'sales', total: 5800, accounts: { name: 'Demo Müşteri' } },
-					{ id: 'd2', invoice_date: new Date().toISOString().slice(0, 10), type: 'purchase', total: 2400, accounts: { name: 'Demo Tedarikçi' } },
-				]);
-				setSales12m((v) => v.length ? v : [12000, 8000, 15000, 18000, 22000, 17000, 26000, 30000, 28000, 31000, 29000, 35000]);
-				setLowStock((v) => v.length ? v : [
-					{ id: 'p1', name: 'Demo Ürün A', balance: 2 },
-					{ id: 'p2', name: 'Demo Ürün B', balance: 3 },
-					{ id: 'p3', name: 'Demo Ürün C', balance: 5 },
-				]);
-			} finally {
-				if (active) setLoading(false);
-			}
-		};
-		load();
-		return () => {
-			active = false;
-		};
-	}, [router]);
+	const [accountCount] = useState<number>(12);
+	const [productCount] = useState<number>(58);
+	const [sales30d] = useState<number>(126000);
+	const [purchases30d] = useState<number>(84000);
+	const [lastInvoices] = useState<InvoiceRow[]>([
+		{ id: 'd1', invoice_date: new Date().toISOString().slice(0, 10), type: 'sales', total: 5800, accounts: { name: 'Demo Müşteri' } },
+		{ id: 'd2', invoice_date: new Date().toISOString().slice(0, 10), type: 'purchase', total: 2400, accounts: { name: 'Demo Tedarikçi' } },
+	]);
+	const [sales12m] = useState<number[]>([12000, 8000, 15000, 18000, 22000, 17000, 26000, 30000, 28000, 31000, 29000, 35000]);
+	const [lowStock] = useState<Array<{ id: string; name: string; balance: number }>>([
+		{ id: 'p1', name: 'Demo Ürün A', balance: 2 },
+		{ id: 'p2', name: 'Demo Ürün B', balance: 3 },
+		{ id: 'p3', name: 'Demo Ürün C', balance: 5 },
+	]);
 
 	const kpis = useMemo(() => {
 		return [
-			{ title: 'Toplam Cari', value: accountCount == null ? '—' : accountCount.toString(), sub: 'Müşteri + Tedarikçi' },
-			{ title: 'Toplam Ürün', value: productCount == null ? '—' : productCount.toString(), sub: 'Aktif stok kartları' },
-			{ title: 'Son 30 Gün Satış', value: sales30d == null ? '—' : formatCurrency(sales30d), accent: '#22c55e' },
-			{ title: 'Son 30 Gün Alım', value: purchases30d == null ? '—' : formatCurrency(purchases30d), accent: '#0ea5e9' },
+			{ title: 'Toplam Cari', value: accountCount.toString(), sub: 'Müşteri + Tedarikçi' },
+			{ title: 'Toplam Ürün', value: productCount.toString(), sub: 'Aktif stok kartları' },
+			{ title: 'Son 30 Gün Satış', value: formatCurrency(sales30d), accent: '#22c55e' },
+			{ title: 'Son 30 Gün Alım', value: formatCurrency(purchases30d), accent: '#0ea5e9' },
 		];
 	}, [accountCount, productCount, sales30d, purchases30d]);
 
