@@ -1,47 +1,35 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
 
-type Row = { id: number; date: string; desc: string; amount: number; paid: number; remaining: number; status: 'Bekliyor' | 'Ödendi' };
+import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
+
+type Row = { id: string; date: string; desc: string; amount: number; paid: number; remaining: number; status: 'Bekliyor' | 'Ödendi' | 'Kısmi' | 'Vadesi Geçmiş' };
 
 export default function InstallmentDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const [header, setHeader] = useState<{
+    title: string;
+    installmentNo: number;
+    txnDate: string;
+    total: number;
+    down: number;
+    collected: number;
+    remaining: number;
+    firstDate: string;
+    count: number;
+    period: string;
+    note: string;
+  } | null>(null);
+  const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const header = useMemo(() => {
-    return {
-      title: 'Mustafa Bey',
-      installmentNo: 4,
-      txnDate: '22.11.2022',
-      total: 50000,
-      down: 20000,
-      collected: 0,
-      remaining: 30000,
-      firstDate: '29.11.2022',
-      count: 10,
-      period: '(30 GÜN) Aylık',
-      note: '',
-    };
-  }, [params.id]);
-
-  const rows: Row[] = Array.from({ length: 10 }).map((_, i) => {
-    const amount = 3000;
-    const paid = 0;
-    const remaining = amount - paid;
-    return {
-      id: i + 1,
-      date: ['29.11.2022','29.12.2022','29.01.2023','28.02.2023','29.03.2023','29.04.2023','29.05.2023','29.06.2023','29.07.2023','29.08.2023'][i] || '29.11.2022',
-      desc: `${i + 1}. Taksitlendirme`,
-      amount,
-      paid,
-      remaining,
-      status: 'Bekliyor',
-    };
-  });
-
-  const [openActionRowId, setOpenActionRowId] = useState<number | null>(null);
+  const [openActionRowId, setOpenActionRowId] = useState<string | null>(null);
   const [showReport, setShowReport] = useState(false);
   const [reportAllTime, setReportAllTime] = useState(false);
   const [reportStart, setReportStart] = useState('22.11.2022');
@@ -52,6 +40,116 @@ export default function InstallmentDetailPage({ params }: { params: { id: string
   const [collectAmount, setCollectAmount] = useState('2450');
   const [collectDate, setCollectDate] = useState('22.11.2022');
   const [collectMethod, setCollectMethod] = useState<string>('Seç');
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!data.session) {
+          router.replace('/login');
+          return;
+        }
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) {
+          if (active) setError('Şirket bilgisi alınamadı');
+          return;
+        }
+        const [{ data: plan, error: planErr }, { data: insts, error: instErr }] = await Promise.all([
+          supabase
+            .from('installment_plans')
+            .select('id, total_amount, installment_count, start_date, notes, accounts ( name )')
+            .eq('company_id', companyId)
+            .eq('id', params.id)
+            .single(),
+          supabase
+            .from('installments')
+            .select('id, installment_no, amount, due_date, paid_date, paid_amount, status')
+            .eq('installment_plan_id', params.id)
+            .order('installment_no', { ascending: true }),
+        ]);
+        if (!active) return;
+        if (planErr) {
+          console.error('Taksit planı bulunamadı:', planErr);
+          setError('Taksit planı bulunamadı');
+          setRows([]);
+          return;
+        }
+        const installments = (insts ?? []) as any[];
+        const collected = installments.reduce((s, it) => s + Number(it.paid_amount ?? 0), 0);
+        const total = Number((plan as any).total_amount ?? 0);
+        const remaining = total - collected;
+        const firstDue =
+          installments.length && installments[0].due_date
+            ? new Date(installments[0].due_date as string).toLocaleDateString('tr-TR')
+            : '';
+        const fmtDate = (d?: string | null) => {
+          if (!d) return '';
+          const dt = new Date(d);
+          if (Number.isNaN(dt.getTime())) return '';
+          return dt.toLocaleDateString('tr-TR');
+        };
+        setHeader({
+          title:
+            (Array.isArray((plan as any).accounts) ? (plan as any).accounts[0]?.name : (plan as any).accounts?.name) ??
+            '',
+          installmentNo: (plan as any).installment_count ?? installments.length ?? 0,
+          txnDate: fmtDate((plan as any).start_date),
+          total,
+          down: 0,
+          collected,
+          remaining,
+          firstDate: firstDue,
+          count: (plan as any).installment_count ?? installments.length ?? 0,
+          period: '(30 GÜN) Aylık',
+          note: ((plan as any).notes as string) ?? '',
+        });
+        const mapStatus = (s?: string | null): Row['status'] => {
+          switch (s) {
+            case 'paid':
+              return 'Ödendi';
+            case 'partial':
+              return 'Kısmi';
+            case 'overdue':
+              return 'Vadesi Geçmiş';
+            default:
+              return 'Bekliyor';
+          }
+        };
+        setRows(
+          installments.map((it: any) => {
+            const amt = Number(it.amount ?? 0);
+            const paid = Number(it.paid_amount ?? 0);
+            return {
+              id: it.id as string,
+              date: fmtDate(it.due_date),
+              desc: `${it.installment_no}. Taksit`,
+              amount: amt,
+              paid,
+              remaining: amt - paid,
+              status: mapStatus(it.status),
+            };
+          }),
+        );
+        if (instErr) {
+          console.error('Taksitler yüklenirken hata:', instErr);
+        }
+      } catch (err: any) {
+        if (!active) return;
+        console.error('Taksit detayı yüklenirken beklenmeyen hata:', err);
+        setError(err?.message ?? 'Beklenmeyen bir hata oluştu');
+        setRows([]);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [router, params.id]);
 
   return (
     <main style={{ minHeight: '100dvh', background: '#ecf0f5', color: '#111827' }}>
@@ -71,19 +169,23 @@ export default function InstallmentDetailPage({ params }: { params: { id: string
             {/* Taksit detayları üst panel */}
             <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid #e5e7eb', background: '#fff', marginBottom: 12 }}>
               <div style={{ background: '#f3f4f6', padding: '10px 12px', fontWeight: 700 }}>Taksit Detayları</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr 200px 1fr', rowGap: 10, columnGap: 16, padding: 12 }}>
-                <div>Ünvan :</div><div>{header.title}</div>
-                <div>Taksit No :</div><div>{header.installmentNo}</div>
-                <div>İşlem Tarihi :</div><div>{header.txnDate}</div>
-                <div>Toplam Tutar :</div><div>₺{header.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
-                <div>Peşinat :</div><div>₺{header.down.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
-                <div>Toplam Tahsilat :</div><div>₺{header.collected.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
-                <div>Kalan Bakiye :</div><div>₺{header.remaining.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
-                <div>İlk Taksit Tarihi :</div><div>{header.firstDate}</div>
-                <div>Taksit Sayısı :</div><div>{header.count}</div>
-                <div>Taksit Periyodu :</div><div>{header.period}</div>
-                <div>Açıklama :</div><div>{header.note || '-'}</div>
-              </div>
+              {header ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr 200px 1fr', rowGap: 10, columnGap: 16, padding: 12 }}>
+                  <div>Ünvan :</div><div>{header.title}</div>
+                  <div>Taksit No :</div><div>{header.installmentNo}</div>
+                  <div>İşlem Tarihi :</div><div>{header.txnDate}</div>
+                  <div>Toplam Tutar :</div><div>₺{header.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
+                  <div>Peşinat :</div><div>₺{header.down.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
+                  <div>Toplam Tahsilat :</div><div>₺{header.collected.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
+                  <div>Kalan Bakiye :</div><div>₺{header.remaining.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
+                  <div>İlk Taksit Tarihi :</div><div>{header.firstDate}</div>
+                  <div>Taksit Sayısı :</div><div>{header.count}</div>
+                  <div>Taksit Periyodu :</div><div>{header.period}</div>
+                  <div>Açıklama :</div><div>{header.note || '-'}</div>
+                </div>
+              ) : (
+                <div style={{ padding: 12 }}>{loading ? 'Yükleniyor…' : error || 'Kayıt bulunamadı'}</div>
+              )}
             </div>
 
             {/* Taksit listesi alt tablo */}

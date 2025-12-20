@@ -1,28 +1,88 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
 
-type Row = { id: number; title: string; total: number; collected: number };
+import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
+
+type Row = { id: string; title: string; total: number; collected: number };
 
 export default function InstallmentsPage() {
   const router = useRouter();
   const [q, setQ] = useState('');
-  const [rows] = useState<Row[]>([
-    { id: 1, title: 'Mustafa Bey', total: 50000, collected: 1000 },
-    { id: 2, title: 'Mehmet Bey', total: 10000, collected: 100 },
-  ]);
+  const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showReport, setShowReport] = useState(false);
   const [reportAllTime, setReportAllTime] = useState(false);
   const [reportStart, setReportStart] = useState('22.11.2022');
   const [reportEnd, setReportEnd] = useState('22.11.2022');
   const [reportKind, setReportKind] = useState<'TÜMÜ' | 'VADESİ GEÇEN TAKSİTLER' | 'BEKLEYEN TAKSİTLER' | 'ÖDENEN TAKSİTLER'>('VADESİ GEÇEN TAKSİTLER');
 
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          if (active) setLoading(false);
+          router.replace('/login');
+          return;
+        }
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) {
+          if (active) {
+            setError('Şirket bilgisi alınamadı');
+            setRows([]);
+          }
+          return;
+        }
+        const { data, error: qErr } = await supabase
+          .from('installment_plans')
+          .select('id, total_amount, accounts ( name ), installments ( paid_amount )')
+          .eq('company_id', companyId)
+          .order('created_at', { ascending: false });
+        if (!active) return;
+        if (qErr) {
+          console.error('Taksit planları yüklenemedi:', qErr);
+          setError('Taksit planları yüklenirken hata oluştu');
+          setRows([]);
+          return;
+        }
+        const mapped: Row[] = (data ?? []).map((p: any) => {
+          const insts = Array.isArray(p.installments) ? p.installments : [];
+          const collected = insts.reduce((s, it) => s + Number(it.paid_amount ?? 0), 0);
+          return {
+            id: p.id as string,
+            title: (Array.isArray(p.accounts) ? p.accounts[0]?.name : p.accounts?.name) ?? '',
+            total: Number(p.total_amount ?? 0),
+            collected,
+          };
+        });
+        setRows(mapped);
+      } catch (err: any) {
+        if (!active) return;
+        console.error('Taksit planları yüklenirken beklenmeyen hata:', err);
+        setError(err?.message ?? 'Beklenmeyen bir hata oluştu');
+        setRows([]);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [router]);
+
   const filtered = useMemo(() => {
     const hay = q.toLowerCase();
-    return rows.filter(r => `${r.id} ${r.title} ${r.total} ${r.collected}`.toLowerCase().includes(hay));
+    return rows.filter((r) => `${r.id} ${r.title} ${r.total} ${r.collected}`.toLowerCase().includes(hay));
   }, [rows, q]);
 
   return (
@@ -65,14 +125,29 @@ export default function InstallmentsPage() {
                       <td style={{ padding: '8px' }}>
                         <button onClick={() => router.push((`/installments/${r.id}`) as Route)} style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>🔍</button>
                       </td>
-                      <td style={{ padding: '8px' }}>{r.id}</td>
-                      <td style={{ padding: '8px' }}>{r.title}</td>
-                      <td style={{ padding: '8px', textAlign: 'right' }}>{r.total.toLocaleString('tr-TR', { minimumFractionDigits: 0 })}</td>
+                      <td style={{ padding: '8px' }}>{r.id.slice(0, 8)}</td>
+                      <td style={{ padding: '8px' }}>{r.title || '-'}</td>
+                      <td style={{ padding: '8px', textAlign: 'right' }}>{r.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
                       <td style={{ padding: '8px', textAlign: 'right' }}>{r.collected.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
-                      <td style={{ padding: '8px', textAlign: 'right' }}>{remaining.toLocaleString('tr-TR', { minimumFractionDigits: 0 })}</td>
+                      <td style={{ padding: '8px', textAlign: 'right' }}>{remaining.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
                     </tr>
                   );
                 })}
+                {!loading && filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={6} style={{ padding: '8px', textAlign: 'center', opacity: 0.8 }}>Kayıt yok</td>
+                  </tr>
+                )}
+                {loading && (
+                  <tr>
+                    <td colSpan={6} style={{ padding: '8px', textAlign: 'center', opacity: 0.8 }}>Yükleniyor…</td>
+                  </tr>
+                )}
+                {error && !loading && (
+                  <tr>
+                    <td colSpan={6} style={{ padding: '8px', textAlign: 'center', color: '#fecaca' }}>{error}</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
