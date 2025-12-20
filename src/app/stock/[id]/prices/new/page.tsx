@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
 
 import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
 
 type Product = { id: string; name: string; sku: string | null };
 
@@ -13,12 +14,15 @@ export default function NewStockPricePage({ params }: { params: { id: string } }
   const router = useRouter();
   const productId = params.id;
   const [product, setProduct] = useState<Product | null>(null);
+  const [companyId, setCompanyId] = useState<string | null>(null);
 
   const [orderNo, setOrderNo] = useState<number>(0);
   const [group, setGroup] = useState('MÜŞTERİLER');
   const [buyPrice, setBuyPrice] = useState<number>(0);
   const [sellPrice, setSellPrice] = useState<number>(0);
   const [desc, setDesc] = useState('Buraya açıklama yazabilirsiniz.');
+  const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -27,17 +31,49 @@ export default function NewStockPricePage({ params }: { params: { id: string } }
         router.replace('/login');
         return;
       }
-      const { data: p } = await supabase.from('products').select('id, name, sku').eq('id', productId).single();
+      const cid = await fetchCurrentCompanyId();
+      setCompanyId(cid);
+      const { data: p } = await supabase.from('products').select('id, name, sku, price, cost_price').eq('id', productId).single();
       setProduct((p ?? null) as any);
+      if (p?.price != null) setSellPrice(Number(p.price));
+      if (p?.cost_price != null) setBuyPrice(Number(p.cost_price));
     };
     init();
   }, [router, productId]);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Şimdilik sadece UI. Daha sonra fiyat geçmişi tablosuna eklenecek.
-    alert('Demo: Yeni satış fiyatı kaydedilecek');
-    router.push((`/stock/${productId}/prices`) as Route);
+    setErr(null);
+    if (!companyId) {
+      setErr('Şirket bilgisi alınamadı');
+      return;
+    }
+    if (!product) {
+      setErr('Ürün bilgisi alınamadı');
+      return;
+    }
+    if (sellPrice <= 0) {
+      setErr('Satış fiyatı 0 dan büyük olmalıdır');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({
+          price: sellPrice,
+          cost_price: buyPrice || null,
+          description: desc || null,
+        })
+        .eq('id', product.id)
+        .eq('company_id', companyId);
+      if (error) throw error;
+      router.push((`/stock/${productId}/prices`) as Route);
+    } catch (e: any) {
+      setErr(e?.message ?? 'Fiyat kaydedilemedi');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -74,10 +110,14 @@ export default function NewStockPricePage({ params }: { params: { id: string } }
             <div>Açıklama :</div>
             <input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Buraya açıklama yazabilirsiniz." style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }} />
 
-            <div />
+            <div>{err && <div style={{ color: '#ffb4b4', fontSize: 12 }}>{err}</div>}</div>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button type="submit" style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #0aa6b5', background: '#12b3c5', color: 'white', cursor: 'pointer' }}>
-                Kaydet
+              <button
+                disabled={loading}
+                type="submit"
+                style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #0aa6b5', background: '#12b3c5', color: 'white', cursor: 'pointer', opacity: loading ? 0.7 : 1 }}
+              >
+                {loading ? 'Kaydediliyor…' : 'Kaydet'}
               </button>
             </div>
           </div>

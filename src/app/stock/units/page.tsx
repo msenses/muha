@@ -5,28 +5,60 @@ import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
 
 import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
 
 type Unit = { id: string; name: string };
 
 export default function StockUnitsPage() {
   const router = useRouter();
   const [q, setQ] = useState('');
-  // Şimdilik sadece UI: örnek birimler
-  const [rows] = useState<Unit[]>([
-    { id: '1', name: 'Adet' },
-    { id: '2', name: 'Kg' },
-    { id: '3', name: 'Kutu' },
-  ]);
+  const [rows, setRows] = useState<Unit[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
     const init = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        router.replace('/login');
-        return;
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!data.session) {
+          router.replace('/login');
+          return;
+        }
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) {
+          if (active) {
+            setError('Şirket bilgisi alınamadı');
+            setRows([]);
+          }
+          return;
+        }
+        const { data: list, error: listErr } = await supabase
+          .from('product_units')
+          .select('id, name')
+          .eq('company_id', companyId)
+          .order('name', { ascending: true });
+        if (!active) return;
+        if (listErr) {
+          console.error('Birimler yüklenemedi:', listErr);
+          setError('Birimler yüklenirken hata oluştu');
+          setRows([]);
+        } else {
+          setRows(((list ?? []) as any[]).map((u) => ({ id: u.id, name: u.name })));
+        }
+      } catch (e: any) {
+        if (!active) return;
+        console.error('Birimler yüklenirken beklenmeyen hata:', e);
+        setError(e?.message ?? 'Beklenmeyen bir hata oluştu');
+        setRows([]);
+      } finally {
+        if (active) setLoading(false);
       }
     };
     init();
+    return () => {
+      active = false;
+    };
   }, [router]);
 
   const filtered = useMemo(() => {
@@ -53,32 +85,75 @@ export default function StockUnitsPage() {
           </div>
 
           <div style={{ padding: 12 }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr style={{ background: 'rgba(255,255,255,0.06)' }}>
-                  <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>#</th>
-                  <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>Birim Adı</th>
-                  <th style={{ textAlign: 'right', padding: 10, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>İşlem</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((u, idx) => (
-                  <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                    <td style={{ padding: 10 }}>{idx + 1}</td>
-                    <td style={{ padding: 10 }}>{u.name}</td>
-                    <td style={{ padding: 10, textAlign: 'right' }}>
-                      <button title="Düzenle" style={{ marginRight: 6, padding: '6px 8px', borderRadius: 6, border: '1px solid #0aa6b5', background: '#12b3c5', color: 'white', cursor: 'pointer' }}>✎</button>
-                      <button title="Sil" style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #c0392b', background: '#e74c3c', color: 'white', cursor: 'pointer' }}>🗑</button>
-                    </td>
+            {loading && <div style={{ padding: 8, fontSize: 13 }}>Yükleniyor…</div>}
+            {error && !loading && <div style={{ padding: 8, fontSize: 13, color: '#ffb4b4' }}>{error}</div>}
+            {!loading && !error && (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: 'rgba(255,255,255,0.06)' }}>
+                    <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>#</th>
+                    <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>Birim Adı</th>
+                    <th style={{ textAlign: 'right', padding: 10, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>İşlem</th>
                   </tr>
-                ))}
-                {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={3} style={{ padding: 12, textAlign: 'center', opacity: 0.8 }}>Kayıt bulunamadı</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filtered.map((u, idx) => (
+                    <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                      <td style={{ padding: 10 }}>{idx + 1}</td>
+                      <td style={{ padding: 10 }}>{u.name}</td>
+                      <td style={{ padding: 10, textAlign: 'right' }}>
+                        <button
+                          title="Düzenle"
+                          onClick={() => {
+                            const nextName = window.prompt('Yeni birim adı', u.name)?.trim();
+                            if (!nextName || nextName === u.name) return;
+                            supabase
+                              .from('product_units')
+                              .update({ name: nextName })
+                              .eq('id', u.id)
+                              .then(({ error }) => {
+                                if (error) {
+                                  window.alert(error.message);
+                                } else {
+                                  setRows((prev) => prev.map((x) => (x.id === u.id ? { ...x, name: nextName } : x)));
+                                }
+                              });
+                          }}
+                          style={{ marginRight: 6, padding: '6px 8px', borderRadius: 6, border: '1px solid #0aa6b5', background: '#12b3c5', color: 'white', cursor: 'pointer' }}
+                        >
+                          ✎
+                        </button>
+                        <button
+                          title="Sil"
+                          onClick={() => {
+                            if (!window.confirm(`"${u.name}" birimini silmek istediğinize emin misiniz?`)) return;
+                            supabase
+                              .from('product_units')
+                              .delete()
+                              .eq('id', u.id)
+                              .then(({ error }) => {
+                                if (error) {
+                                  window.alert(error.message);
+                                } else {
+                                  setRows((prev) => prev.filter((x) => x.id !== u.id));
+                                }
+                              });
+                          }}
+                          style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #c0392b', background: '#e74c3c', color: 'white', cursor: 'pointer' }}
+                        >
+                          🗑
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {filtered.length === 0 && (
+                    <tr>
+                      <td colSpan={3} style={{ padding: 12, textAlign: 'center', opacity: 0.8 }}>Kayıt bulunamadı</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </section>

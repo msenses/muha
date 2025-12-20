@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
 
 export default function StockLabelsReportPage() {
   const router = useRouter();
@@ -12,7 +13,35 @@ export default function StockLabelsReportPage() {
   useEffect(() => {
     const init = async () => {
       const { data } = await supabase.auth.getSession();
-      if (!data.session) router.replace('/login');
+      if (!data.session) {
+        router.replace('/login');
+        return;
+      }
+
+      // Etiket örneği: gerçek bir üründen alınan bilgiyi local storage'a koyup sadece bu sayfada kullanıyoruz.
+      // Burada amaç, "İçim Peynir" gibi veritabanında olmayan sabit veriyi kaldırmak.
+      try {
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) return;
+        const { data: prod } = await supabase
+          .from('products')
+          .select('id, name, price')
+          .eq('company_id', companyId)
+          .order('name', { ascending: true })
+          .limit(1)
+          .single();
+        if (prod && typeof window !== 'undefined') {
+          window.localStorage.setItem(
+            'stock_label_sample',
+            JSON.stringify({
+              name: prod.name as string,
+              price: Number((prod as any).price ?? 0),
+            }),
+          );
+        }
+      } catch {
+        // Sessiz geç
+      }
     };
     init();
   }, [router]);
@@ -46,9 +75,7 @@ export default function StockLabelsReportPage() {
             {/* İçerik */}
             <div>
               <div style={{ fontSize: 12, color: '#7f8c8d' }}>11:08:22</div>
-              <div style={{ fontSize: 16, fontWeight: 700, marginTop: 4 }}>İçim</div>
-              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Peynir</div>
-              <div style={{ fontSize: 22, fontWeight: 800 }}>12.50 ₺</div>
+              <LabelContent />
             </div>
           </div>
         </div>
@@ -56,5 +83,45 @@ export default function StockLabelsReportPage() {
     </main>
   );
 }
+
+function LabelContent() {
+  if (typeof window === 'undefined') {
+    return (
+      <>
+        <div style={{ fontSize: 16, fontWeight: 700, marginTop: 4 }}>Ürün</div>
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Adı</div>
+        <div style={{ fontSize: 22, fontWeight: 800 }}>0,00 ₺</div>
+      </>
+    );
+  }
+
+  let name = 'Ürün Adı';
+  let price = 0;
+  try {
+    const raw = window.localStorage.getItem('stock_label_sample');
+    if (raw) {
+      const parsed = JSON.parse(raw) as { name?: string; price?: number };
+      if (parsed.name) name = parsed.name;
+      if (typeof parsed.price === 'number') price = parsed.price;
+    }
+  } catch {
+    // ignore
+  }
+
+  const parts = name.split(' ');
+  const first = parts[0] ?? name;
+  const rest = parts.slice(1).join(' ');
+
+  return (
+    <>
+      <div style={{ fontSize: 16, fontWeight: 700, marginTop: 4 }}>{first}</div>
+      <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>{rest}</div>
+      <div style={{ fontSize: 22, fontWeight: 800 }}>
+        {price.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
+      </div>
+    </>
+  );
+}
+
 
 

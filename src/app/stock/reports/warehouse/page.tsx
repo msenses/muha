@@ -5,22 +5,63 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
+
+type Warehouse = { id: string; name: string };
 
 export default function WarehouseMovementReportPage() {
   const router = useRouter();
   const [allTime, setAllTime] = useState(true);
   const [start, setStart] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [end, setEnd] = useState<string>(() => new Date().toISOString().slice(0, 10));
-  const [warehouse, setWarehouse] = useState('Merkez');
+  const [warehouseId, setWarehouseId] = useState<string>('');
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
     const init = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        router.replace('/login');
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!data.session) {
+          router.replace('/login');
+          return;
+        }
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) {
+          if (active) setError('Şirket bilgisi alınamadı');
+          return;
+        }
+        const { data: list, error: listErr } = await supabase
+          .from('warehouses')
+          .select('id, name')
+          .eq('company_id', companyId)
+          .order('created_at', { ascending: true });
+        if (!active) return;
+        if (listErr) {
+          console.error('Depolar alınamadı:', listErr);
+          setError('Depo listesi alınırken hata oluştu');
+          setWarehouses([]);
+        } else {
+          const ws = ((list ?? []) as any[]).map((w) => ({ id: w.id, name: w.name }));
+          setWarehouses(ws);
+          if (!warehouseId && ws.length > 0) {
+            setWarehouseId(ws[0].id);
+          }
+        }
+      } catch (e: any) {
+        if (!active) return;
+        console.error('Depo listesi yüklenirken beklenmeyen hata:', e);
+        setError(e?.message ?? 'Beklenmeyen bir hata oluştu');
+      } finally {
+        if (active) setLoading(false);
       }
     };
     init();
+    return () => {
+      active = false;
+    };
   }, [router]);
 
   return (
@@ -61,21 +102,35 @@ export default function WarehouseMovementReportPage() {
 
             <label style={{ display: 'grid', gap: 6 }}>
               <span style={{ fontSize: 12, opacity: 0.85 }}>Depo Seçiniz :</span>
-              <select value={warehouse} onChange={(e) => setWarehouse(e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}>
-                <option value="Merkez">Merkez</option>
+              <select
+                value={warehouseId}
+                onChange={(e) => setWarehouseId(e.target.value)}
+                style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}
+              >
+                {warehouses.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name}
+                  </option>
+                ))}
               </select>
             </label>
+
+            {error && <div style={{ color: '#ffb4b4', fontSize: 12 }}>{error}</div>}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button
                 onClick={() => {
+                  if (!warehouseId) {
+                    window.alert('Lütfen bir depo seçiniz.');
+                    return;
+                  }
                   const params = new URLSearchParams();
                   if (allTime) params.set('all', '1');
                   else {
                     params.set('start', start);
                     params.set('end', end);
                   }
-                  params.set('warehouse', warehouse);
+                  params.set('warehouseId', warehouseId);
                   params.set('ts', Date.now().toString());
                   router.push(`/stock/reports/warehouse/view?${params.toString()}`);
                 }}
