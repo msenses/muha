@@ -55,8 +55,8 @@ export default function InstallmentsPage() {
           return;
         }
         const mapped: Row[] = (data ?? []).map((p: any) => {
-          const insts = Array.isArray(p.installments) ? p.installments : [];
-          const collected = insts.reduce((s, it) => s + Number(it.paid_amount ?? 0), 0);
+          const insts = Array.isArray(p.installments) ? (p.installments as any[]) : [];
+          const collected = insts.reduce((s: number, it: any) => s + Number(it.paid_amount ?? 0), 0);
           return {
             id: p.id as string,
             title: (Array.isArray(p.accounts) ? p.accounts[0]?.name : p.accounts?.name) ?? '',
