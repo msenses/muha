@@ -1,36 +1,120 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
 
-type Row = { id: number; date: string; due: string; firm: string; status: 'BEKLEMEDE' | 'ÖDENDİ' | 'TAHSİL EDİLDİ'; amount: number };
+import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
+
+type Row = { id: string; date: string; due: string; firm: string; status: string; amount: number };
 
 export default function ChequeNotePage() {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [sortOpen, setSortOpen] = useState(false);
   const [sortMode, setSortMode] = useState<'Sıralama' | 'Tarihi Yeniden Eskiye' | 'Tarihi Eskiden Yeniye' | 'Vade Eskiden Yeniye' | 'Vade Yeniden Eskiye'>('Sıralama');
-
-  const rows: Row[] = [
-    { id: 1, date: '22.11.2022', due: '22.11.2022', firm: 'Mustafa Bey', status: 'BEKLEMEDE', amount: 100000 },
-    { id: 2, date: '22.11.2022', due: '22.11.2022', firm: 'Mustafa Bey', status: 'BEKLEMEDE', amount: 100000 },
-  ];
+  const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Rapor modalı
   const [showReport, setShowReport] = useState(false);
   const [reportAllTime, setReportAllTime] = useState(false);
-  const [reportStart, setReportStart] = useState('27.11.2022');
-  const [reportEnd, setReportEnd] = useState('27.11.2022');
+  const [reportStart, setReportStart] = useState('');
+  const [reportEnd, setReportEnd] = useState('');
   const [reportType, setReportType] = useState<'HEPSİ' | 'MÜŞTERİ EVRAĞI' | 'KENDİ EVRAĞIMIZ'>('HEPSİ');
   const [reportStatus, setReportStatus] = useState<'HEPSİ' | 'BEKLEMEDE' | 'ÖDENDİ' | 'TAHSİL EDİLDİ'>('HEPSİ');
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          if (active) setLoading(false);
+          router.replace('/login');
+          return;
+        }
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) {
+          if (active) {
+            setError('Şirket bilgisi alınamadı');
+            setRows([]);
+          }
+          return;
+        }
+        const { data, error: qErr } = await supabase
+          .from('cheques_notes')
+          .select('id, issue_date, due_date, amount, status, direction, accounts ( name )')
+          .eq('company_id', companyId)
+          .order('issue_date', { ascending: false });
+        if (!active) return;
+        if (qErr) {
+          console.error('Çek/senet listesi yüklenemedi:', qErr);
+          setError('Çek/senet listesi yüklenirken hata oluştu');
+          setRows([]);
+          return;
+        }
+        const mapStatus = (s?: string | null): string => {
+          switch (s) {
+            case 'pending':
+              return 'BEKLEMEDE';
+            case 'paid':
+              return 'ÖDENDİ';
+            case 'bounced':
+              return 'KARŞILIKSIZ';
+            case 'endorsed':
+              return 'CİROLU';
+            case 'cancelled':
+              return 'İPTAL';
+            default:
+              return s ?? '';
+          }
+        };
+        const fmtDate = (d?: string | null): string => {
+          if (!d) return '';
+          const dt = new Date(d);
+          if (Number.isNaN(dt.getTime())) return '';
+          return dt.toLocaleDateString('tr-TR');
+        };
+        const mapped: Row[] = (data ?? []).map((r: any) => ({
+          id: r.id as string,
+          date: fmtDate(r.issue_date),
+          due: fmtDate(r.due_date),
+          firm: r.accounts?.name ?? '',
+          status: mapStatus(r.status),
+          amount: Number(r.amount ?? 0),
+        }));
+        setRows(mapped);
+      } catch (err: any) {
+        if (!active) return;
+        console.error('Çek/senet listesi yüklenirken beklenmeyen hata:', err);
+        setError(err?.message ?? 'Beklenmeyen bir hata oluştu');
+        setRows([]);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [router]);
+
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
-    let list = rows.filter(r => `${r.id} ${r.date} ${r.due} ${r.firm} ${r.status} ${r.amount}`.toLowerCase().includes(q));
+    let list = rows.filter((r) => `${r.id} ${r.date} ${r.due} ${r.firm} ${r.status} ${r.amount}`.toLowerCase().includes(q));
     const parse = (d: string) => {
-      // dd.mm.yyyy -> yyyy-mm-dd
+      if (!d) return 0;
       const [dd, mm, yyyy] = d.split('.');
+      if (!dd || !mm || !yyyy) {
+        const dt = new Date(d);
+        return dt.getTime() || 0;
+      }
       const iso = `${yyyy}-${mm}-${dd}`;
       return new Date(iso).getTime();
     };
@@ -39,7 +123,7 @@ export default function ChequeNotePage() {
     if (sortMode === 'Vade Eskiden Yeniye') list = list.slice().sort((a, b) => parse(a.due) - parse(b.due));
     if (sortMode === 'Vade Yeniden Eskiye') list = list.slice().sort((a, b) => parse(b.due) - parse(a.due));
     return list;
-  }, [query, sortMode]);
+  }, [query, sortMode, rows]);
 
   return (
     <main style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
@@ -108,15 +192,37 @@ export default function ChequeNotePage() {
                   <tbody>
                     {filtered.map((r) => (
                       <tr key={r.id} style={{ color: 'white' }}>
-                        <td style={{ padding: '8px' }}><button onClick={() => router.push((`/cheque-note/${r.id}`) as Route)} style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>🔍</button></td>
-                        <td style={{ padding: '8px' }}>{r.id}</td>
-                        <td style={{ padding: '8px' }}>{r.date}</td>
-                        <td style={{ padding: '8px' }}>{r.due}</td>
-                        <td style={{ padding: '8px' }}>{r.firm}</td>
-                        <td style={{ padding: '8px' }}>{r.status}</td>
-                        <td style={{ padding: '8px', textAlign: 'right' }}>{r.amount.toLocaleString('tr-TR')}</td>
+                        <td style={{ padding: '8px' }}>
+                          <button
+                            onClick={() => router.push((`/cheque-note/${r.id}`) as Route)}
+                            style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}
+                          >
+                            🔍
+                          </button>
+                        </td>
+                        <td style={{ padding: '8px' }}>{r.id.slice(0, 8)}</td>
+                        <td style={{ padding: '8px' }}>{r.date || '-'}</td>
+                        <td style={{ padding: '8px' }}>{r.due || '-'}</td>
+                        <td style={{ padding: '8px' }}>{r.firm || '-'}</td>
+                        <td style={{ padding: '8px' }}>{r.status || '-'}</td>
+                        <td style={{ padding: '8px', textAlign: 'right' }}>{r.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
                       </tr>
                     ))}
+                    {!loading && filtered.length === 0 && (
+                      <tr>
+                        <td colSpan={7} style={{ padding: 12, textAlign: 'center', opacity: 0.8 }}>Kayıt bulunamadı</td>
+                      </tr>
+                    )}
+                    {loading && (
+                      <tr>
+                        <td colSpan={7} style={{ padding: 12, textAlign: 'center', opacity: 0.8 }}>Yükleniyor…</td>
+                      </tr>
+                    )}
+                    {error && !loading && (
+                      <tr>
+                        <td colSpan={7} style={{ padding: 12, textAlign: 'center', color: '#fecaca' }}>{error}</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>

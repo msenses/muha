@@ -1,30 +1,167 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
 
+import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
+
+type ChequeRow = {
+  id: string;
+  issue_date: string | null;
+  due_date: string | null;
+  amount: number;
+  status: string | null;
+  direction: string | null;
+  document_no: string | null;
+  bank_name: string | null;
+  bank_branch: string | null;
+  drawer_name: string | null;
+  notes: string | null;
+  account_name: string | null;
+};
+
+type AccountPick = { id: string; title: string; officer: string | null };
+
 export default function ChequeNoteDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const data = useMemo(() => {
-    // Demo verisi
-    return {
-      txnDate: '27.11.2022',
-      dueDate: '27.11.2022',
-      amount: '₺10,000.00',
-      firm: 'Mehmet Bey',
-      number: '123',
-      kind: 'KENDİ EVRAĞIMIZ',
-      docType: 'ASIL EVRAK',
-      status: 'BEKLEMEDE',
-      bank: 'Banka2',
-      branch: 'Merkez',
-      account: '987654321',
-      principal: '',
-      note: '',
+  const [row, setRow] = useState<ChequeRow | null>(null);
+  const [accounts, setAccounts] = useState<AccountPick[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!data.session) {
+          router.replace('/login');
+          return;
+        }
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) {
+          if (active) setError('Şirket bilgisi alınamadı');
+          return;
+        }
+        const [{ data: ch, error: chErr }, { data: accs, error: accErr }] = await Promise.all([
+          supabase
+            .from('cheques_notes')
+            .select('id, issue_date, due_date, amount, status, direction, document_no, bank_name, bank_branch, drawer_name, notes, accounts ( name )')
+            .eq('company_id', companyId)
+            .eq('id', params.id)
+            .single(),
+          supabase
+            .from('accounts')
+            .select('id, name, contact_name')
+            .eq('company_id', companyId)
+            .order('name', { ascending: true }),
+        ]);
+        if (!active) return;
+        if (chErr) {
+          console.error('Çek kaydı bulunamadı:', chErr);
+          setError('Kayıt bulunamadı');
+        } else if (ch) {
+          setRow({
+            id: ch.id as string,
+            issue_date: ch.issue_date ?? null,
+            due_date: ch.due_date ?? null,
+            amount: Number(ch.amount ?? 0),
+            status: ch.status ?? null,
+            direction: ch.direction ?? null,
+            document_no: ch.document_no ?? null,
+            bank_name: ch.bank_name ?? null,
+            bank_branch: ch.bank_branch ?? null,
+            drawer_name: ch.drawer_name ?? null,
+            notes: ch.notes ?? null,
+            account_name: ch.accounts?.name ?? null,
+          });
+        }
+        if (accErr) {
+          console.error('Cari listesi yüklenemedi:', accErr);
+          setAccounts([]);
+        } else {
+          setAccounts(
+            ((accs ?? []) as any[]).map((a) => ({
+              id: a.id as string,
+              title: a.name as string,
+              officer: (a.contact_name as string) ?? null,
+            })),
+          );
+        }
+      } catch (err: any) {
+        if (!active) return;
+        console.error('Çek detayı yüklenirken beklenmeyen hata:', err);
+        setError(err?.message ?? 'Beklenmeyen bir hata oluştu');
+      } finally {
+        if (active) setLoading(false);
+      }
     };
-  }, [params.id]);
+    load();
+    return () => {
+      active = false;
+    };
+  }, [router, params.id]);
+
+  const data = useMemo(() => {
+    if (!row) {
+      return {
+        txnDate: '',
+        dueDate: '',
+        amount: '',
+        firm: '',
+        number: '',
+        kind: '',
+        docType: 'ASIL EVRAK',
+        status: '',
+        bank: '',
+        branch: '',
+        account: '',
+        principal: '',
+        note: '',
+      };
+    }
+    const fmtDate = (d: string | null) => {
+      if (!d) return '';
+      const dt = new Date(d);
+      if (Number.isNaN(dt.getTime())) return '';
+      return dt.toLocaleDateString('tr-TR');
+    };
+    const mapStatus = (s?: string | null): string => {
+      switch (s) {
+        case 'pending':
+          return 'BEKLEMEDE';
+        case 'paid':
+          return 'ÖDENDİ';
+        case 'bounced':
+          return 'KARŞILIKSIZ';
+        case 'endorsed':
+          return 'CİROLU';
+        case 'cancelled':
+          return 'İPTAL';
+        default:
+          return s ?? '';
+      }
+    };
+    const kind = (row.direction || '').toLowerCase() === 'incoming' ? 'MÜŞTERİ ÇEKİ/SENEDİ' : 'KENDİ EVRAĞIMIZ';
+    return {
+      txnDate: fmtDate(row.issue_date),
+      dueDate: fmtDate(row.due_date),
+      amount: `${row.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺`,
+      firm: row.account_name ?? '',
+      number: row.document_no ?? '',
+      kind,
+      docType: 'ASIL EVRAK',
+      status: mapStatus(row.status),
+      bank: row.bank_name ?? '',
+      branch: row.bank_branch ?? '',
+      account: row.drawer_name ?? '',
+      principal: '',
+      note: row.notes ?? '',
+    };
+  }, [row]);
 
   const Row = ({ label, value }: { label: string; value: string }) => (
     <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', padding: '10px 12px', borderBottom: '1px solid #e5e7eb' }}>
