@@ -218,6 +218,71 @@ ALTER TABLE public.stock_movements ADD COLUMN IF NOT EXISTS warehouse_id UUID RE
 ALTER TABLE public.stock_movements ADD COLUMN IF NOT EXISTS unit_cost NUMERIC(14,2); -- Birim maliyet
 ALTER TABLE public.stock_movements ADD COLUMN IF NOT EXISTS description TEXT;
 
+-- ============================================================
+-- Stok hareketlerinden products.stock_balance alanını güncel tut
+-- ============================================================
+
+-- Belirli bir ürün için stok bakiyesini tüm hareketlerden yeniden hesaplar
+CREATE OR REPLACE FUNCTION public.recalc_product_stock_balance(p_product_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_balance NUMERIC(14,3);
+BEGIN
+    SELECT COALESCE(SUM(CASE WHEN move_type = 'in' THEN qty ELSE -qty END), 0)
+    INTO v_balance
+    FROM public.stock_movements
+    WHERE product_id = p_product_id;
+
+    UPDATE public.products
+    SET stock_balance = v_balance
+    WHERE id = p_product_id;
+END;
+$$;
+
+-- stock_movements üzerinde insert/update/delete olduğunda ilgili ürünün stok bakiyesini günceller
+CREATE OR REPLACE FUNCTION public.stock_movements_after_change()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    -- Silme durumunda eski kaydın ürününü güncelle
+    IF TG_OP = 'DELETE' THEN
+        PERFORM public.recalc_product_stock_balance(OLD.product_id);
+        RETURN OLD;
+    END IF;
+
+    -- Ekleme veya güncelleme durumunda yeni kaydın ürününü güncelle
+    PERFORM public.recalc_product_stock_balance(NEW.product_id);
+
+    -- Ürün değişmişse eski ürünün bakiyesini de yeniden hesapla
+    IF TG_OP = 'UPDATE' AND NEW.product_id IS DISTINCT FROM OLD.product_id THEN
+        PERFORM public.recalc_product_stock_balance(OLD.product_id);
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_stock_movements_after_change ON public.stock_movements;
+CREATE TRIGGER trg_stock_movements_after_change
+AFTER INSERT OR UPDATE OR DELETE ON public.stock_movements
+FOR EACH ROW
+EXECUTE FUNCTION public.stock_movements_after_change();
+
+-- Mevcut veriler için stok bakiyelerini bir kerelik senkronize et
+UPDATE public.products p
+SET stock_balance = COALESCE(sm.sum_qty, 0)
+FROM (
+    SELECT
+        product_id,
+        SUM(CASE WHEN move_type = 'in' THEN qty ELSE -qty END) AS sum_qty
+    FROM public.stock_movements
+    GROUP BY product_id
+) sm
+WHERE sm.product_id = p.id;
+
 -- Seri/Lot Takibi
 CREATE TABLE IF NOT EXISTS public.product_lots (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
