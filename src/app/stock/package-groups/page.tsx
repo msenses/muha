@@ -68,7 +68,7 @@ export default function StockPackageGroupsPage() {
   const filtered = useMemo(() => {
     const t = q.trim().toLocaleLowerCase('tr-TR');
     if (!t) return rows;
-    return rows.filter((r) => r.name.toLocaleLowerCase('tr-TR').includes(t) || r.barcode.includes(t));
+    return rows.filter((r) => r.name.toLocaleLowerCase('tr-TR').includes(t));
   }, [rows, q]);
 
   return (
