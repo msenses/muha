@@ -64,6 +64,10 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
           console.error('Çek kaydı bulunamadı:', chErr);
           setError('Kayıt bulunamadı');
         } else if (ch) {
+          const accName =
+            Array.isArray((ch as any).accounts)
+              ? ((ch as any).accounts[0]?.name as string | undefined) ?? null
+              : ((ch as any).accounts?.name as string | undefined) ?? null;
           setRow({
             id: ch.id as string,
             issue_date: ch.issue_date ?? null,
@@ -76,7 +80,7 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
             bank_branch: ch.bank_branch ?? null,
             drawer_name: ch.drawer_name ?? null,
             notes: ch.notes ?? null,
-            account_name: ch.accounts?.name ?? null,
+            account_name: accName,
           });
         }
         if (accErr) {
