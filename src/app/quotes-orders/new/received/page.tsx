@@ -1,23 +1,72 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
+import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
+
+type AccountRow = { id: string; title: string; officer: string | null };
 
 export default function ReceivedQuoteSelectAccountPage() {
   const router = useRouter();
   const [q, setQ] = useState('');
-  const accounts = [
-    { id: '1', title: 'Tedarikçi A.Ş.', officer: 'Zeynep Hanım' },
-    { id: '2', title: 'Tedarikçi B Ltd.', officer: 'Kemal Bey' },
-    { id: '3', title: 'ABC İthalat', officer: '-' },
-  ];
+  const [accounts, setAccounts] = useState<AccountRow[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          if (active) setAccounts([]);
+          return;
+        }
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) {
+          console.warn('Company ID bulunamadı (Alınan teklif cari seçimi)');
+          if (active) setAccounts([]);
+          return;
+        }
+        const { data, error } = await supabase
+          .from('accounts')
+          .select('id, name, contact_name')
+          .eq('company_id', companyId)
+          .order('name', { ascending: true });
+        if (!active) return;
+        if (error) {
+          console.error('Cari listesi yüklenemedi (Alınan Teklif):', error);
+          setAccounts([]);
+        } else {
+          setAccounts(
+            ((data ?? []) as any[]).map((a) => ({
+              id: a.id as string,
+              title: (a.name as string) ?? '',
+              officer: (a.contact_name as string) ?? null,
+            })),
+          );
+        }
+      } catch (err) {
+        if (!active) return;
+        console.error('Cari listesi yüklenirken beklenmeyen hata (Alınan Teklif):', err);
+        setAccounts([]);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const filtered = useMemo(() => {
     const hay = q.toLowerCase();
-    return accounts.filter(a => `${a.title} ${a.officer}`.toLowerCase().includes(hay));
-  }, [q]);
+    return accounts.filter(a => `${a.title} ${a.officer ?? ''}`.toLowerCase().includes(hay));
+  }, [q, accounts]);
 
   return (
     <main style={{ minHeight: '100dvh', background: '#ecf0f5', color: '#111827' }}>
@@ -43,7 +92,17 @@ export default function ReceivedQuoteSelectAccountPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((a) => (
+                {loading && (
+                  <tr>
+                    <td colSpan={3} style={{ padding: '10px 12px' }}>Yükleniyor…</td>
+                  </tr>
+                )}
+                {!loading && filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={3} style={{ padding: '10px 12px' }}>Cari bulunamadı</td>
+                  </tr>
+                )}
+                {!loading && filtered.map((a) => (
                   <tr key={a.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
                     <td style={{ padding: '10px 12px' }}>
                       <button
@@ -52,7 +111,7 @@ export default function ReceivedQuoteSelectAccountPage() {
                       >+ Seç</button>
                     </td>
                     <td style={{ padding: '10px 12px' }}>{a.title}</td>
-                    <td style={{ padding: '10px 12px' }}>{a.officer}</td>
+                    <td style={{ padding: '10px 12px' }}>{a.officer ?? '-'}</td>
                   </tr>
                 ))}
               </tbody>

@@ -3,9 +3,11 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
 
 type Row = {
-  id: number;
+  id: string;
   type: 'VERİLEN TEKLİF' | 'ALINAN TEKLİF' | 'VERİLEN SİPARİŞ' | 'ALINAN SİPARİŞ';
   date: string;
   no: string;
@@ -20,7 +22,7 @@ export default function QuotesOrdersPage() {
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<'Hepsi' | 'Teklif' | 'Sipariş'>('Hepsi');
   const [menu, setMenu] = useState<{
-    id: number;
+    id: string;
     left: number; // viewport koordinatı (fixed)
     top: number;  // viewport koordinatı (fixed)
     // Anchor buton konumu
@@ -37,14 +39,90 @@ export default function QuotesOrdersPage() {
   const [reportSortType, setReportSortType] = useState<'Tarihe Göre' | 'Ada Göre'>('Tarihe Göre');
   const [reportSortOrder, setReportSortOrder] = useState<'AZ' | 'ZA'>('AZ');
   const [reportListType, setReportListType] = useState<'Hepsi' | 'Teklif' | 'Sipariş'>('Hepsi');
+  const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const rows: Row[] = [
-    { id: 1, type: 'VERİLEN TEKLİF', date: '27.11.2022', no: '1', flow: 'Verilen Teklif => Verilen Sipariş', stage: 'Bekliyor', title: 'Mehmet Bey', total: 0, note: 'KDV dahildir' },
-    { id: 2, type: 'VERİLEN TEKLİF', date: '22.11.2022', no: '1', flow: 'Verilen Teklif => Alış Siparişi', stage: 'Bekliyor', title: 'Mehmet Bey', total: 0, note: 'KDV dahildir' },
-    { id: 3, type: 'VERİLEN SİPARİŞ', date: '28.10.2022', no: '1', flow: 'Verilen Sipariş => ALIŞ FATURASI', stage: 'Bekliyor', title: 'Mehmet Bey', total: 0, note: '' },
-    { id: 4, type: 'ALINAN SİPARİŞ', date: '28.10.2022', no: '1', flow: 'Alınan Sipariş => IRSALİYE', stage: 'Bekliyor', title: 'Mehmet Bey', total: 0, note: '' },
-    { id: 5, type: 'ALINAN TEKLİF', date: '28.10.2022', no: '1', flow: 'Alınan Teklif => Verilen Sipariş', stage: 'Bekliyor', title: 'Mehmet Bey', total: 0, note: '' },
-  ];
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          if (active) setRows([]);
+          return;
+        }
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) {
+          console.warn('Company ID bulunamadı (Teklif/Sipariş liste)');
+          if (active) setRows([]);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('quotes_orders')
+          .select('id, quote_order_date, type, status, quote_order_no, total, vat_total, net_total, notes, accounts(name)')
+          .eq('company_id', companyId)
+          .order('quote_order_date', { ascending: false });
+
+        if (!active) return;
+        if (error) {
+          console.error('Teklif/Sipariş listesi yüklenemedi:', error);
+          setRows([]);
+          return;
+        }
+
+        const mapped: Row[] = (data ?? []).map((r: any) => {
+          let typeText: Row['type'];
+          if (r.type === 'quote_given') typeText = 'VERİLEN TEKLİF';
+          else if (r.type === 'quote_received') typeText = 'ALINAN TEKLİF';
+          else if (r.type === 'order_given') typeText = 'VERİLEN SİPARİŞ';
+          else typeText = 'ALINAN SİPARİŞ';
+
+          let stageText = 'Bekliyor';
+          switch (r.status) {
+            case 'approved': stageText = 'Onaylandı'; break;
+            case 'rejected': stageText = 'Reddedildi'; break;
+            case 'converted': stageText = 'Dönüştürüldü'; break;
+            case 'cancelled': stageText = 'İptal Edildi'; break;
+            default: stageText = 'Bekliyor';
+          }
+
+          let flowText = '';
+          if (r.type === 'quote_given') flowText = 'Verilen Teklif';
+          else if (r.type === 'quote_received') flowText = 'Alınan Teklif';
+          else if (r.type === 'order_given') flowText = 'Verilen Sipariş';
+          else if (r.type === 'order_received') flowText = 'Alınan Sipariş';
+
+          return {
+            id: r.id as string,
+            type: typeText,
+            date: r.quote_order_date
+              ? new Date(r.quote_order_date).toLocaleDateString('tr-TR')
+              : '',
+            no: (r.quote_order_no as string) ?? '',
+            flow: flowText,
+            stage: stageText,
+            title: r.accounts?.name ?? '-',
+            total: Number(r.net_total ?? r.total ?? 0),
+            note: (r.notes as string) ?? '',
+          };
+        });
+        setRows(mapped);
+      } catch (err) {
+        if (!active) return;
+        console.error('Teklif/Sipariş listesi yüklenirken beklenmeyen hata:', err);
+        setRows([]);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const filtered = useMemo(() => {
     const hay = q.toLowerCase();
@@ -52,7 +130,7 @@ export default function QuotesOrdersPage() {
     if (filter === 'Teklif') list = list.filter(r => r.type.includes('TEKLİF'));
     if (filter === 'Sipariş') list = list.filter(r => r.type.includes('SİPARİŞ'));
     return list;
-  }, [q, filter]);
+  }, [rows, q, filter]);
 
   // Menü açıkken dışarı tıklayınca kapat
   useEffect(() => {

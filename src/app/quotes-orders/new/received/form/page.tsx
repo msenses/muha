@@ -1,8 +1,11 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { Suspense, useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import type { Route } from 'next';
+import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
 
 type Row = {
   id: string;
@@ -13,23 +16,89 @@ type Row = {
   qty: number;
 };
 
+type AccountInfo = {
+  title: string;
+  officer: string;
+  address: string;
+  taxOffice: string;
+  taxNo: string;
+  city: string;
+  district: string;
+};
+
 function FormInner() {
   const sp = useSearchParams();
-  const accountId = sp.get('account') || '1';
+  const router = useRouter();
+  const accountId = sp.get('account') || '';
 
-  const account = useMemo(() => {
-    const map: Record<string, { title: string; officer: string; address: string; taxOffice: string; taxNo: string; city: string; district: string; }> = {
-      '1': { title: 'Tedarikçi A.Ş.', officer: 'Zeynep Hanım', address: 'İkitelli', taxOffice: 'Bağcılar', taxNo: '1234567890', city: 'İstanbul', district: 'Bağcılar' },
-      '2': { title: 'Tedarikçi B Ltd.', officer: 'Kemal Bey', address: 'Bornova', taxOffice: 'Bornova', taxNo: '2345678901', city: 'İzmir', district: 'Bornova' },
-      '3': { title: 'ABC İthalat', officer: '-', address: 'Merkez', taxOffice: 'Üsküdar', taxNo: '9012345678', city: 'Düzce', district: 'Merkez' },
-    };
-    return map[accountId] || map['1'];
-  }, [accountId]);
+  const [companyId, setCompanyId] = useState<string | null>(null);
+  const [account, setAccount] = useState<AccountInfo | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState<boolean>(false);
 
   const [rows, setRows] = useState<Row[]>([]);
   const [noteTitle, setNoteTitle] = useState('KDV2');
   const [noteText, setNoteText] = useState('Fiyatlara KDV dahildir.');
   const [withholding, setWithholding] = useState<'YOK' | '1/2' | '3/10'>('YOK');
+  const [orderDate, setOrderDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [validUntil, setValidUntil] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [orderTime, setOrderTime] = useState<string>('10:30');
+  const [orderNo, setOrderNo] = useState<string>('');
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      if (!accountId) {
+        setSaveError('Cari seçilmedi. Lütfen önce cari seçin.');
+        return;
+      }
+      setLoading(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          router.replace(('/login') as Route);
+          return;
+        }
+        const cid = await fetchCurrentCompanyId();
+        if (!cid) {
+          setSaveError('Şirket bilgisi alınamadı');
+          return;
+        }
+        if (active) setCompanyId(cid);
+        const { data, error } = await supabase
+          .from('accounts')
+          .select('name, contact_name, address, tax_office, tax_id, city, district')
+          .eq('id', accountId)
+          .single();
+        if (!active) return;
+        if (error) {
+          console.error('Cari bilgisi yüklenemedi (Alınan Teklif):', error);
+          setSaveError('Cari bilgisi yüklenemedi');
+          return;
+        }
+        setAccount({
+          title: data?.name ?? '',
+          officer: (data as any)?.contact_name ?? '',
+          address: data?.address ?? '',
+          taxOffice: (data as any)?.tax_office ?? '',
+          taxNo: (data as any)?.tax_id ?? '',
+          city: (data as any)?.city ?? '',
+          district: (data as any)?.district ?? '',
+        });
+      } catch (err) {
+        if (!active) return;
+        console.error('Cari bilgisi yüklenirken beklenmeyen hata (Alınan Teklif):', err);
+        setSaveError('Cari bilgisi yüklenirken hata oluştu');
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [accountId, router]);
 
   const totals = useMemo(() => {
     const total = rows.reduce((s, r) => s + r.price * r.qty, 0);
@@ -40,15 +109,55 @@ function FormInner() {
   }, [rows]);
 
   const addProduct = () => {
-    const sample: Row = {
+    const row: Row = {
       id: String(Date.now()),
-      name: 'Buğday Ekmek',
+      name: '',
       vat: 18,
       sct: 0,
-      price: 2.10,
+      price: 0,
       qty: 1,
     };
-    setRows((r) => [...r, sample]);
+    setRows((r) => [...r, row]);
+  };
+
+  const handleSave = async () => {
+    setSaveError(null);
+    if (!companyId) {
+      setSaveError('Şirket bilgisi alınamadı');
+      return;
+    }
+    if (!accountId) {
+      setSaveError('Cari seçilmedi');
+      return;
+    }
+    if (rows.length === 0) {
+      setSaveError('En az bir satır eklemelisiniz');
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('quotes_orders')
+        .insert({
+          company_id: companyId,
+          account_id: accountId,
+          type: 'quote_received',
+          status: 'pending',
+          quote_order_no: orderNo || null,
+          quote_order_date: orderDate,
+          valid_until: validUntil || null,
+          total: totals.total,
+          vat_total: totals.vat,
+          net_total: totals.grand,
+          notes: `${noteTitle ? `${noteTitle}: ` : ''}${noteText || ''}`.trim() || null,
+        });
+      if (error) throw error;
+      router.push(('/quotes-orders') as Route);
+    } catch (err: any) {
+      setSaveError(err?.message ?? 'Teklif kaydedilemedi');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -66,21 +175,21 @@ function FormInner() {
           }}
         >
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 10, display: 'grid', gap: 6 }}>
-            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6 }}><span>Ünvan:</span><input value={account.title} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }} /></label>
-            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6 }}><span>Yetkili:</span><input value={account.officer} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }} /></label>
-            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6 }}><span>Adres:</span><input value={account.address} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }} /></label>
+            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6 }}><span>Ünvan:</span><input value={account?.title ?? ''} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }} /></label>
+            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6 }}><span>Yetkili:</span><input value={account?.officer ?? ''} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }} /></label>
+            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6 }}><span>Adres:</span><input value={account?.address ?? ''} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6 }} /></label>
           </div>
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 10, display: 'grid', gap: 6 }}>
-            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6, alignItems: 'center' }}><span>Vergi Dairesi:</span><input value={account.taxOffice} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} /></label>
-            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6, alignItems: 'center' }}><span>Vergi No:</span><input value={account.taxNo} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} /></label>
-            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr 120px 1fr', gap: 6, alignItems: 'center' }}><span>İlçe:</span><input value={account.city} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} /><span>İl:</span><input value={account.district} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} /></label>
+            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6, alignItems: 'center' }}><span>Vergi Dairesi:</span><input value={account?.taxOffice ?? ''} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} /></label>
+            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6, alignItems: 'center' }}><span>Vergi No:</span><input value={account?.taxNo ?? ''} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} /></label>
+            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr 120px 1fr', gap: 6, alignItems: 'center' }}><span>İlçe:</span><input value={account?.city ?? ''} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} /><span>İl:</span><input value={account?.district ?? ''} readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} /></label>
           </div>
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 10, display: 'grid', gap: 6 }}>
-            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6, alignItems: 'center' }}><span>İşlem Tarihi</span><input value="27.11.2022" readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} /></label>
-            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6, alignItems: 'center' }}><span>Geçerlilik</span><input value="30.11.2022" readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} /></label>
+            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6, alignItems: 'center' }}><span>İşlem Tarihi</span><input type="date" value={orderDate} onChange={(e) => setOrderDate(e.target.value)} style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} /></label>
+            <label style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 6, alignItems: 'center' }}><span>Geçerlilik</span><input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} /></label>
             <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 120px 1fr', gap: 6, alignItems: 'center' }}>
-              <span>Saat</span><input value="10:30" readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} />
-              <span>Teklif No</span><input value="A-111" readOnly style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} />
+              <span>Saat</span><input type="time" value={orderTime} onChange={(e) => setOrderTime(e.target.value)} style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} />
+              <span>Teklif No</span><input value={orderNo} onChange={(e) => setOrderNo(e.target.value)} placeholder="Otomatik" style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 6, width: '100%' }} />
             </div>
           </div>
         </div>
@@ -196,9 +305,20 @@ function FormInner() {
         </div>
         </div>
 
-        {/* Alt kaydet butonu */}
+        {/* Hata ve kaydet butonu */}
+        {saveError && (
+          <div style={{ marginTop: 8, color: '#b91c1c', fontSize: 13 }}>
+            {saveError}
+          </div>
+        )}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-          <button style={{ padding: '10px 16px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>Kaydet</button>
+          <button
+            onClick={handleSave}
+            disabled={saving || loading}
+            style={{ padding: '10px 16px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', opacity: saving || loading ? 0.7 : 1, cursor: 'pointer' }}
+          >
+            {saving ? 'Kaydediliyor…' : 'Kaydet'}
+          </button>
         </div>
       </section>
     </main>
