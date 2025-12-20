@@ -3,7 +3,7 @@
 import { useState, FormEvent } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { directorySupabase } from '@/lib/directorySupabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,8 +18,8 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // 1) Merkezi projede login
-      const { error: signInError } = await directorySupabase.auth.signInWithPassword({
+      // Tek firma modunda doğrudan uygulama veritabanına login
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -30,35 +30,7 @@ export default function LoginPage() {
         return;
       }
 
-      // 2) Kullanıcının bağlı olduğu firmaları (tenant'ları) çek
-      const { data: tenants, error: tenantsError } = await directorySupabase
-        .from('current_user_tenants')
-        .select('*');
-
-      if (tenantsError) {
-        setError(`Firma bilgileri alınırken hata oluştu: ${tenantsError.message}`);
-        setLoading(false);
-        return;
-      }
-
-      if (!tenants || tenants.length === 0) {
-        setError('Bu kullanıcıya tanımlı bir firma bulunamadı.');
-        setLoading(false);
-        return;
-      }
-
-      // 3) Şimdilik tek firma varsayımı: default olanı ya da ilkini seç
-      const selectedTenant =
-        tenants.find((t: any) => t.is_default) ?? tenants[0];
-
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem('currentTenantId', selectedTenant.tenant_id);
-        if (selectedTenant.tenant_name) {
-          window.localStorage.setItem('currentTenantName', selectedTenant.tenant_name);
-        }
-      }
-
-      // 4) Dashboard'a yönlendir
+      // Başarılı girişten sonra dashboard'a yönlendir
       router.push('/dashboard');
     } catch (err: any) {
       setError(err?.message ?? 'Beklenmeyen bir hata oluştu.');

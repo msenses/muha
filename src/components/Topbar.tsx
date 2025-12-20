@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { directorySupabase } from '@/lib/directorySupabaseClient';
+import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
 
 type Branch = {
   id: string;
@@ -27,16 +28,22 @@ export default function Topbar() {
 
     const load = async () => {
       try {
-        // 1) Login'de localStorage'a yazılan tenant adını oku
-        if (typeof window !== 'undefined') {
-          const storedName = window.localStorage.getItem('currentTenantName');
-          if (storedName) {
-            setCompanyName(storedName);
+        // 1) Tek firma modunda mevcut firma adını veritabanından çek
+        const companyId = await fetchCurrentCompanyId();
+        if (companyId) {
+          const { data: company, error: companyError } = await supabase
+            .from('companies')
+            .select('name')
+            .eq('id', companyId)
+            .single();
+
+          if (!companyError && company?.name && active) {
+            setCompanyName(company.name);
           }
         }
 
-        // 2) Merkezi (directory) Supabase oturumundan kullanıcı mailini al
-        const { data: userData, error } = await directorySupabase.auth.getUser();
+        // 2) Uygulama Supabase oturumundan kullanıcı mailini al
+        const { data: userData, error } = await supabase.auth.getUser();
         if (error) {
           console.warn('Topbar: kullanıcı bilgisi alınamadı', error);
         } else if (active) {
