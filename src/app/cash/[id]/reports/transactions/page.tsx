@@ -1,9 +1,12 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useMemo } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Route } from 'next';
+
+import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
 
 type Txn = {
   date: string;
@@ -14,32 +17,119 @@ type Txn = {
   amount: number;
 };
 
-export default function CashTransactionsReportPage({ params }: { params: { id: string } }) {
+function CashTransactionsReportInner({ params }: { params: { id: string } }) {
   const router = useRouter();
   const sp = useSearchParams();
 
+  const [rows, setRows] = useState<Txn[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [ledgerName, setLedgerName] = useState<string>('');
+  const [ledgerDesc, setLedgerDesc] = useState<string | null>(null);
+
+  const allTime = sp.get('alltime') === '1';
+  const start = sp.get('start') || '';
+  const end = sp.get('end') || '';
+
   const cashName = useMemo(() => {
+    if (ledgerName) return ledgerName;
     const slug = (params.id || '').toLowerCase();
     if (slug.includes('varsayilan') || slug.includes('varsayılan')) return 'Varsayılan Kasa';
     return params.id;
-  }, [params.id]);
+  }, [ledgerName, params.id]);
 
-  const rows: Txn[] = [
-    { date: '14.11.2022', type: 'GİRİŞ(+)', amount: 100 },
-    { date: '14.11.2022', type: 'GİRİŞ(+)', amount: 250 },
-    { date: '14.11.2022', type: 'GİRİŞ(+)', amount: 500 },
-    { date: '14.11.2022', type: 'GİRİŞ(+)', amount: 150 },
-    { date: '14.11.2022', type: 'ÇIKIŞ(-)', title: 'Mustafa Bey', amount: 650 },
-    { date: '14.11.2022', type: 'ÇIKIŞ(-)', desc: 'Varsayılan Kasa Kasasından', amount: 4000 },
-    { date: '14.11.2022', type: 'ÇIKIŞ(-)', desc: 'Kasa2 Kasasına Virman Aktarımı', amount: 50 },
-  ];
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          if (active) setLoading(false);
+          router.replace('/login');
+          return;
+        }
 
-  const totalIn = rows.filter(r => r.type === 'GİRİŞ(+)').reduce((s, r) => s + r.amount, 0);
-  const totalOut = rows.filter(r => r.type === 'ÇIKIŞ(-)').reduce((s, r) => s + r.amount, 0);
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) {
+          console.warn('Company ID bulunamadı');
+          if (active) setLoading(false);
+          return;
+        }
+
+        const ledgerId = params.id;
+
+        const [{ data: ledger, error: ledgerErr }, trxResult] = await Promise.all([
+          supabase
+            .from('cash_ledgers')
+            .select('id, name, description')
+            .eq('company_id', companyId)
+            .eq('id', ledgerId)
+            .single(),
+          (async () => {
+            let q = supabase
+              .from('cash_transactions')
+              .select('id, amount, flow, description, trx_date')
+              .eq('cash_ledger_id', ledgerId);
+
+            if (!allTime) {
+              if (start) q = q.gte('trx_date', start);
+              if (end) q = q.lte('trx_date', end);
+            }
+
+            return q;
+          })(),
+        ]);
+
+        if (ledgerErr) {
+          console.error('Kasa bilgisi rapor için yüklenemedi', ledgerErr);
+        } else if (ledger) {
+          if (active) {
+            setLedgerName((ledger as any).name ?? '');
+            setLedgerDesc((ledger as any).description ?? null);
+          }
+        }
+
+        const { data: trxData, error: trxErr } = trxResult;
+        if (trxErr) {
+          console.error('Kasa hareketleri rapor için yüklenemedi', trxErr);
+          if (active) setRows([]);
+          return;
+        }
+
+        const mapped: Txn[] =
+          (trxData ?? []).map((t: any) => ({
+            date: t.trx_date,
+            doc: undefined,
+            title: undefined,
+            desc: t.description ?? '',
+            type: t.flow === 'in' ? 'GİRİŞ(+)' : 'ÇIKIŞ(-)',
+            amount: Number(t.amount ?? 0),
+          })) ?? [];
+
+        if (active) setRows(mapped);
+      } catch (err) {
+        console.error('Kasa işlem raporu yüklenirken hata', err);
+        if (active) setRows([]);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, [router, params.id, allTime, start, end]);
+
+  const totalIn = useMemo(
+    () => rows.filter((r) => r.type === 'GİRİŞ(+)').reduce((s, r) => s + r.amount, 0),
+    [rows],
+  );
+  const totalOut = useMemo(
+    () => rows.filter((r) => r.type === 'ÇIKIŞ(-)').reduce((s, r) => s + r.amount, 0),
+    [rows],
+  );
   const balance = totalIn - totalOut;
-
-  const start = sp.get('start') || '';
-  const end = sp.get('end') || '';
 
   return (
     <main style={{ minHeight: '100dvh', background: '#ecf0f5', color: '#111827' }}>
@@ -62,14 +152,21 @@ export default function CashTransactionsReportPage({ params }: { params: { id: s
         <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb', padding: 0 }}>
           <div style={{ background: '#64748b', color: '#fff', padding: '10px 12px', borderTopLeftRadius: 8, borderTopRightRadius: 8, display: 'grid', gridTemplateColumns: '1fr 1fr auto', columnGap: 16 }}>
             <div>Kasa Adı: <b>{cashName}</b></div>
-            <div>Açıklama: <b>-</b></div>
+            <div>Açıklama: <b>{ledgerDesc || '-'}</b></div>
             <div style={{ textAlign: 'right' }}>Bakiye: <b>{balance.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</b></div>
           </div>
 
           {/* Tarih aralığı gösterimi */}
-          {(start || end) && (
+          {(start || end || allTime) && (
             <div style={{ padding: '8px 12px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>
-              Tarih Aralığı: <b>{start || '—'}</b> - <b>{end || '—'}</b>
+              Tarih Aralığı:{' '}
+              {allTime ? (
+                <b>Tüm Zamanlar</b>
+              ) : (
+                <>
+                  <b>{start || '—'}</b> - <b>{end || '—'}</b>
+                </>
+              )}
             </div>
           )}
 
@@ -92,12 +189,22 @@ export default function CashTransactionsReportPage({ params }: { params: { id: s
                     <tr key={i} style={{ borderBottom: '1px solid #e5e7eb' }}>
                       <td style={{ padding: '8px 10px' }}>{r.date}</td>
                       <td style={{ padding: '8px 10px' }}>{r.doc || '0'}</td>
-                      <td style={{ padding: '8px 10px' }}>{r.title || (r.type === 'ÇIKIŞ(-)' ? 'Mustafa Bey' : '-')}</td>
+                      <td style={{ padding: '8px 10px' }}>{r.title || '-'}</td>
                       <td style={{ padding: '8px 10px' }}>{r.desc || '-'}</td>
                       <td style={{ padding: '8px 10px' }}>{r.type}</td>
                       <td style={{ padding: '8px 10px', textAlign: 'right' }}>{r.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
                     </tr>
                   ))}
+                  {!loading && rows.length === 0 && (
+                    <tr>
+                      <td colSpan={6} style={{ padding: '8px 10px', textAlign: 'center', color: '#6b7280' }}>Kayıt bulunamadı.</td>
+                    </tr>
+                  )}
+                  {loading && (
+                    <tr>
+                      <td colSpan={6} style={{ padding: '8px 10px', textAlign: 'center', color: '#6b7280' }}>Yükleniyor…</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -140,4 +247,16 @@ export default function CashTransactionsReportPage({ params }: { params: { id: s
   );
 }
 
-
+export default function CashTransactionsReportPage(props: { params: { id: string } }) {
+  return (
+    <Suspense
+      fallback={
+        <main style={{ minHeight: '100dvh', background: '#ecf0f5', color: '#111827' }}>
+          <section style={{ padding: 12 }}>Yükleniyor…</section>
+        </main>
+      }
+    >
+      <CashTransactionsReportInner {...props} />
+    </Suspense>
+  );
+}
