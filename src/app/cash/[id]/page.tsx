@@ -22,6 +22,7 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
   const [ledger, setLedger] = useState<CashLedger | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const [banks, setBanks] = useState<{ id: string; bank_name: string | null; branch_name: string | null; iban: string | null }[]>([]);
 
   const cashName = useMemo(() => {
     if (ledger?.name) return ledger.name;
@@ -303,15 +304,21 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
 
         trxQuery = trxQuery.order('trx_date', { ascending: false }).limit(1000);
 
-        const [{ data: ledgerData, error: ledgerErr }, { data: trxData, error: trxErr }] = await Promise.all([
-          supabase
-            .from('cash_ledgers')
-            .select('id, name, description, balance')
-            .eq('company_id', companyId)
-            .eq('id', ledgerId)
-            .single(),
-          trxQuery,
-        ]);
+        const [{ data: ledgerData, error: ledgerErr }, { data: trxData, error: trxErr }, { data: bankData, error: bankErr }] =
+          await Promise.all([
+            supabase
+              .from('cash_ledgers')
+              .select('id, name, description, balance')
+              .eq('company_id', companyId)
+              .eq('id', ledgerId)
+              .single(),
+            trxQuery,
+            supabase
+              .from('bank_accounts')
+              .select('id, bank_name, branch_name, iban')
+              .eq('company_id', companyId)
+              .order('bank_name', { ascending: true }),
+          ]);
 
         if (!active) return;
         if (ledgerErr) {
@@ -333,6 +340,18 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
             note: t.description ?? '',
           }));
           setRows(mapped);
+        }
+
+        if (bankErr) {
+          console.error('Banka listesi yüklenemedi', bankErr);
+          setBanks([]);
+        } else {
+          setBanks(((bankData ?? []) as any).map((b: any) => ({
+            id: b.id,
+            bank_name: b.bank_name ?? null,
+            branch_name: b.branch_name ?? null,
+            iban: b.iban ?? null,
+          })));
         }
       } catch (err) {
         console.error('Kasa detayı yüklenirken hata', err);
@@ -858,27 +877,43 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {(() => {
-                        const banks = [
-                          { id: 'b1', name: 'Ziraat Bankası', branch: 'Merkez', iban: 'TR12 0001 0000 1111 2222 3333 44' },
-                          { id: 'b2', name: 'İş Bankası', branch: 'Ankara', iban: 'TR34 0006 4000 5555 6666 7777 88' },
-                          { id: 'b3', name: 'Garanti BBVA', branch: 'İstanbul', iban: 'TR56 0006 2000 9999 0000 1111 22' },
-                        ];
-                        const filtered = banks.filter((r) => {
-                          const hay = `${r.name} ${r.branch} ${r.iban}`.toLowerCase();
+                      {banks
+                        .filter((r) => {
+                          const hay = `${r.bank_name ?? ''} ${r.branch_name ?? ''} ${r.iban ?? ''}`.toLowerCase();
                           return hay.includes(bankPickQuery.toLowerCase());
-                        });
-                        return filtered.map((r) => (
+                        })
+                        .map((r) => (
                           <tr key={r.id} style={{ borderBottom: '1px solid #eee' }}>
                             <td style={{ padding: '8px 10px' }}>
-                              <button onClick={() => { setBankName(`${r.name} - ${r.branch}`); setOpenBankPick(false); }} style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #2563eb', background: '#2563eb', color: '#fff', cursor: 'pointer' }}>Seç</button>
+                              <button
+                                onClick={() => {
+                                  setBankName(`${r.bank_name ?? ''}${r.branch_name ? ` - ${r.branch_name}` : ''}`);
+                                  setOpenBankPick(false);
+                                }}
+                                style={{
+                                  padding: '6px 10px',
+                                  borderRadius: 8,
+                                  border: '1px solid #2563eb',
+                                  background: '#2563eb',
+                                  color: '#fff',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Seç
+                              </button>
                             </td>
-                            <td style={{ padding: '8px 10px' }}>{r.name}</td>
-                            <td style={{ padding: '8px 10px' }}>{r.branch}</td>
-                            <td style={{ padding: '8px 10px' }}>{r.iban}</td>
+                            <td style={{ padding: '8px 10px' }}>{r.bank_name ?? '-'}</td>
+                            <td style={{ padding: '8px 10px' }}>{r.branch_name ?? '-'}</td>
+                            <td style={{ padding: '8px 10px' }}>{r.iban ?? '-'}</td>
                           </tr>
-                        ));
-                      })()}
+                        ))}
+                      {!banks.length && (
+                        <tr>
+                          <td colSpan={4} style={{ padding: 12, textAlign: 'center', color: '#6b7280' }}>
+                            Kayıtlı banka bulunamadı
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
