@@ -34,11 +34,34 @@ export default function Sidebar() {
   };
 
   return (
-    <aside style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: 240, padding: 16, borderRight: '1px solid rgba(255,255,255,0.12)', background: 'rgba(0,0,0,0.15)', zIndex: 1000 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+    <aside
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        bottom: 0,
+        width: 240,
+        padding: 16,
+        borderRight: '1px solid rgba(255,255,255,0.12)',
+        background: 'rgba(0,0,0,0.15)',
+        zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexShrink: 0 }}>
         <Image src="/finova_logo_2.png" alt="Finova" width={160} height={40} style={{ height: 24, width: 'auto' }} />
       </div>
-      <nav style={{ display: 'grid', gap: 8 }}>
+      <nav
+        style={{
+          display: 'grid',
+          gap: 8,
+          flex: 1,
+          overflowY: 'auto',
+          paddingRight: 4,
+        }}
+      >
         <button onClick={() => router.push(('/dashboard') as Route)} style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.08)', color: 'white', cursor: 'pointer' }}>Giriş Ekranı</button>
         <button onClick={() => router.push(('/accounts?selectFor=sales') as Route)} style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.08)', color: 'white', cursor: 'pointer' }}>Satış Yap</button>
         <button onClick={() => router.push(('/accounts') as Route)} style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.08)', color: 'white', cursor: 'pointer' }}>Cari Hesaplar</button>
@@ -55,8 +78,23 @@ export default function Sidebar() {
         <button onClick={() => router.push(('/agenda') as Route)} style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.08)', color: 'white', cursor: 'pointer' }}>Ajanda</button>
         <button onClick={() => router.push(('/reports') as Route)} style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.08)', color: 'white', cursor: 'pointer' }}>Raporlar</button>
       </nav>
-      <div style={{ marginTop: 16, fontSize: 12, opacity: 0.8 }}>Oturum: {email ?? '-'}</div>
-      <button onClick={signOut} style={{ marginTop: 8, width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white', cursor: 'pointer' }}>Çıkış</button>
+      <div style={{ marginTop: 16, fontSize: 12, opacity: 0.8, flexShrink: 0 }}>Oturum: {email ?? '-'}</div>
+      <button
+        onClick={signOut}
+        style={{
+          marginTop: 8,
+          width: '100%',
+          padding: '8px 10px',
+          borderRadius: 8,
+          border: '1px solid rgba(255,255,255,0.2)',
+          background: 'rgba(255,255,255,0.12)',
+          color: 'white',
+          cursor: 'pointer',
+          flexShrink: 0,
+        }}
+      >
+        Çıkış
+      </button>
     </aside>
   );
 }
