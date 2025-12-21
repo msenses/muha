@@ -32,6 +32,18 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Düzelt modalı için alanlar
+  const [showEdit, setShowEdit] = useState(false);
+  const [editIssueDate, setEditIssueDate] = useState('');
+  const [editDueDate, setEditDueDate] = useState('');
+  const [editAmount, setEditAmount] = useState('0,00');
+  const [editDocumentNo, setEditDocumentNo] = useState('');
+  const [editBankName, setEditBankName] = useState('');
+  const [editBankBranch, setEditBankBranch] = useState('');
+  const [editDrawerName, setEditDrawerName] = useState('');
+  const [editStatus, setEditStatus] = useState<string>('pending');
+  const [editNotes, setEditNotes] = useState('');
+
   useEffect(() => {
     let active = true;
     const load = async () => {
@@ -111,21 +123,21 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
 
   const data = useMemo(() => {
     if (!row) {
-    return {
+      return {
         txnDate: '',
         dueDate: '',
         amount: '',
         firm: '',
         number: '',
         kind: '',
-      docType: 'ASIL EVRAK',
+        docType: 'ASIL EVRAK',
         status: '',
         bank: '',
         branch: '',
         account: '',
-      principal: '',
-      note: '',
-    };
+        principal: '',
+        note: '',
+      };
     }
     const fmtDate = (d: string | null) => {
       if (!d) return '';
@@ -176,8 +188,8 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
 
   // Ödeme Yap modalı
   const [showPay, setShowPay] = useState(false);
-  const [payDate, setPayDate] = useState('27.11.2022');
-  const [payAmount, setPayAmount] = useState('10000');
+  const [payDate, setPayDate] = useState('');
+  const [payAmount, setPayAmount] = useState('0,00');
   const [payMethod, setPayMethod] = useState<'Kasadan' | 'Bankadan'>('Kasadan');
   const [selectedCash, setSelectedCash] = useState<'Varsayılan Kasa' | 'Kasa2'>('Varsayılan Kasa');
   // Tahsilat modalı
@@ -194,8 +206,197 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
   const [endorsePickQuery, setEndorsePickQuery] = useState('');
   // Bankaya Ver modalı
   const [showGiveBank, setShowGiveBank] = useState(false);
-  const [giveBankDate, setGiveBankDate] = useState('27.11.2022');
+  const [giveBankDate, setGiveBankDate] = useState('');
   const [selectedBank, setSelectedBank] = useState<'Varsayılan' | 'Banka2'>('Varsayılan');
+
+  const parseAmount = (raw: string) => {
+    const txt = (raw || '0').toString().replace(/\./g, '').replace(',', '.');
+    const n = Number(txt);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const openPayModal = () => {
+    if (!row) return;
+    try {
+      const todayIso = new Date().toISOString().slice(0, 10);
+      setPayDate(todayIso);
+    } catch {
+      setPayDate('');
+    }
+    setPayAmount(
+      row.amount.toLocaleString('tr-TR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+    );
+    setPayMethod('Kasadan');
+    setSelectedCash('Varsayılan Kasa');
+    setShowPay(true);
+  };
+
+  const openEditModal = () => {
+    if (!row) return;
+    setEditIssueDate(row.issue_date ?? '');
+    setEditDueDate(row.due_date ?? '');
+    setEditAmount(
+      row.amount.toLocaleString('tr-TR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+    );
+    setEditDocumentNo(row.document_no ?? '');
+    setEditBankName(row.bank_name ?? '');
+    setEditBankBranch(row.bank_branch ?? '');
+    setEditDrawerName(row.drawer_name ?? '');
+    setEditStatus(row.status ?? 'pending');
+    setEditNotes(row.notes ?? '');
+    setShowEdit(true);
+  };
+
+  const handleEditSave = async () => {
+    if (!row) return;
+    const amount = parseAmount(editAmount);
+    if (!editIssueDate || !editDueDate) {
+      alert('İşlem tarihi ve vade tarihi zorunludur.');
+      return;
+    }
+    if (!(amount > 0)) {
+      alert('Tutar 0’dan büyük olmalıdır.');
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('cheques_notes')
+        .update({
+          issue_date: editIssueDate,
+          due_date: editDueDate,
+          amount,
+          document_no: editDocumentNo || null,
+          bank_name: editBankName || null,
+          bank_branch: editBankBranch || null,
+          drawer_name: editDrawerName || null,
+          status: editStatus || null,
+          notes: editNotes || null,
+        })
+        .eq('id', row.id);
+      if (error) throw error;
+
+      setRow((prev) =>
+        prev
+          ? {
+              ...prev,
+              issue_date: editIssueDate,
+              due_date: editDueDate,
+              amount,
+              document_no: editDocumentNo || null,
+              bank_name: editBankName || null,
+              bank_branch: editBankBranch || null,
+              drawer_name: editDrawerName || null,
+              status: editStatus || null,
+              notes: editNotes || null,
+            }
+          : prev,
+      );
+      setShowEdit(false);
+    } catch (err: any) {
+      console.error('Çek kaydı güncellenemedi', err);
+      alert(err?.message ?? 'Çek kaydı güncellenemedi.');
+    }
+  };
+
+  const handlePaySave = async () => {
+    if (!row) return;
+    const amount = parseAmount(payAmount);
+    if (!(amount > 0)) {
+      alert('Tutar 0’dan büyük olmalıdır.');
+      return;
+    }
+    if (!payDate) {
+      alert('İşlem tarihi zorunludur.');
+      return;
+    }
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        router.replace('/login');
+        return;
+      }
+      const companyId = await fetchCurrentCompanyId();
+      if (!companyId) {
+        alert('Şirket bilgisi bulunamadı.');
+        return;
+      }
+
+      if (payMethod === 'Kasadan') {
+        const { data: cashLedgers, error: cashErr } = await supabase
+          .from('cash_ledgers')
+          .select('id, name, balance')
+          .eq('company_id', companyId)
+          .order('name', { ascending: true });
+        if (cashErr) throw cashErr;
+        if (!cashLedgers || cashLedgers.length === 0) {
+          alert('Kasa bulunamadı. Önce bir kasa tanımlayın.');
+          return;
+        }
+        let target = cashLedgers[0];
+        if (selectedCash === 'Kasa2' && cashLedgers.length > 1) {
+          target = cashLedgers[1];
+        }
+        const trxDate = payDate;
+        const { error: cashTrxErr } = await supabase.from('cash_transactions').insert({
+          cash_ledger_id: target.id,
+          amount,
+          flow: 'out',
+          description: `Verilen çek ödemesi - Çek No: ${row.document_no ?? ''}`,
+          trx_date: trxDate,
+        });
+        if (cashTrxErr) throw cashTrxErr;
+        const currentBal = Number(target.balance ?? 0);
+        await supabase
+          .from('cash_ledgers')
+          .update({ balance: currentBal - amount })
+          .eq('id', target.id);
+      } else {
+        const { data: banks, error: bankErr } = await supabase
+          .from('bank_accounts')
+          .select('id, bank_name, balance')
+          .eq('company_id', companyId)
+          .order('bank_name', { ascending: true });
+        if (bankErr) throw bankErr;
+        if (!banks || banks.length === 0) {
+          alert('Banka hesabı bulunamadı. Önce bir banka hesabı tanımlayın.');
+          return;
+        }
+        const bankAcc = banks[0];
+        const trxDate = payDate;
+        const { error: bankTrxErr } = await supabase.from('bank_transactions').insert({
+          bank_account_id: bankAcc.id,
+          amount,
+          flow: 'out',
+          description: `Verilen çek ödemesi - Çek No: ${row.document_no ?? ''}`,
+          trx_date: trxDate,
+        });
+        if (bankTrxErr) throw bankTrxErr;
+        const currentBal = Number(bankAcc.balance ?? 0);
+        await supabase
+          .from('bank_accounts')
+          .update({ balance: currentBal - amount })
+          .eq('id', bankAcc.id);
+      }
+
+      const { error: chErr } = await supabase
+        .from('cheques_notes')
+        .update({ status: 'paid' })
+        .eq('id', row.id);
+      if (chErr) throw chErr;
+
+      setRow((prev) => (prev ? { ...prev, status: 'paid' } : prev));
+      setShowPay(false);
+    } catch (err: any) {
+      console.error('Çek ödemesi kaydedilemedi', err);
+      alert(err?.message ?? 'Çek ödemesi kaydedilemedi.');
+    }
+  };
 
   return (
     <main style={{ minHeight: '100dvh', background: '#ecf0f5', color: '#111827' }}>
@@ -255,11 +456,11 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
                 }
                 return true;
               };
-              const actions: Array<{ label: string; onClick?: () => void }> = [
-                { label: 'DÜZELT' },
+                const actions: Array<{ label: string; onClick?: () => void }> = [
+                { label: 'DÜZELT', onClick: openEditModal },
                 { label: 'İADE YAP' },
                 { label: 'TAHSİLAT YAP', onClick: () => setShowCollect(true) },
-                { label: 'ÖDEME YAP', onClick: () => setShowPay(true) },
+                { label: 'ÖDEME YAP', onClick: openPayModal },
                 { label: 'CİRO ET', onClick: () => setShowEndorse(true) },
                 { label: 'BANKAYA VER', onClick: () => setShowGiveBank(true) },
                 { label: 'VERİLEN ÇEK/SENET BORDROSU', onClick: () => router.push((`/cheque-note/${params.id}/reports/outgoing`) as Route) },
@@ -314,6 +515,188 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
         </div>
       </section>
 
+      {/* Düzelt Modal */}
+      {showEdit && (
+        <div
+          onClick={() => setShowEdit(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.35)',
+            display: 'grid',
+            placeItems: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 620,
+              maxWidth: '95%',
+              borderRadius: 10,
+              background: '#ffffff',
+              color: '#111827',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.45)',
+              border: '1px solid #e5e7eb',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: 12,
+                borderBottom: '1px solid #e5e7eb',
+              }}
+            >
+              <strong>Çek Bilgilerini Düzelt</strong>
+              <button
+                onClick={() => setShowEdit(false)}
+                style={{
+                  padding: 6,
+                  borderRadius: 6,
+                  border: '1px solid #d1d5db',
+                  background: '#fff',
+                  cursor: 'pointer',
+                }}
+              >
+                ✖
+              </button>
+            </div>
+
+            <div style={{ padding: 16, display: 'grid', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <label style={{ display: 'grid', gap: 6 }}>
+                  <span>İşlem Tarihi</span>
+                  <input
+                    type="date"
+                    value={editIssueDate}
+                    onChange={(e) => setEditIssueDate(e.target.value)}
+                    style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }}
+                  />
+                </label>
+                <label style={{ display: 'grid', gap: 6 }}>
+                  <span>Vade Tarihi</span>
+                  <input
+                    type="date"
+                    value={editDueDate}
+                    onChange={(e) => setEditDueDate(e.target.value)}
+                    style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }}
+                  />
+                </label>
+              </div>
+
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span>Tutar</span>
+                <input
+                  value={editAmount}
+                  onChange={(e) => setEditAmount(e.target.value)}
+                  style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db', textAlign: 'right' }}
+                />
+              </label>
+
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span>Çek/Senet No</span>
+                <input
+                  value={editDocumentNo}
+                  onChange={(e) => setEditDocumentNo(e.target.value)}
+                  style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }}
+                />
+              </label>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <label style={{ display: 'grid', gap: 6 }}>
+                  <span>Banka Adı</span>
+                  <input
+                    value={editBankName}
+                    onChange={(e) => setEditBankName(e.target.value)}
+                    style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }}
+                  />
+                </label>
+                <label style={{ display: 'grid', gap: 6 }}>
+                  <span>Banka Şubesi</span>
+                  <input
+                    value={editBankBranch}
+                    onChange={(e) => setEditBankBranch(e.target.value)}
+                    style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }}
+                  />
+                </label>
+              </div>
+
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span>Keşideci / Hesap No</span>
+                <input
+                  value={editDrawerName}
+                  onChange={(e) => setEditDrawerName(e.target.value)}
+                  style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }}
+                />
+              </label>
+
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span>Evrak Durumu</span>
+                <select
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value)}
+                  style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }}
+                >
+                  <option value="pending">Beklemede</option>
+                  <option value="paid">Ödendi</option>
+                  <option value="bounced">Karşılıksız</option>
+                  <option value="endorsed">Cirolu</option>
+                  <option value="cancelled">İptal</option>
+                </select>
+              </label>
+
+              <label style={{ display: 'grid', gap: 6 }}>
+                <span>Açıklama</span>
+                <textarea
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  rows={3}
+                  style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db' }}
+                />
+              </label>
+            </div>
+
+            <div
+              style={{
+                padding: 12,
+                borderTop: '1px solid #e5e7eb',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: 8,
+              }}
+            >
+              <button
+                onClick={() => setShowEdit(false)}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 6,
+                  border: '1px solid #d1d5db',
+                  background: '#fff',
+                  cursor: 'pointer',
+                }}
+              >
+                Vazgeç
+              </button>
+              <button
+                onClick={handleEditSave}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 6,
+                  border: '1px solid #0ea5e9',
+                  background: '#0ea5e9',
+                  color: '#fff',
+                  cursor: 'pointer',
+                }}
+              >
+                Kaydet
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Ödeme Yap Modal */}
       {showPay && (
         <div onClick={() => setShowPay(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'grid', placeItems: 'center', zIndex: 1000 }}>
@@ -350,7 +733,7 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
               )}
             </div>
             <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', display: 'flex', gap: 8 }}>
-              <button onClick={() => { /* demo submit */ setShowPay(false); }} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>Ödeme Yap</button>
+              <button onClick={handlePaySave} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>Ödeme Yap</button>
               <button onClick={() => setShowPay(false)} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #d1d5db', background: '#fff' }}>Vazgeç</button>
             </div>
           </div>
