@@ -403,6 +403,7 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
           flow: 'out',
           description: `Verilen çek ödemesi - Çek No: ${row.document_no ?? ''}`,
           trx_date: trxDate,
+          cheque_note_id: row.id,
         });
         if (cashTrxErr) throw cashTrxErr;
         const currentBal = Number(target.balance ?? 0);
@@ -433,6 +434,7 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
           flow: 'out',
           description: `Verilen çek ödemesi - Çek No: ${row.document_no ?? ''}`,
           trx_date: trxDate,
+          cheque_note_id: row.id,
         });
         if (bankTrxErr) throw bankTrxErr;
         const currentBal = Number(bankAcc.balance ?? 0);
@@ -453,6 +455,95 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
     } catch (err: any) {
       console.error('Çek ödemesi kaydedilemedi', err);
       alert(err?.message ?? 'Çek ödemesi kaydedilemedi.');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!row) return;
+    const ok = window.confirm('Bu çeki silmek istediğinize emin misiniz? İlişkili ödeme hareketleri de geri alınacaktır.');
+    if (!ok) return;
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        router.replace('/login');
+        return;
+      }
+      const companyId = await fetchCurrentCompanyId();
+      if (!companyId) {
+        alert('Şirket bilgisi bulunamadı.');
+        return;
+      }
+
+      // İlgili kasa hareketlerini bul ve bakiyeleri geri al
+      const { data: cashTrx, error: cashTrxErr } = await supabase
+        .from('cash_transactions')
+        .select('id, cash_ledger_id, amount, flow')
+        .eq('cheque_note_id', row.id);
+      if (cashTrxErr) throw cashTrxErr;
+
+      if (cashTrx && cashTrx.length > 0) {
+        const ledgerIds = Array.from(new Set((cashTrx as any[]).map((t) => t.cash_ledger_id as string)));
+        const { data: ledgers, error: ledgersErr } = await supabase
+          .from('cash_ledgers')
+          .select('id, balance')
+          .in('id', ledgerIds);
+        if (ledgersErr) throw ledgersErr;
+        const balMap = new Map<string, number>();
+        for (const l of ledgers ?? []) {
+          balMap.set((l as any).id as string, Number((l as any).balance ?? 0));
+        }
+        for (const t of cashTrx as any[]) {
+          const id = t.cash_ledger_id as string;
+          const current = balMap.get(id) ?? 0;
+          const amt = Number(t.amount ?? 0);
+          const delta = t.flow === 'out' ? amt : -amt;
+          balMap.set(id, current + delta);
+        }
+        for (const [id, newBal] of balMap.entries()) {
+          await supabase.from('cash_ledgers').update({ balance: newBal }).eq('id', id);
+        }
+        await supabase.from('cash_transactions').delete().eq('cheque_note_id', row.id);
+      }
+
+      // İlgili banka hareketlerini bul ve bakiyeleri geri al
+      const { data: bankTrx, error: bankTrxErr } = await supabase
+        .from('bank_transactions')
+        .select('id, bank_account_id, amount, flow')
+        .eq('cheque_note_id', row.id);
+      if (bankTrxErr) throw bankTrxErr;
+
+      if (bankTrx && bankTrx.length > 0) {
+        const bankIds = Array.from(new Set((bankTrx as any[]).map((t) => t.bank_account_id as string)));
+        const { data: banks, error: banksErr } = await supabase
+          .from('bank_accounts')
+          .select('id, balance')
+          .in('id', bankIds);
+        if (banksErr) throw banksErr;
+        const balMap = new Map<string, number>();
+        for (const b of banks ?? []) {
+          balMap.set((b as any).id as string, Number((b as any).balance ?? 0));
+        }
+        for (const t of bankTrx as any[]) {
+          const id = t.bank_account_id as string;
+          const current = balMap.get(id) ?? 0;
+          const amt = Number(t.amount ?? 0);
+          const delta = t.flow === 'out' ? amt : -amt;
+          balMap.set(id, current + delta);
+        }
+        for (const [id, newBal] of balMap.entries()) {
+          await supabase.from('bank_accounts').update({ balance: newBal }).eq('id', id);
+        }
+        await supabase.from('bank_transactions').delete().eq('cheque_note_id', row.id);
+      }
+
+      // Çekin kendisini sil
+      const { error: delErr } = await supabase.from('cheques_notes').delete().eq('id', row.id);
+      if (delErr) throw delErr;
+
+      router.push(('/cheque-note') as Route);
+    } catch (err: any) {
+      console.error('Çek kaydı silinemedi', err);
+      alert(err?.message ?? 'Çek kaydı silinemedi.');
     }
   };
 
@@ -551,6 +642,7 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
               return (
                 <button
                   disabled={!canDelete}
+                  onClick={canDelete ? handleDelete : undefined}
                   style={{
                     width: '100%',
                     padding: '10px 12px',
