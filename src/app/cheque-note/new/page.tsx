@@ -82,6 +82,22 @@ export default function ChequeNoteNewPage() {
     };
   }, [router]);
 
+  // URL query'sine göre varsayılan çek yönünü ayarla (ör: /cheque-note/new?direction=incoming)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      const dir = sp.get('direction');
+      if (dir === 'incoming') {
+        setKind('MÜŞTERİ ÇEKİ/SENEDİ');
+      } else if (dir === 'outgoing') {
+        setKind('KENDİ EVRAĞIMIZ');
+      }
+    } catch {
+      // sessizce yut
+    }
+  }, []);
+
   const handleSave = async () => {
     setSaveError(null);
     if (!companyId) {

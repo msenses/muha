@@ -133,7 +133,12 @@ export default function ChequeNotePage() {
           <aside>
             <div style={{ display: 'grid', gap: 10 }}>
               <button onClick={() => router.push(('/cheque-note/new') as Route)} style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #22c55e', background: '#22c55e', color: '#fff' }}>Yeni Verilen ÇEK/SENET</button>
-              <button style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #f59e0b', background: '#f59e0b', color: '#1f2937' }}>Yeni Alınan ÇEK/SENET</button>
+              <button
+                onClick={() => router.push(('/cheque-note/new?direction=incoming') as Route)}
+                style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #f59e0b', background: '#f59e0b', color: '#1f2937' }}
+              >
+                Yeni Alınan ÇEK/SENET
+              </button>
             </div>
             <div style={{ marginTop: 16, color: 'white', opacity: 0.9, fontWeight: 700 }}>Raporlar</div>
             <div style={{ marginTop: 8 }}>
