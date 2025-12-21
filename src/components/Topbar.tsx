@@ -354,6 +354,31 @@ export default function Topbar() {
                 </div>
                 <button
                   type="button"
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    router.push('/profile');
+                  }}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '8px 8px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'rgba(209,213,219,0.95)',
+                    fontSize: 12,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    marginTop: 4,
+                  }}
+                >
+                  <span>👤</span>
+                  <span>Profilim</span>
+                </button>
+                <button
+                  type="button"
                   onClick={signOut}
                   style={{
                     width: '100%',
