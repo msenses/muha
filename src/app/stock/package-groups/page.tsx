@@ -24,10 +24,10 @@ export default function StockPackageGroupsPage() {
     let active = true;
     const init = async () => {
       try {
-        const { data } = await supabase.auth.getSession();
-        if (!data.session) {
-          router.replace('/login');
-          return;
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        router.replace('/login');
+        return;
         }
         const companyId = await fetchCurrentCompanyId();
         if (!companyId) {
@@ -92,18 +92,18 @@ export default function StockPackageGroupsPage() {
             {loading && <div style={{ padding: 8, fontSize: 13 }}>Yükleniyor…</div>}
             {error && !loading && <div style={{ padding: 8, fontSize: 13, color: '#ffb4b4' }}>{error}</div>}
             {!loading && !error && (
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead>
-                  <tr style={{ background: 'rgba(255,255,255,0.06)' }}>
-                    <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>İşlemler</th>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: 'rgba(255,255,255,0.06)' }}>
+                  <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>İşlemler</th>
                     <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>Paket Grup Adı</th>
                     <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>Toplam Fiyat</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((r) => (
-                    <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                      <td style={{ padding: 10 }}>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((r) => (
+                  <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                    <td style={{ padding: 10 }}>
                         <button
                           style={{ marginRight: 6, padding: '6px 8px', borderRadius: 6, border: '1px solid #0aa6b5', background: '#12b3c5', color: 'white', cursor: 'pointer' }}
                           onClick={() => {
@@ -113,20 +113,20 @@ export default function StockPackageGroupsPage() {
                         >
                           Detay
                         </button>
-                      </td>
-                      <td style={{ padding: 10 }}>{r.name}</td>
+                    </td>
+                    <td style={{ padding: 10 }}>{r.name}</td>
                       <td style={{ padding: 10 }}>
                         {r.total_price != null ? r.total_price.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
                       </td>
-                    </tr>
-                  ))}
-                  {filtered.length === 0 && (
-                    <tr>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr>
                       <td colSpan={3} style={{ padding: 12, textAlign: 'center', opacity: 0.8 }}>Kayıt bulunamadı</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                  </tr>
+                )}
+              </tbody>
+            </table>
             )}
           </div>
         </div>

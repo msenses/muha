@@ -43,7 +43,7 @@ export default function StockUnitNewPage() {
         short_name: shortName.trim() || null,
       });
       if (error) throw error;
-      router.push(('/stock/units') as Route);
+    router.push(('/stock/units') as Route);
     } catch (e: any) {
       setErr(e?.message ?? 'Birim kaydedilemedi');
     } finally {
@@ -62,9 +62,9 @@ export default function StockUnitNewPage() {
           <form onSubmit={submit} style={{ display: 'grid', gap: 10 }}>
             <label style={{ display: 'grid', gap: 6 }}>
               <span style={{ fontSize: 12, opacity: 0.85 }}>Birim Adı</span>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
                 placeholder="Örn: Adet, Kg, Kutu"
                 style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}
               />
@@ -75,8 +75,8 @@ export default function StockUnitNewPage() {
                 value={shortName}
                 onChange={(e) => setShortName(e.target.value)}
                 placeholder="Örn: Ad, Kg, Kt"
-                style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}
-              />
+              style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}
+            />
             </label>
             {err && <div style={{ color: '#ffb4b4', fontSize: 12 }}>{err}</div>}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -93,7 +93,7 @@ export default function StockUnitNewPage() {
                 style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #0aa6b5', background: '#12b3c5', color: 'white', cursor: 'pointer', opacity: loading ? 0.7 : 1 }}
               >
                 {loading ? 'Kaydediliyor…' : 'Kaydet'}
-              </button>
+            </button>
             </div>
           </form>
         </div>

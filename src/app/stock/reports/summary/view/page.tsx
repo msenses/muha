@@ -34,8 +34,8 @@ export default function StockSummaryReportViewPage() {
 
     const load = async () => {
       try {
-        if (typeof window === 'undefined') return;
-        const sp = new URLSearchParams(window.location.search);
+    if (typeof window === 'undefined') return;
+    const sp = new URLSearchParams(window.location.search);
         const isAll = sp.get('all') === '1';
         const s = sp.get('start') ?? '';
         const e = sp.get('end') ?? '';
@@ -207,47 +207,47 @@ export default function StockSummaryReportViewPage() {
           )}
 
           {!loading && !error && rows.length > 0 && (
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12, fontSize: 13 }}>
-              <thead>
-                <tr style={{ background: '#5d6d7e', color: 'white' }}>
-                  <th style={{ textAlign: 'left', padding: 8 }}>KOD</th>
-                  <th style={{ textAlign: 'left', padding: 8 }}>RAF</th>
-                  <th style={{ textAlign: 'left', padding: 8 }}>AD</th>
-                  <th style={{ textAlign: 'left', padding: 8 }}>GRUP</th>
-                  <th style={{ textAlign: 'left', padding: 8 }}>GİREN</th>
-                  <th style={{ textAlign: 'left', padding: 8 }}>ÇIKAN</th>
-                  <th style={{ textAlign: 'left', padding: 8 }}>KALAN</th>
-                </tr>
-              </thead>
-              <tbody>
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12, fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: '#5d6d7e', color: 'white' }}>
+                <th style={{ textAlign: 'left', padding: 8 }}>KOD</th>
+                <th style={{ textAlign: 'left', padding: 8 }}>RAF</th>
+                <th style={{ textAlign: 'left', padding: 8 }}>AD</th>
+                <th style={{ textAlign: 'left', padding: 8 }}>GRUP</th>
+                <th style={{ textAlign: 'left', padding: 8 }}>GİREN</th>
+                <th style={{ textAlign: 'left', padding: 8 }}>ÇIKAN</th>
+                <th style={{ textAlign: 'left', padding: 8 }}>KALAN</th>
+              </tr>
+            </thead>
+            <tbody>
                 {rows.map((r) => {
-                  const remain = r.inQty - r.outQty;
-                  return (
+                const remain = r.inQty - r.outQty;
+                return (
                     <tr key={r.productId} style={{ borderBottom: '1px solid #ecf0f1' }}>
                       <td style={{ padding: 8 }}>{r.code || '-'}</td>
                       <td style={{ padding: 8 }}>{r.shelf || '-'}</td>
-                      <td style={{ padding: 8 }}>{r.name}</td>
+                    <td style={{ padding: 8 }}>{r.name}</td>
                       <td style={{ padding: 8 }}>{r.groupName || '-'}</td>
-                      <td style={{ padding: 8 }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 8 }}>
+                    <td style={{ padding: 8 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 8 }}>
                           <span>Miktar:</span>
                           <span>{r.inQty.toFixed(2)} Adet</span>
-                        </div>
-                      </td>
-                      <td style={{ padding: 8 }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 8 }}>
+                      </div>
+                    </td>
+                    <td style={{ padding: 8 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 8 }}>
                           <span>Miktar:</span>
                           <span>{r.outQty.toFixed(2)} Adet</span>
-                        </div>
-                      </td>
-                      <td style={{ padding: 8 }}>
-                        <div style={{ color: '#7f8c8d' }}>{remain.toFixed(2)} Adet</div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </div>
+                    </td>
+                    <td style={{ padding: 8 }}>
+                      <div style={{ color: '#7f8c8d' }}>{remain.toFixed(2)} Adet</div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
           )}
         </div>
       </section>

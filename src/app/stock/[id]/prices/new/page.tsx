@@ -68,7 +68,7 @@ export default function NewStockPricePage({ params }: { params: { id: string } }
         .eq('id', product.id)
         .eq('company_id', companyId);
       if (error) throw error;
-      router.push((`/stock/${productId}/prices`) as Route);
+    router.push((`/stock/${productId}/prices`) as Route);
     } catch (e: any) {
       setErr(e?.message ?? 'Fiyat kaydedilemedi');
     } finally {

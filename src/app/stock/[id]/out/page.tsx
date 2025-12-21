@@ -82,7 +82,7 @@ export default function StockOutPage({ params }: { params: { id: string } }) {
 
       const { error } = await supabase.from('stock_movements').insert(payload);
       if (error) throw error;
-      router.push((`/stock/${productId}`) as Route);
+    router.push((`/stock/${productId}`) as Route);
     } catch (e: any) {
       setErr(e?.message ?? 'Stok çıkışı kaydedilemedi');
     } finally {

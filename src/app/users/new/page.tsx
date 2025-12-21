@@ -91,14 +91,7 @@ export default function NewUserPage() {
 
     setSaving(true);
     try {
-      const companyId = await fetchCurrentCompanyId();
-      if (!companyId) {
-        setError('Firma bilgisi alınamadı.');
-        setSaving(false);
-        return;
-      }
-
-      // 1) Yeni auth kullanıcısı oluştur
+      // 1) Yeni auth kullanıcısını oluştur (RLS'den etkilenmez)
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -123,17 +116,15 @@ export default function NewUserPage() {
         return;
       }
 
-      // 2) user_profiles tablosuna kayıt ekle
-      const { error: profileError } = await supabase.from('user_profiles').insert({
-        user_id: newUser.id,
-        company_id: companyId,
-        role,
-        status: 'active',
+      // 2) Admin'in firması için user_profiles kaydını SECURITY DEFINER fonksiyon ile oluştur
+      const { error: rpcError } = await supabase.rpc('create_user_with_profile', {
+        p_user_id: newUser.id,
+        p_role: role,
       });
 
-      if (profileError) {
-        console.error('user_profiles kaydı oluşturulamadı:', profileError);
-        setError(profileError.message ?? 'Kullanıcı profili oluşturulamadı.');
+      if (rpcError) {
+        console.error('create_user_with_profile hatası:', rpcError);
+        setError(rpcError.message ?? 'Kullanıcı profili oluşturulamadı.');
         setSaving(false);
         return;
       }

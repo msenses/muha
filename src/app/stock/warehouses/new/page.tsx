@@ -44,7 +44,7 @@ export default function WarehouseNewPage() {
         is_default: isDefault,
       });
       if (error) throw error;
-      router.push(('/stock/warehouses') as Route);
+    router.push(('/stock/warehouses') as Route);
     } catch (e: any) {
       setErr(e?.message ?? 'Depo kaydedilemedi');
     } finally {
@@ -63,12 +63,12 @@ export default function WarehouseNewPage() {
           <form onSubmit={submit} style={{ display: 'grid', gap: 10 }}>
             <label style={{ display: 'grid', gap: 6 }}>
               <span style={{ fontSize: 12, opacity: 0.85 }}>Depo Adı</span>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Depo adı"
-                style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}
-              />
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Depo adı"
+              style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.15)', color: 'white' }}
+            />
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} />
@@ -89,7 +89,7 @@ export default function WarehouseNewPage() {
                 style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #0aa6b5', background: '#12b3c5', color: 'white', cursor: 'pointer', opacity: loading ? 0.7 : 1 }}
               >
                 {loading ? 'Kaydediliyor…' : 'Kaydet'}
-              </button>
+            </button>
             </div>
           </form>
         </div>

@@ -37,17 +37,17 @@ export default function StockMovementsReportViewPage() {
 
     const load = async () => {
       try {
-        if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') return;
 
         // 1) URL parametrelerini oku
-        const sp = new URLSearchParams(window.location.search);
-        const isAll = sp.get('all') === '1';
-        const s = sp.get('start') ?? '';
-        const e = sp.get('end') ?? '';
+    const sp = new URLSearchParams(window.location.search);
+    const isAll = sp.get('all') === '1';
+    const s = sp.get('start') ?? '';
+    const e = sp.get('end') ?? '';
         if (!active) return;
-        setAll(isAll);
-        setStart(s);
-        setEnd(e);
+    setAll(isAll);
+    setStart(s);
+    setEnd(e);
 
         setLoading(true);
         setError(null);
@@ -177,37 +177,37 @@ export default function StockMovementsReportViewPage() {
             const totalQty = blk.rows.reduce((sum, r) => sum + r.qty, 0);
             return (
               <div key={blk.productId || blk.name} style={{ marginTop: 14, border: '1px solid #dfe6ee', borderRadius: 6, overflow: 'hidden' }}>
-                <div style={{ background: '#5d6d7e', color: 'white', padding: '8px 10px', fontWeight: 700, display: 'grid', gridTemplateColumns: '140px 1fr 200px' }}>
+              <div style={{ background: '#5d6d7e', color: 'white', padding: '8px 10px', fontWeight: 700, display: 'grid', gridTemplateColumns: '140px 1fr 200px' }}>
                   <div>ÜRÜN KODU {blk.code || '-'}</div>
-                  <div>ÜRÜN ADI {blk.name}</div>
+                <div>ÜRÜN ADI {blk.name}</div>
                   <div style={{ textAlign: 'right' }}>ÜRÜN GRUBU -</div>
-                </div>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                  <thead>
-                    <tr style={{ background: '#ecf0f1' }}>
-                      <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #e5e8ec' }}>Tarih</th>
-                      <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #e5e8ec' }}>Miktar</th>
-                      <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #e5e8ec' }}>İşlem Tipi</th>
-                      <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #e5e8ec' }}>Açıklama</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {blk.rows.map((r, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid #f0f3f7' }}>
+              </div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: '#ecf0f1' }}>
+                    <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #e5e8ec' }}>Tarih</th>
+                    <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #e5e8ec' }}>Miktar</th>
+                    <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #e5e8ec' }}>İşlem Tipi</th>
+                    <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #e5e8ec' }}>Açıklama</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {blk.rows.map((r, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid #f0f3f7' }}>
                         <td style={{ padding: 8 }}>{new Date(r.date).toLocaleDateString('tr-TR')}</td>
-                        <td style={{ padding: 8, textAlign: 'right' }}>{r.qty}</td>
+                      <td style={{ padding: 8, textAlign: 'right' }}>{r.qty}</td>
                         <td style={{ padding: 8 }}>{r.typeLabel}</td>
                         <td style={{ padding: 8 }}>{r.description || ''}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, padding: 10, borderTop: '1px solid #e5e8ec', background: '#fafbfc' }}>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, padding: 10, borderTop: '1px solid #e5e8ec', background: '#fafbfc' }}>
                   <div>GİRİŞ / ÇIKIŞ TOPLAM : {totalQty}</div>
                   <div>MALİYET : -</div>
                   <div>KALAN : {/* Kalan stok için ayrı raporlar kullanılabilir */}</div>
-                </div>
               </div>
+            </div>
             );
           })}
         </div>

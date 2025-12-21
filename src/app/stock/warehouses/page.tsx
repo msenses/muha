@@ -20,10 +20,10 @@ export default function StockWarehousesPage() {
     let active = true;
     const init = async () => {
       try {
-        const { data } = await supabase.auth.getSession();
-        if (!data.session) {
-          router.replace('/login');
-          return;
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        router.replace('/login');
+        return;
         }
         const companyId = await fetchCurrentCompanyId();
         if (!companyId) {
@@ -88,22 +88,22 @@ export default function StockWarehousesPage() {
             {loading && <div style={{ padding: 8, fontSize: 13 }}>Yükleniyor…</div>}
             {error && !loading && <div style={{ padding: 8, fontSize: 13, color: '#ffb4b4' }}>{error}</div>}
             {!loading && !error && (
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead>
-                  <tr style={{ background: 'rgba(255,255,255,0.06)' }}>
-                    <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>#</th>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: 'rgba(255,255,255,0.06)' }}>
+                  <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>#</th>
                     <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>Depo Adı</th>
                     <th style={{ textAlign: 'left', padding: 10, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>Varsayılan</th>
-                    <th style={{ textAlign: 'right', padding: 10, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>İşlem</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((w, idx) => (
-                    <tr key={w.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                      <td style={{ padding: 10 }}>{idx + 1}</td>
-                      <td style={{ padding: 10 }}>{w.name}</td>
+                  <th style={{ textAlign: 'right', padding: 10, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>İşlem</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((w, idx) => (
+                  <tr key={w.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                    <td style={{ padding: 10 }}>{idx + 1}</td>
+                    <td style={{ padding: 10 }}>{w.name}</td>
                       <td style={{ padding: 10 }}>{w.is_default ? 'Evet' : ''}</td>
-                      <td style={{ padding: 10, textAlign: 'right' }}>
+                    <td style={{ padding: 10, textAlign: 'right' }}>
                         <button
                           title="Düzenle"
                           style={{ marginRight: 6, padding: '6px 8px', borderRadius: 6, border: '1px solid #0aa6b5', background: '#12b3c5', color: 'white', cursor: 'pointer' }}
@@ -145,16 +145,16 @@ export default function StockWarehousesPage() {
                         >
                           🗑
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {filtered.length === 0 && (
-                    <tr>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr>
                       <td colSpan={4} style={{ padding: 12, textAlign: 'center', opacity: 0.8 }}>Kayıt bulunamadı</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                  </tr>
+                )}
+              </tbody>
+            </table>
             )}
           </div>
         </div>

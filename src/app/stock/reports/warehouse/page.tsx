@@ -23,9 +23,9 @@ export default function WarehouseMovementReportPage() {
     let active = true;
     const init = async () => {
       try {
-        const { data } = await supabase.auth.getSession();
-        if (!data.session) {
-          router.replace('/login');
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        router.replace('/login');
           return;
         }
         const companyId = await fetchCurrentCompanyId();

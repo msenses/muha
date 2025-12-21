@@ -43,7 +43,7 @@ export default function StockPackageGroupNewPage() {
         description: description.trim() || null,
       });
       if (error) throw error;
-      router.push(('/stock/package-groups') as Route);
+    router.push(('/stock/package-groups') as Route);
     } catch (e: any) {
       setErr(e?.message ?? 'Paket grup kaydedilemedi');
     } finally {

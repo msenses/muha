@@ -111,21 +111,21 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
 
   const data = useMemo(() => {
     if (!row) {
-      return {
+    return {
         txnDate: '',
         dueDate: '',
         amount: '',
         firm: '',
         number: '',
         kind: '',
-        docType: 'ASIL EVRAK',
+      docType: 'ASIL EVRAK',
         status: '',
         bank: '',
         branch: '',
         account: '',
-        principal: '',
-        note: '',
-      };
+      principal: '',
+      note: '',
+    };
     }
     const fmtDate = (d: string | null) => {
       if (!d) return '';

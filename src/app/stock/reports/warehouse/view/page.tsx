@@ -33,8 +33,8 @@ export default function WarehouseMovementReportViewPage() {
 
     const load = async () => {
       try {
-        if (typeof window === 'undefined') return;
-        const sp = new URLSearchParams(window.location.search);
+    if (typeof window === 'undefined') return;
+    const sp = new URLSearchParams(window.location.search);
         const isAll = sp.get('all') === '1';
         const s = sp.get('start') ?? '';
         const e = sp.get('end') ?? '';
@@ -187,38 +187,38 @@ export default function WarehouseMovementReportViewPage() {
           {!loading &&
             !error &&
             blocks.map((blk, idx) => {
-              const total = blk.rows.reduce((s, r) => s + r.qty, 0);
+            const total = blk.rows.reduce((s, r) => s + r.qty, 0);
               const totalCost = blk.rows.reduce((s, r) => s + (r.unitCost ? r.unitCost * r.qty : 0), 0);
-              return (
-                <div key={idx} style={{ marginTop: 12, border: '1px solid #ecf0f1', borderRadius: 6, overflow: 'hidden' }}>
+            return (
+              <div key={idx} style={{ marginTop: 12, border: '1px solid #ecf0f1', borderRadius: 6, overflow: 'hidden' }}>
                   <div style={{ background: '#ecf0f1', padding: '8px 10px', fontWeight: 700 }}>Stok Adı : {blk.productName}</div>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                    <tbody>
-                      {blk.rows.map((r, i) => (
-                        <tr key={i} style={{ borderBottom: '1px solid #f3f6f9' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <tbody>
+                    {blk.rows.map((r, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid #f3f6f9' }}>
                           <td style={{ padding: 8, width: 140 }}>
                             Tarih : {new Date(r.date).toLocaleDateString('tr-TR')}
                           </td>
                           <td style={{ padding: 8, width: 220 }}>Açıklama : {r.note}</td>
-                          <td style={{ padding: 8, width: 180, textAlign: 'right' }}>Miktar : {r.qty}</td>
+                        <td style={{ padding: 8, width: 180, textAlign: 'right' }}>Miktar : {r.qty}</td>
                           <td style={{ padding: 8, width: 220, textAlign: 'right' }}>
                             Birim Maliyet :{' '}
                             {r.unitCost != null ? r.unitCost.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
                           </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: 8, background: '#ecf0f1' }}>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: 8, background: '#ecf0f1' }}>
                     <div>Toplam Miktar : {total}</div>
                     <div>
                       Toplam Maliyet :{' '}
                       {totalCost ? totalCost.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
                     </div>
-                  </div>
                 </div>
-              );
-            })}
+              </div>
+            );
+          })}
         </div>
       </section>
     </main>

@@ -90,14 +90,14 @@ export default function InstallmentReportViewPage({ params }: { params: { id: st
                 return 'Bekliyor';
             }
           };
-          return {
+    return {
             date: fmtDate(it.due_date),
             desc: `${it.installment_no}. Taksitlendirme`,
             amount: amt,
             paid,
             remaining,
             status: mapStatus(it.status),
-          };
+    };
         });
         setRows(mappedRows);
         const reportDate = fmtDate((plan as any).start_date);
@@ -164,11 +164,11 @@ export default function InstallmentReportViewPage({ params }: { params: { id: st
           )}
 
           {header && (
-            <div style={{ background: '#e5e7eb', padding: '8px 10px', borderRadius: 6, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, alignItems: 'center' }}>
-              <div><b>{header.customer}</b></div>
-              <div style={{ textAlign: 'center' }}>Taksit Tarihi : {header.reportDate}</div>
-              <div style={{ textAlign: 'right' }}>Taksit Sayısı : {header.count}  •  Periyot : {header.period}</div>
-            </div>
+          <div style={{ background: '#e5e7eb', padding: '8px 10px', borderRadius: 6, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, alignItems: 'center' }}>
+            <div><b>{header.customer}</b></div>
+            <div style={{ textAlign: 'center' }}>Taksit Tarihi : {header.reportDate}</div>
+            <div style={{ textAlign: 'right' }}>Taksit Sayısı : {header.count}  •  Periyot : {header.period}</div>
+          </div>
           )}
 
           <div style={{ marginTop: 12, overflowX: 'auto' }}>

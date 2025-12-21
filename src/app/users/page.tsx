@@ -52,32 +52,13 @@ export default function UsersPage() {
         }
 
         const myRole = (me as any)?.role ?? null;
-        const myCompanyId: string | null = (me as any)?.company_id ?? null;
 
         if (!active) return;
 
         setCurrentProfile({ role: myRole });
 
-        if (myRole !== 'admin') {
-          setLoading(false);
-          return;
-        }
-
-        // Firma ID yoksa tek firma modundan çöz
-        const companyId = myCompanyId || (await fetchCurrentCompanyId());
-
-        if (!companyId) {
-          setError('Firma bilgisi alınamadı.');
-          setLoading(false);
-          return;
-        }
-
-        // Aynı firmaya bağlı tüm kullanıcı profillerini listele
-        const { data: rows, error: listError } = await supabase
-          .from('user_profiles')
-          .select('id, user_id, role, status, created_at')
-          .eq('company_id', companyId)
-          .order('created_at', { ascending: true });
+        // Tüm kullanıcı profillerini admin için (ya da sadece kendisi için) listele
+        const { data: rows, error: listError } = await supabase.rpc('list_user_profiles_for_admin');
 
         if (listError) {
           console.error('Kullanıcı listesi alınamadı:', listError);

@@ -42,7 +42,7 @@ export default function StockGroupNewPage() {
         name: trimmed,
       });
       if (error) throw error;
-      router.push(('/stock/groups') as Route);
+    router.push(('/stock/groups') as Route);
     } catch (e: any) {
       setErr(e?.message ?? 'Stok grubu oluşturulamadı');
     } finally {
@@ -80,7 +80,7 @@ export default function StockGroupNewPage() {
                 style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #0aa6b5', background: '#12b3c5', color: 'white', cursor: 'pointer', opacity: loading ? 0.7 : 1 }}
               >
                 {loading ? 'Kaydediliyor…' : 'Kaydet'}
-              </button>
+            </button>
             </div>
           </form>
         </div>

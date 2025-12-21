@@ -170,19 +170,19 @@ export default function InstallmentDetailPage({ params }: { params: { id: string
             <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid #e5e7eb', background: '#fff', marginBottom: 12 }}>
               <div style={{ background: '#f3f4f6', padding: '10px 12px', fontWeight: 700 }}>Taksit Detayları</div>
               {header ? (
-                <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr 200px 1fr', rowGap: 10, columnGap: 16, padding: 12 }}>
-                  <div>Ünvan :</div><div>{header.title}</div>
-                  <div>Taksit No :</div><div>{header.installmentNo}</div>
-                  <div>İşlem Tarihi :</div><div>{header.txnDate}</div>
-                  <div>Toplam Tutar :</div><div>₺{header.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
-                  <div>Peşinat :</div><div>₺{header.down.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
-                  <div>Toplam Tahsilat :</div><div>₺{header.collected.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
-                  <div>Kalan Bakiye :</div><div>₺{header.remaining.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
-                  <div>İlk Taksit Tarihi :</div><div>{header.firstDate}</div>
-                  <div>Taksit Sayısı :</div><div>{header.count}</div>
-                  <div>Taksit Periyodu :</div><div>{header.period}</div>
-                  <div>Açıklama :</div><div>{header.note || '-'}</div>
-                </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr 200px 1fr', rowGap: 10, columnGap: 16, padding: 12 }}>
+                <div>Ünvan :</div><div>{header.title}</div>
+                <div>Taksit No :</div><div>{header.installmentNo}</div>
+                <div>İşlem Tarihi :</div><div>{header.txnDate}</div>
+                <div>Toplam Tutar :</div><div>₺{header.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
+                <div>Peşinat :</div><div>₺{header.down.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
+                <div>Toplam Tahsilat :</div><div>₺{header.collected.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
+                <div>Kalan Bakiye :</div><div>₺{header.remaining.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
+                <div>İlk Taksit Tarihi :</div><div>{header.firstDate}</div>
+                <div>Taksit Sayısı :</div><div>{header.count}</div>
+                <div>Taksit Periyodu :</div><div>{header.period}</div>
+                <div>Açıklama :</div><div>{header.note || '-'}</div>
+              </div>
               ) : (
                 <div style={{ padding: 12 }}>{loading ? 'Yükleniyor…' : error || 'Kayıt bulunamadı'}</div>
               )}
