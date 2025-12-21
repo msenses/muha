@@ -71,6 +71,8 @@ export default function ChequeNotePage() {
               return 'CİROLU';
             case 'cancelled':
               return 'İPTAL';
+            case 'in_bank':
+              return 'BANKADA';
             default:
               return s ?? '';
           }

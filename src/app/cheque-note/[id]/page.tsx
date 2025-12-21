@@ -21,6 +21,7 @@ type ChequeRow = {
   drawer_name: string | null;
   notes: string | null;
   account_name: string | null;
+  endorsement_history: string[] | null;
 };
 
 type AccountPick = { id: string; title: string; officer: string | null };
@@ -72,7 +73,7 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
         ] = await Promise.all([
           supabase
             .from('cheques_notes')
-            .select('id, issue_date, due_date, amount, status, direction, document_no, bank_name, bank_branch, drawer_name, notes, accounts ( name )')
+            .select('id, issue_date, due_date, amount, status, direction, document_no, bank_name, bank_branch, drawer_name, notes, endorsement_history, accounts ( name )')
             .eq('company_id', companyId)
             .eq('id', params.id)
             .single(),
@@ -114,6 +115,7 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
             drawer_name: ch.drawer_name ?? null,
             notes: ch.notes ?? null,
             account_name: accName,
+            endorsement_history: (ch as any).endorsement_history ?? null,
           });
         }
         if (accErr) {
@@ -209,6 +211,8 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
           return 'CİROLU';
         case 'cancelled':
           return 'İPTAL';
+        case 'in_bank':
+          return 'BANKADA';
         default:
           return s ?? '';
       }
@@ -245,25 +249,71 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
   const [payMethod, setPayMethod] = useState<'Kasadan' | 'Bankadan'>('Kasadan');
   // Tahsilat modalı
   const [showCollect, setShowCollect] = useState(false);
-  const [collectDate, setCollectDate] = useState('27.11.2022');
-  const [collectAmount, setCollectAmount] = useState('20000');
+  const [collectDate, setCollectDate] = useState('');
+  const [collectAmount, setCollectAmount] = useState('0,00');
   const [collectMethod, setCollectMethod] = useState<'Kasaya' | 'Bankaya'>('Kasaya');
-  const [selectedCollectCash, setSelectedCollectCash] = useState<'Varsayılan Kasa' | 'Kasa2'>('Varsayılan Kasa');
   // Ciro Et modalı
   const [showEndorse, setShowEndorse] = useState(false);
-  const [endorseDate, setEndorseDate] = useState('27.11.2022');
+  const [endorseDate, setEndorseDate] = useState('');
   const [endorseCompany, setEndorseCompany] = useState('');
   const [openEndorsePick, setOpenEndorsePick] = useState(false);
   const [endorsePickQuery, setEndorsePickQuery] = useState('');
   // Bankaya Ver modalı
   const [showGiveBank, setShowGiveBank] = useState(false);
   const [giveBankDate, setGiveBankDate] = useState('');
-  const [selectedBank, setSelectedBank] = useState<'Varsayılan' | 'Banka2'>('Varsayılan');
 
   const parseAmount = (raw: string) => {
     const txt = (raw || '0').toString().replace(/\./g, '').replace(',', '.');
     const n = Number(txt);
     return Number.isFinite(n) ? n : 0;
+  };
+
+  const openCollectModal = () => {
+    if (!row) return;
+    try {
+      const todayIso = new Date().toISOString().slice(0, 10);
+      setCollectDate(todayIso);
+    } catch {
+      setCollectDate('');
+    }
+    setCollectAmount(
+      row.amount.toLocaleString('tr-TR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+    );
+    setCollectMethod('Kasaya');
+    if (cashOptions.length > 0 && !selectedCashId) {
+      setSelectedCashId(cashOptions[0].id);
+    }
+    setShowCollect(true);
+  };
+
+  const openEndorseModal = () => {
+    if (!row) return;
+    try {
+      const todayIso = new Date().toISOString().slice(0, 10);
+      setEndorseDate(todayIso);
+    } catch {
+      setEndorseDate('');
+    }
+    setEndorseCompany('');
+    setEndorsePickQuery('');
+    setShowEndorse(true);
+  };
+
+  const openGiveBankModal = () => {
+    if (!row) return;
+    try {
+      const todayIso = new Date().toISOString().slice(0, 10);
+      setGiveBankDate(todayIso);
+    } catch {
+      setGiveBankDate('');
+    }
+    if (bankOptions.length > 0 && !selectedBankId) {
+      setSelectedBankId(bankOptions[0].id);
+    }
+    setShowGiveBank(true);
   };
 
   const openPayModal = () => {
@@ -458,6 +508,263 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
     }
   };
 
+  const handleCollectSave = async () => {
+    if (!row) return;
+    const amount = parseAmount(collectAmount);
+    if (!(amount > 0)) {
+      alert('Tutar 0’dan büyük olmalıdır.');
+      return;
+    }
+    if (!collectDate) {
+      alert('İşlem tarihi zorunludur.');
+      return;
+    }
+    // Sadece müşteri çeki/senedi için tahsilat yapılmalı
+    const isIncoming = (row.direction || '').toLowerCase() === 'incoming';
+    if (!isIncoming) {
+      alert('Tahsilat işlemi sadece alınan çek/senetler için geçerlidir.');
+      return;
+    }
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        router.replace('/login');
+        return;
+      }
+      const companyId = await fetchCurrentCompanyId();
+      if (!companyId) {
+        alert('Şirket bilgisi bulunamadı.');
+        return;
+      }
+
+      if (collectMethod === 'Kasaya') {
+        const { data: cashLedgers, error: cashErr } = await supabase
+          .from('cash_ledgers')
+          .select('id, name, balance')
+          .eq('company_id', companyId)
+          .order('name', { ascending: true });
+        if (cashErr) throw cashErr;
+        if (!cashLedgers || cashLedgers.length === 0) {
+          alert('Kasa bulunamadı. Önce bir kasa tanımlayın.');
+          return;
+        }
+        let target = cashLedgers[0];
+        if (selectedCashId) {
+          const found = cashLedgers.find((c) => c.id === selectedCashId);
+          if (found) target = found;
+        }
+        const trxDate = collectDate;
+        const { error: cashTrxErr } = await supabase.from('cash_transactions').insert({
+          cash_ledger_id: target.id,
+          amount,
+          flow: 'in',
+          description: `Alınan çek tahsilatı - Çek No: ${row.document_no ?? ''}`,
+          trx_date: trxDate,
+          cheque_note_id: row.id,
+        });
+        if (cashTrxErr) throw cashTrxErr;
+        const currentBal = Number(target.balance ?? 0);
+        await supabase
+          .from('cash_ledgers')
+          .update({ balance: currentBal + amount })
+          .eq('id', target.id);
+      } else {
+        const { data: banks, error: bankErr } = await supabase
+          .from('bank_accounts')
+          .select('id, bank_name, branch_name, balance')
+          .eq('company_id', companyId)
+          .order('bank_name', { ascending: true });
+        if (bankErr) throw bankErr;
+        if (!banks || banks.length === 0) {
+          alert('Banka hesabı bulunamadı. Önce bir banka hesabı tanımlayın.');
+          return;
+        }
+        let bankAcc = banks[0];
+        if (selectedBankId) {
+          const found = banks.find((b) => b.id === selectedBankId);
+          if (found) bankAcc = found;
+        }
+        const trxDate = collectDate;
+        const { error: bankTrxErr } = await supabase.from('bank_transactions').insert({
+          bank_account_id: bankAcc.id,
+          amount,
+          flow: 'in',
+          description: `Alınan çek tahsilatı - Çek No: ${row.document_no ?? ''}`,
+          trx_date: trxDate,
+          cheque_note_id: row.id,
+        });
+        if (bankTrxErr) throw bankTrxErr;
+        const currentBal = Number(bankAcc.balance ?? 0);
+        await supabase
+          .from('bank_accounts')
+          .update({ balance: currentBal + amount })
+          .eq('id', bankAcc.id);
+      }
+
+      const { error: chErr } = await supabase
+        .from('cheques_notes')
+        .update({ status: 'paid' })
+        .eq('id', row.id);
+      if (chErr) throw chErr;
+
+      setRow((prev) => (prev ? { ...prev, status: 'paid' } : prev));
+      setShowCollect(false);
+    } catch (err: any) {
+      console.error('Çek tahsilatı kaydedilemedi', err);
+      alert(err?.message ?? 'Çek tahsilatı kaydedilemedi.');
+    }
+  };
+
+  const handleEndorseSave = async () => {
+    if (!row) return;
+    if (!endorseDate) {
+      alert('İşlem tarihi zorunludur.');
+      return;
+    }
+    if (!endorseCompany.trim()) {
+      alert('Ciro yapılacak firmayı seçmelisiniz.');
+      return;
+    }
+    // Sadece alınan çek/senetler için anlamlı
+    const isIncoming = (row.direction || '').toLowerCase() === 'incoming';
+    if (!isIncoming) {
+      alert('Ciro işlemi sadece alınan çek/senetler için geçerlidir.');
+      return;
+    }
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        router.replace('/login');
+        return;
+      }
+      const companyId = await fetchCurrentCompanyId();
+      if (!companyId) {
+        alert('Şirket bilgisi bulunamadı.');
+        return;
+      }
+
+      const newEntry = `${endorseDate} - ${endorseCompany.trim()}`;
+      const history = Array.isArray(row.endorsement_history) ? [...row.endorsement_history] : [];
+      history.push(newEntry);
+
+      const { error } = await supabase
+        .from('cheques_notes')
+        .update({ status: 'endorsed', endorsement_history: history })
+        .eq('id', row.id)
+        .eq('company_id', companyId);
+      if (error) throw error;
+
+      setRow((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: 'endorsed',
+              endorsement_history: history,
+            }
+          : prev,
+      );
+      setShowEndorse(false);
+    } catch (err: any) {
+      console.error('Çek ciro işlemi tamamlanamadı', err);
+      alert(err?.message ?? 'Çek ciro işlemi tamamlanamadı.');
+    }
+  };
+
+  const handleGiveBankSave = async () => {
+    if (!row) return;
+    if (!giveBankDate) {
+      alert('İşlem tarihi zorunludur.');
+      return;
+    }
+    if (!selectedBankId) {
+      alert('Lütfen bir banka hesabı seçin.');
+      return;
+    }
+    // Sadece alınan çek/senetler için anlamlı
+    const isIncoming = (row.direction || '').toLowerCase() === 'incoming';
+    if (!isIncoming) {
+      alert('Bankaya verme işlemi sadece alınan çek/senetler için geçerlidir.');
+      return;
+    }
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        router.replace('/login');
+        return;
+      }
+      const companyId = await fetchCurrentCompanyId();
+      if (!companyId) {
+        alert('Şirket bilgisi bulunamadı.');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('cheques_notes')
+        .update({
+          status: 'in_bank',
+          bank_account_id: selectedBankId,
+          notes: row.notes ?? null,
+        })
+        .eq('id', row.id)
+        .eq('company_id', companyId);
+      if (error) throw error;
+
+      setRow((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: 'in_bank',
+            }
+          : prev,
+      );
+      setShowGiveBank(false);
+    } catch (err: any) {
+      console.error('Bankaya verme işlemi tamamlanamadı', err);
+      alert(err?.message ?? 'Bankaya verme işlemi tamamlanamadı.');
+    }
+  };
+
+  const handleReturn = async () => {
+    if (!row) return;
+    // Sadece müşteri çeki/senedi ve beklemede durumunda iade edilsin
+    const isIncoming = (row.direction || '').toLowerCase() === 'incoming';
+    if (!isIncoming) {
+      alert('İade işlemi sadece alınan çek/senetler için geçerlidir.');
+      return;
+    }
+    if (row.status && row.status !== 'pending') {
+      alert('Sadece beklemede durumundaki çek/senetler iade edilebilir.');
+      return;
+    }
+    const ok = window.confirm('Bu çeki/senedi iade etmek istediğinize emin misiniz?');
+    if (!ok) return;
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        router.replace('/login');
+        return;
+      }
+      const companyId = await fetchCurrentCompanyId();
+      if (!companyId) {
+        alert('Şirket bilgisi bulunamadı.');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('cheques_notes')
+        .update({ status: 'cancelled' })
+        .eq('id', row.id)
+        .eq('company_id', companyId);
+      if (error) throw error;
+
+      setRow((prev) => (prev ? { ...prev, status: 'cancelled' } : prev));
+    } catch (err: any) {
+      console.error('Çek iade işlemi tamamlanamadı', err);
+      alert(err?.message ?? 'Çek iade işlemi tamamlanamadı.');
+    }
+  };
+
   const handleDelete = async () => {
     if (!row) return;
     const ok = window.confirm('Bu çeki silmek istediğinize emin misiniz? İlişkili ödeme hareketleri de geri alınacaktır.');
@@ -605,13 +912,13 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
                 }
                 return true;
               };
-                const actions: Array<{ label: string; onClick?: () => void }> = [
+              const actions: Array<{ label: string; onClick?: () => void }> = [
                 { label: 'DÜZELT', onClick: openEditModal },
-                { label: 'İADE YAP' },
-                { label: 'TAHSİLAT YAP', onClick: () => setShowCollect(true) },
+                { label: 'İADE YAP', onClick: handleReturn },
+                { label: 'TAHSİLAT YAP', onClick: openCollectModal },
                 { label: 'ÖDEME YAP', onClick: openPayModal },
-                { label: 'CİRO ET', onClick: () => setShowEndorse(true) },
-                { label: 'BANKAYA VER', onClick: () => setShowGiveBank(true) },
+                { label: 'CİRO ET', onClick: openEndorseModal },
+                { label: 'BANKAYA VER', onClick: openGiveBankModal },
                 { label: 'VERİLEN ÇEK/SENET BORDROSU', onClick: () => router.push((`/cheque-note/${params.id}/reports/outgoing`) as Route) },
                 { label: 'ALINAN ÇEK/SENET BORDROSU' },
                 { label: 'RAPORLA' },
@@ -926,19 +1233,25 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
                 <input value={giveBankDate} onChange={(e) => setGiveBankDate(e.target.value)} style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db' }} />
               </label>
               <div style={{ display: 'grid', gap: 6 }}>
-                <div style={{ fontSize: 12, opacity: 0.8 }}>Varsayılan</div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input type="radio" checked={selectedBank === 'Varsayılan'} onChange={() => setSelectedBank('Varsayılan')} />
-                  <span>Varsayılan</span>
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input type="radio" checked={selectedBank === 'Banka2'} onChange={() => setSelectedBank('Banka2')} />
-                  <span>Banka2</span>
-                </label>
+                <div style={{ fontSize: 12, opacity: 0.8 }}>Banka Seçimi</div>
+                {bankOptions.length === 0 && <div style={{ fontSize: 12, color: '#6b7280' }}>Tanımlı banka hesabı bulunamadı.</div>}
+                {bankOptions.map((b) => (
+                  <label key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input
+                      type="radio"
+                      checked={selectedBankId === b.id}
+                      onChange={() => setSelectedBankId(b.id)}
+                    />
+                    <span>
+                      {b.bank_name ?? 'Banka'}
+                      {b.branch_name ? ` - ${b.branch_name}` : ''}
+                    </span>
+                  </label>
+                ))}
               </div>
             </div>
             <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', display: 'flex', gap: 8 }}>
-              <button onClick={() => { /* demo */ setShowGiveBank(false); }} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>Bankaya Ver</button>
+              <button onClick={handleGiveBankSave} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>Bankaya Ver</button>
               <button onClick={() => setShowGiveBank(false)} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #d1d5db', background: '#fff' }}>Vazgeç</button>
             </div>
           </div>
@@ -1039,20 +1352,42 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
               </label>
               {collectMethod === 'Kasaya' && (
                 <div style={{ display: 'grid', gap: 6 }}>
-                  <div style={{ fontSize: 12, opacity: 0.8 }}>Varsayılan Kasa</div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <input type="radio" checked={selectedCollectCash === 'Varsayılan Kasa'} onChange={() => setSelectedCollectCash('Varsayılan Kasa')} />
-                    <span>Varsayılan Kasa</span>
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <input type="radio" checked={selectedCollectCash === 'Kasa2'} onChange={() => setSelectedCollectCash('Kasa2')} />
-                    <span>Kasa2</span>
-                  </label>
+                  <div style={{ fontSize: 12, opacity: 0.8 }}>Kasa Seçimi</div>
+                  {cashOptions.length === 0 && <div style={{ fontSize: 12, color: '#6b7280' }}>Tanımlı kasa bulunamadı.</div>}
+                  {cashOptions.map((c) => (
+                    <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input
+                        type="radio"
+                        checked={selectedCashId === c.id}
+                        onChange={() => setSelectedCashId(c.id)}
+                      />
+                      <span>{c.name}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+              {collectMethod === 'Bankaya' && (
+                <div style={{ display: 'grid', gap: 6 }}>
+                  <div style={{ fontSize: 12, opacity: 0.8 }}>Banka Seçimi</div>
+                  {bankOptions.length === 0 && <div style={{ fontSize: 12, color: '#6b7280' }}>Tanımlı banka hesabı bulunamadı.</div>}
+                  {bankOptions.map((b) => (
+                    <label key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input
+                        type="radio"
+                        checked={selectedBankId === b.id}
+                        onChange={() => setSelectedBankId(b.id)}
+                      />
+                      <span>
+                        {b.bank_name ?? 'Banka'}
+                        {b.branch_name ? ` - ${b.branch_name}` : ''}
+                      </span>
+                    </label>
+                  ))}
                 </div>
               )}
             </div>
             <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', display: 'flex', gap: 8 }}>
-              <button onClick={() => { /* demo submit */ setShowCollect(false); }} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>Tahsilat Yap</button>
+              <button onClick={handleCollectSave} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>Tahsilat Yap</button>
               <button onClick={() => setShowCollect(false)} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #d1d5db', background: '#fff' }}>Vazgeç</button>
             </div>
           </div>
