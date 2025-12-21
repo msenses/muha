@@ -47,7 +47,13 @@ export default function BankDetailPage({ params }: { params: { id: string } }) {
   const [showDeposit, setShowDeposit] = useState(false);
   const [depType, setDepType] = useState<'GİRİŞ' | 'ÇIKIŞ'>('GİRİŞ');
   const [depMethod, setDepMethod] = useState<'HAVALE' | 'KREDİ KARTI' | 'NAKİT'>('HAVALE');
-  const [depDate, setDepDate] = useState('14.11.2022');
+  const [depDate, setDepDate] = useState<string>(() => {
+    try {
+      return new Date().toISOString().slice(0, 10);
+    } catch {
+      return '2022-11-14';
+    }
+  });
   const [depTitle, setDepTitle] = useState('');
   const [depDocNo, setDepDocNo] = useState('');
   const [depDesc, setDepDesc] = useState('');
@@ -59,7 +65,13 @@ export default function BankDetailPage({ params }: { params: { id: string } }) {
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [withType, setWithType] = useState<'GİRİŞ' | 'ÇIKIŞ'>('ÇIKIŞ');
   const [withMethod, setWithMethod] = useState<'HAVALE' | 'KREDİ KARTI' | 'NAKİT'>('HAVALE');
-  const [withDate, setWithDate] = useState('14.11.2022');
+  const [withDate, setWithDate] = useState<string>(() => {
+    try {
+      return new Date().toISOString().slice(0, 10);
+    } catch {
+      return '2022-11-14';
+    }
+  });
   const [withTitle, setWithTitle] = useState('');
   const [withDocNo, setWithDocNo] = useState('');
   const [withDesc, setWithDesc] = useState('');
@@ -70,10 +82,16 @@ export default function BankDetailPage({ params }: { params: { id: string } }) {
   // Kasaya Virman modalı
   const [showCashTransfer, setShowCashTransfer] = useState(false);
   const [ctMethod, setCtMethod] = useState<'Havale' | 'Kredi Kartı' | 'Nakit'>('Havale');
-  const [ctDate, setCtDate] = useState('14.11.2022');
+  const [ctDate, setCtDate] = useState<string>(() => {
+    try {
+      return new Date().toISOString().slice(0, 10);
+    } catch {
+      return '2022-11-14';
+    }
+  });
   const [ctDocNo, setCtDocNo] = useState('');
   const [ctDesc, setCtDesc] = useState('Bankadan, kasaya virman');
-  const [ctAmount, setCtAmount] = useState('0');
+  const [ctAmount, setCtAmount] = useState('0.00');
   const [ctCash, setCtCash] = useState<'Varsayılan Kasa' | 'Kasa2'>('Varsayılan Kasa');
 
   const bankName = useMemo(() => {
@@ -172,6 +190,165 @@ export default function BankDetailPage({ params }: { params: { id: string } }) {
     }
     return { inSum, outSum, balance: inSum - outSum };
   }, [rows]);
+
+  const parseAmount = (raw: string) => {
+    const txt = (raw || '0').toString().replace(/\./g, '').replace(',', '.');
+    const n = Number(txt);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const addBankTransaction = async (opts: { flow: 'in' | 'out'; amount: number; description: string | null; date: string | null }) => {
+    const { flow, amount, description, date } = opts;
+    if (!bankId) throw new Error('Banka bulunamadı.');
+    const trxDate = (date && date.trim()) || new Date().toISOString().slice(0, 10);
+
+    const { data: inserted, error } = await supabase
+      .from('bank_transactions')
+      .insert({
+        bank_account_id: bankId,
+        amount,
+        flow,
+        description,
+        trx_date: trxDate,
+      })
+      .select('id, amount, flow, description, trx_date')
+      .single();
+    if (error) throw error;
+
+    const delta = flow === 'in' ? amount : -amount;
+
+    setBank((prev) => {
+      if (!prev) return prev;
+      const currentBal = Number(prev.balance ?? 0);
+      return { ...prev, balance: currentBal + delta };
+    });
+
+    setRows((prev) => [
+      {
+        id: inserted.id,
+        date: inserted.trx_date,
+        type: inserted.flow === 'in' ? 'GİRİŞ' : 'ÇIKIŞ',
+        amount: Number(inserted.amount ?? 0),
+        desc: inserted.description ?? '',
+        payMethod: '',
+        account: '',
+      },
+      ...prev,
+    ]);
+  };
+
+  const handleDepositSave = async () => {
+    const amount = parseAmount(depAmount);
+    if (amount <= 0) {
+      alert('Tutar 0’dan büyük olmalıdır.');
+      return;
+    }
+    if (!bank) {
+      alert('Banka kaydı yüklenemedi.');
+      return;
+    }
+    try {
+      const flow = depType === 'ÇIKIŞ' ? 'out' : 'in';
+      await addBankTransaction({
+        flow,
+        amount,
+        description: depDesc || `Banka ${flow === 'in' ? 'girişi' : 'çıkışı'}`,
+        date: depDate,
+      });
+      setShowDeposit(false);
+    } catch (e: any) {
+      console.error('Banka para yatırma kaydedilemedi', e);
+      alert(e?.message ?? 'Banka para yatırma kaydedilemedi.');
+    }
+  };
+
+  const handleWithdrawSave = async () => {
+    const amount = parseAmount(withAmount);
+    if (amount <= 0) {
+      alert('Tutar 0’dan büyük olmalıdır.');
+      return;
+    }
+    if (!bank) {
+      alert('Banka kaydı yüklenemedi.');
+      return;
+    }
+    try {
+      const flow = withType === 'GİRİŞ' ? 'in' : 'out';
+      await addBankTransaction({
+        flow,
+        amount,
+        description: withDesc || `Banka ${flow === 'in' ? 'girişi' : 'çıkışı'}`,
+        date: withDate,
+      });
+      setShowWithdraw(false);
+    } catch (e: any) {
+      console.error('Banka para çekme kaydedilemedi', e);
+      alert(e?.message ?? 'Banka para çekme kaydedilemedi.');
+    }
+  };
+
+  const handleCashTransferSave = async () => {
+    const amount = parseAmount(ctAmount);
+    if (amount <= 0) {
+      alert('Tutar 0’dan büyük olmalıdır.');
+      return;
+    }
+    try {
+      // Bankadan çıkış
+      await addBankTransaction({
+        flow: 'out',
+        amount,
+        description: ctDesc || 'Bankadan kasaya virman',
+        date: ctDate,
+      });
+
+      // Hedef kasa: şirket kasalarından sırasıyla seç
+      const companyId = await fetchCurrentCompanyId();
+      if (!companyId) {
+        alert('Şirket bilgisi bulunamadı. Kasa seçilemedi.');
+        return;
+      }
+
+      const { data: cashLedgers, error: cashErr } = await supabase
+        .from('cash_ledgers')
+        .select('id, name, balance')
+        .eq('company_id', companyId)
+        .order('name', { ascending: true });
+      if (cashErr) throw cashErr;
+
+      if (!cashLedgers || cashLedgers.length === 0) {
+        alert('Kasa bulunamadı. Önce bir kasa tanımlayın.');
+        return;
+      }
+
+      let target = cashLedgers[0];
+      if (ctCash === 'Kasa2' && cashLedgers.length > 1) {
+        target = cashLedgers[1];
+      }
+
+      const trxDate = (ctDate && ctDate.trim()) || new Date().toISOString().slice(0, 10);
+
+      const { error: cashTrxErr } = await supabase.from('cash_transactions').insert({
+        cash_ledger_id: target.id,
+        amount,
+        flow: 'in',
+        description: ctDesc || `Bankadan kasaya virman - Kaynak: ${bankName}`,
+        trx_date: trxDate,
+      });
+      if (cashTrxErr) throw cashTrxErr;
+
+      const currentBal = Number(target.balance ?? 0);
+      await supabase
+        .from('cash_ledgers')
+        .update({ balance: currentBal + amount })
+        .eq('id', target.id);
+
+      setShowCashTransfer(false);
+    } catch (e: any) {
+      console.error('Kasaya virman kaydedilemedi', e);
+      alert(e?.message ?? 'Kasaya virman kaydedilemedi.');
+    }
+  };
 
   return (
     <main style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
@@ -336,7 +513,7 @@ export default function BankDetailPage({ params }: { params: { id: string } }) {
               </label>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                 <button onClick={() => setShowDeposit(false)} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>Vazgeç</button>
-                <button onClick={() => setShowDeposit(false)} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}>Kaydet</button>
+                <button onClick={handleDepositSave} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}>Kaydet</button>
               </div>
             </div>
           </div>
@@ -427,7 +604,7 @@ export default function BankDetailPage({ params }: { params: { id: string } }) {
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                 <button onClick={() => setShowCashTransfer(false)} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>Vazgeç</button>
-                <button onClick={() => setShowCashTransfer(false)} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}>Kaydet</button>
+                <button onClick={handleCashTransferSave} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}>Kaydet</button>
               </div>
             </div>
           </div>
@@ -482,7 +659,7 @@ export default function BankDetailPage({ params }: { params: { id: string } }) {
               </label>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                 <button onClick={() => setShowWithdraw(false)} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>Vazgeç</button>
-                <button onClick={() => setShowWithdraw(false)} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}>Kaydet</button>
+                <button onClick={handleWithdrawSave} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}>Kaydet</button>
               </div>
             </div>
           </div>
