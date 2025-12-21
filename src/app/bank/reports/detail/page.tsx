@@ -1,7 +1,7 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 import { supabase } from '@/lib/supabaseClient';
@@ -30,7 +30,7 @@ function Currency({ value }: { value: number }) {
   return <span>{value.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>;
 }
 
-export default function BankDetailReportPage() {
+function BankDetailReportInner() {
   const sp = useSearchParams();
   const allTime = sp.get('alltime') === '1';
   const start = sp.get('start');
@@ -283,6 +283,14 @@ export default function BankDetailReportPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function BankDetailReportPage() {
+  return (
+    <Suspense fallback={<main style={{ minHeight: '100dvh', background: '#ecf0f5', color: '#111827' }}><section style={{ padding: 12 }}>Yükleniyor…</section></main>}>
+      <BankDetailReportInner />
+    </Suspense>
   );
 }
 
