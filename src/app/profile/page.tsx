@@ -57,7 +57,7 @@ export default function ProfilePage() {
         let role: string | null = null;
         if (user.id) {
           const { data: prof } = await supabase
-            .from('profiles')
+            .from('user_profiles')
             .select('role')
             .eq('user_id', user.id)
             .maybeSingle();
@@ -341,6 +341,53 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
+
+            {profile.role === 'admin' && (
+              <div
+                style={{
+                  padding: 12,
+                  borderRadius: 14,
+                  background: 'rgba(15,23,42,0.9)',
+                  border: '1px solid rgba(59,130,246,0.7)',
+                  display: 'grid',
+                  gap: 8,
+                }}
+              >
+                <div style={{ fontSize: 13, opacity: 0.8 }}>Admin Araçları</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => router.push('/users')}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: 999,
+                      border: '1px solid rgba(148,163,184,0.6)',
+                      background: 'rgba(15,23,42,0.9)',
+                      color: 'white',
+                      fontSize: 12,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Kullanıcı Listesi
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => router.push('/users/new')}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: 999,
+                      border: '1px solid rgba(59,130,246,0.7)',
+                      background: 'linear-gradient(135deg,#3b82f6,#2563eb)',
+                      color: 'white',
+                      fontSize: 12,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Yeni Kullanıcı Ekle
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
