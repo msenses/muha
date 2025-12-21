@@ -1,37 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { supabase } from '@/lib/supabaseClient';
 import type { Route } from 'next';
 
 export default function Sidebar() {
   const router = useRouter();
-  const [email, setEmail] = useState<string | null>(null);
-
-  useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      const { data } = await supabase.auth.getSession();
-      const session = data.session;
-      if (!mounted) return;
-      setEmail(session?.user?.email ?? null);
-    };
-    load();
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setEmail(session?.user?.email ?? null);
-    });
-    return () => {
-      mounted = false;
-      sub.subscription.unsubscribe();
-    };
-  }, []);
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    router.replace('/login');
-  };
 
   return (
     <aside
@@ -54,6 +28,7 @@ export default function Sidebar() {
         <Image src="/finova_logo_2.png" alt="Finova" width={160} height={40} style={{ height: 24, width: 'auto' }} />
       </div>
       <nav
+        className="sidebar-scroll"
         style={{
           display: 'grid',
           gap: 8,
@@ -78,23 +53,6 @@ export default function Sidebar() {
         <button onClick={() => router.push(('/agenda') as Route)} style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.08)', color: 'white', cursor: 'pointer' }}>Ajanda</button>
         <button onClick={() => router.push(('/reports') as Route)} style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.08)', color: 'white', cursor: 'pointer' }}>Raporlar</button>
       </nav>
-      <div style={{ marginTop: 16, fontSize: 12, opacity: 0.8, flexShrink: 0 }}>Oturum: {email ?? '-'}</div>
-      <button
-        onClick={signOut}
-        style={{
-          marginTop: 8,
-          width: '100%',
-          padding: '8px 10px',
-          borderRadius: 8,
-          border: '1px solid rgba(255,255,255,0.2)',
-          background: 'rgba(255,255,255,0.12)',
-          color: 'white',
-          cursor: 'pointer',
-          flexShrink: 0,
-        }}
-      >
-        Çıkış
-      </button>
     </aside>
   );
 }

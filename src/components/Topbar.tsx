@@ -22,6 +22,7 @@ export default function Topbar() {
   const [activeYear, setActiveYear] = useState<number>(new Date().getFullYear());
   const [yearMenuOpen, setYearMenuOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -76,6 +77,11 @@ export default function Topbar() {
   const handleSelectYear = (year: number) => {
     setActiveYear(year);
     setYearMenuOpen(false);
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    router.replace('/login');
   };
 
   return (
@@ -291,30 +297,85 @@ export default function Topbar() {
         </div>
 
         {userEmail && (
-          <div style={{
-            fontSize: 13,
-            opacity: 0.9,
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}>
-            <div style={{
-              width: 28,
-              height: 28,
-              borderRadius: '50%',
-              background: 'rgba(255,255,255,0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 12,
-              fontWeight: 600,
-              color: 'white',
-            }}>
-              {userEmail.charAt(0).toUpperCase()}
-            </div>
-            <span style={{ fontSize: 12 }}>{userEmail}</span>
-            <span style={{ fontSize: 10, opacity: 0.8 }}>▾</span>
+          <div style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setUserMenuOpen((v) => !v)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '4px 8px',
+                borderRadius: 999,
+                border: 'none',
+                background: 'transparent',
+                color: 'white',
+                cursor: 'pointer',
+                fontSize: 12,
+              }}
+            >
+              <div style={{
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'white',
+              }}>
+                {userEmail.charAt(0).toUpperCase()}
+              </div>
+              <span style={{ fontSize: 12, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {userEmail}
+              </span>
+              <span style={{ fontSize: 10, opacity: 0.8 }}>▾</span>
+            </button>
+
+            {userMenuOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 36,
+                  right: 0,
+                  minWidth: 180,
+                  background: 'rgba(15,23,42,0.98)',
+                  borderRadius: 10,
+                  border: '1px solid rgba(148,163,184,0.5)',
+                  boxShadow: '0 12px 30px rgba(15,23,42,0.6)',
+                  padding: 6,
+                  zIndex: 1000,
+                }}
+              >
+                <div style={{ padding: '6px 8px', fontSize: 12, color: 'rgba(229,231,235,0.9)', borderBottom: '1px solid rgba(55,65,81,0.8)' }}>
+                  Oturum: {userEmail}
+                </div>
+                <button
+                  type="button"
+                  onClick={signOut}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '8px 8px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: 'transparent',
+                    color: '#fecaca',
+                    fontSize: 12,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    marginTop: 4,
+                  }}
+                >
+                  <span>⏻</span>
+                  <span>Çıkış Yap</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
