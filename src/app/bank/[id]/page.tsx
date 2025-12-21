@@ -1,15 +1,46 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import type { Route } from 'next';
+
+import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
+
+type Txn = {
+  id: string;
+  date: string;
+  type: 'GİRİŞ' | 'ÇIKIŞ';
+  amount: number;
+  desc: string;
+  payMethod: string;
+  account: string;
+};
+
+type BankAccount = {
+  id: string;
+  bank_name: string | null;
+  account_no: string | null;
+  branch_name: string | null;
+  iban: string | null;
+  balance: number | null;
+};
 
 export default function BankDetailPage({ params }: { params: { id: string } }) {
-  const bankName = useMemo(() => {
-    return 'Varsayılan - Merkez';
-  }, [params.id]);
+  const router = useRouter();
+  const bankId = params.id as string;
 
-  const [startDate, setStartDate] = useState('01.01.2000');
-  const [endDate, setEndDate] = useState('14.11.2022');
+  const [bank, setBank] = useState<BankAccount | null>(null);
+  const [rows, setRows] = useState<Txn[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().slice(0, 10);
+  });
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [q, setQ] = useState('');
 
   // Para yatırma modalı (Banka İşlemi)
@@ -45,21 +76,86 @@ export default function BankDetailPage({ params }: { params: { id: string } }) {
   const [ctAmount, setCtAmount] = useState('0');
   const [ctCash, setCtCash] = useState<'Varsayılan Kasa' | 'Kasa2'>('Varsayılan Kasa');
 
-  type Txn = {
-    id: string;
-    date: string;
-    type: 'GİRİŞ' | 'ÇIKIŞ';
-    amount: number;
-    desc: string;
-    payMethod: string;
-    account: string;
-  };
+  const bankName = useMemo(() => {
+    if (!bank) return 'Banka';
+    return `${bank.bank_name ?? 'Banka'}${bank.branch_name ? ` - ${bank.branch_name}` : ''}`;
+  }, [bank]);
 
-  const rows: Txn[] = [
-    { id: '1', date: '14.11.2022', type: 'GİRİŞ', amount: 4000, desc: 'Varsayılan Kasa Kasasından Varsayılan Bankasına Virman -', payMethod: 'Kasadan Virman', account: '' },
-    { id: '2', date: '11.11.2022', type: 'GİRİŞ', amount: 4.77, desc: 'SATIŞ FATURASI', payMethod: 'Kredi Kartı', account: 'Mehmet Bey' },
-    { id: '3', date: '04.11.2022', type: 'GİRİŞ', amount: 10000, desc: 'Tahsilat', payMethod: 'Kredi Kartı', account: 'Mehmet Bey' },
-  ];
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          if (active) setLoading(false);
+          router.replace('/login');
+          return;
+        }
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) {
+          if (active) setLoading(false);
+          return;
+        }
+
+        let trxQuery = supabase
+          .from('bank_transactions')
+          .select('id, amount, flow, description, trx_date, account_id')
+          .eq('bank_account_id', bankId);
+
+        if (startDate) trxQuery = trxQuery.gte('trx_date', startDate);
+        if (endDate) trxQuery = trxQuery.lte('trx_date', endDate);
+
+        trxQuery = trxQuery.order('trx_date', { ascending: false }).limit(1000);
+
+        const [{ data: bankData, error: bankErr }, { data: trxData, error: trxErr }] = await Promise.all([
+          supabase
+            .from('bank_accounts')
+            .select('id, bank_name, account_no, branch_name, iban, balance')
+            .eq('company_id', companyId)
+            .eq('id', bankId)
+            .single(),
+          trxQuery,
+        ]);
+
+        if (!active) return;
+
+        if (bankErr) {
+          console.error('Banka kaydı yüklenemedi', bankErr);
+        } else if (bankData) {
+          setBank(bankData as any);
+        }
+
+        if (trxErr) {
+          console.error('Banka hareketleri yüklenemedi', trxErr);
+          setRows([]);
+        } else {
+          const mapped: Txn[] = (trxData ?? []).map((t: any) => ({
+            id: t.id,
+            date: t.trx_date,
+            type: t.flow === 'in' ? 'GİRİŞ' : 'ÇIKIŞ',
+            amount: Number(t.amount ?? 0),
+            desc: t.description ?? '',
+            payMethod: '',
+            account: '',
+          }));
+          setRows(mapped);
+        }
+      } catch (err) {
+        console.error('Banka detayı yüklenirken hata', err);
+        if (active) {
+          setBank(null);
+          setRows([]);
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [router, bankId, startDate, endDate]);
 
   const filtered = rows.filter(r =>
     `${r.date} ${r.type} ${r.amount} ${r.desc} ${r.payMethod} ${r.account}`
