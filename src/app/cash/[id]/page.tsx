@@ -109,6 +109,142 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
   const [reportStart, setReportStart] = useState('14.11.2022');
   const [reportEnd, setReportEnd] = useState('14.11.2022');
 
+  const parseAmount = (raw: string) => {
+    const txt = (raw || '0').toString().replace(/\./g, '').replace(',', '.');
+    const n = Number(txt);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const addCashTransaction = async (opts: { flow: 'in' | 'out'; amount: number; description: string | null; date: string | null }) => {
+    const { flow, amount, description, date } = opts;
+    if (!ledgerId) throw new Error('Kasa bulunamadı.');
+    const trxDate = (date && date.trim()) || new Date().toISOString().slice(0, 10);
+
+    const { error } = await supabase.from('cash_transactions').insert({
+      cash_ledger_id: ledgerId,
+      amount,
+      flow,
+      description,
+      trx_date: trxDate,
+    });
+    if (error) throw error;
+
+    const delta = flow === 'in' ? amount : -amount;
+    await supabase
+      .from('cash_ledgers')
+      .update({ balance: (ledger?.balance ?? 0) + delta })
+      .eq('id', ledgerId);
+  };
+
+  const handleAddIncome = async () => {
+    const amount = parseAmount(incomeAmount);
+    if (amount <= 0) {
+      alert('Giriş tutarı 0’dan büyük olmalıdır.');
+      return;
+    }
+    try {
+      await addCashTransaction({
+        flow: 'in',
+        amount,
+        description: incomeDesc || null,
+        date: incomeDate,
+      });
+      setShowIncome(false);
+    } catch (e: any) {
+      console.error('Kasa girişi eklenemedi', e);
+      alert(e?.message ?? 'Kasa girişi kaydedilemedi.');
+    }
+  };
+
+  const handleAddOutcome = async () => {
+    const amount = parseAmount(outcomeAmount);
+    if (amount <= 0) {
+      alert('Çıkış tutarı 0’dan büyük olmalıdır.');
+      return;
+    }
+    try {
+      await addCashTransaction({
+        flow: 'out',
+        amount,
+        description: outcomeDesc || null,
+        date: outcomeDate,
+      });
+      setShowOutcome(false);
+    } catch (e: any) {
+      console.error('Kasa çıkışı eklenemedi', e);
+      alert(e?.message ?? 'Kasa çıkışı kaydedilemedi.');
+    }
+  };
+
+  const handleBankTransferSave = async () => {
+    const amount = parseAmount(bankTransferAmount);
+    if (amount <= 0) {
+      alert('Tutar 0’dan büyük olmalıdır.');
+      return;
+    }
+    try {
+      await addCashTransaction({
+        flow: 'out',
+        amount,
+        description: bankTransferDesc || `Bankaya virman${bankName ? ` - ${bankName}` : ''}`,
+        date: bankTransferDate,
+      });
+      setShowBankTransfer(false);
+    } catch (e: any) {
+      console.error('Bankaya virman kaydedilemedi', e);
+      alert(e?.message ?? 'Bankaya virman kaydedilemedi.');
+    }
+  };
+
+  const handleCashTransferSave = async () => {
+    const amount = parseAmount(cashTransferAmount);
+    if (amount <= 0) {
+      alert('Tutar 0’dan büyük olmalıdır.');
+      return;
+    }
+    try {
+      // Mevcut kasadan çıkış
+      await addCashTransaction({
+        flow: 'out',
+        amount,
+        description: cashTransferDesc || `Kasadan kasaya virman - Hedef: ${targetCashName ?? '-'}`,
+        date: cashTransferDate,
+      });
+
+      // Hedef kasa seçiliyse ona da giriş kaydı aç
+      if (targetCashName) {
+        const { data: target } = await supabase
+          .from('cash_ledgers')
+          .select('id, name, balance')
+          .ilike('name', targetCashName)
+          .limit(1)
+          .maybeSingle();
+
+        if (target?.id) {
+          const trxDate = (cashTransferDate && cashTransferDate.trim()) || new Date().toISOString().slice(0, 10);
+          const { error: trxErr } = await supabase.from('cash_transactions').insert({
+            cash_ledger_id: target.id,
+            amount,
+            flow: 'in',
+            description: cashTransferDesc || `Kasadan kasaya virman - Kaynak: ${cashName}`,
+            trx_date: trxDate,
+          });
+          if (trxErr) throw trxErr;
+          const currentBal = Number(target.balance ?? 0);
+          await supabase
+            .from('cash_ledgers')
+            .update({ balance: currentBal + amount })
+            .eq('id', target.id);
+        }
+      }
+
+      setShowCashTransfer(false);
+    } catch (e: any) {
+      console.error('Kasadan kasaya virman kaydedilemedi', e);
+      alert(e?.message ?? 'Kasadan kasaya virman kaydedilemedi.');
+    }
+  };
+
   useEffect(() => {
     let active = true;
     const load = async () => {
@@ -379,7 +515,7 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
 
             <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button onClick={() => setShowIncome(false)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>Kapat</button>
-              <button onClick={() => { /* demo ekle */ setShowIncome(false); }} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #22c55e', background: '#22c55e', color: '#fff', cursor: 'pointer' }}>Ekle</button>
+              <button onClick={handleAddIncome} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #22c55e', background: '#22c55e', color: '#fff', cursor: 'pointer' }}>Ekle</button>
             </div>
           </div>
 
@@ -496,7 +632,7 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
 
             <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button onClick={() => setShowCashTransfer(false)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>Kapat</button>
-              <button onClick={() => { /* demo save */ setShowCashTransfer(false); }} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}>Kaydet</button>
+              <button onClick={handleCashTransferSave} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}>Kaydet</button>
             </div>
           </div>
 
@@ -656,7 +792,7 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
 
             <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button onClick={() => setShowBankTransfer(false)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>Kapat</button>
-              <button onClick={() => { /* demo save */ setShowBankTransfer(false); }} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #3b82f6', background: '#3b82f6', color: '#fff', cursor: 'pointer' }}>Kaydet</button>
+              <button onClick={handleBankTransferSave} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #3b82f6', background: '#3b82f6', color: '#fff', cursor: 'pointer' }}>Kaydet</button>
             </div>
           </div>
 
@@ -767,7 +903,7 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
 
             <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button onClick={() => setShowOutcome(false)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer' }}>Kapat</button>
-              <button onClick={() => { /* demo ekle */ setShowOutcome(false); }} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ef4444', background: '#ef4444', color: '#fff', cursor: 'pointer' }}>Ekle</button>
+              <button onClick={handleAddOutcome} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ef4444', background: '#ef4444', color: '#fff', cursor: 'pointer' }}>Ekle</button>
             </div>
           </div>
 
