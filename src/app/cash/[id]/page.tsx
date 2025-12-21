@@ -104,8 +104,8 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
   const [sourceCashPickQuery, setSourceCashPickQuery] = useState('');
   const [targetCashPickQuery, setTargetCashPickQuery] = useState('');
 
-  // Liste satır "İşlemler" açılır menü durumu
-  const [openActionRowId, setOpenActionRowId] = useState<string | null>(null);
+  // Liste satır "İşlemler" açılır menü konumu (ekran koordinatı)
+  const [actionMenu, setActionMenu] = useState<{ rowId: string; x: number; y: number } | null>(null);
 
   // Raporla modalı
   const [showReport, setShowReport] = useState(false);
@@ -372,7 +372,10 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
   const totalBalance = typeof ledger?.balance === 'number' ? Number(ledger.balance) : totals.balance;
 
   return (
-    <main style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
+    <main
+      style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}
+      onClick={() => setActionMenu(null)}
+    >
       <section style={{ padding: 12 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 12 }}>
           {/* Sol menü */}
@@ -469,28 +472,19 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
                       <tr key={r.id} style={{ color: 'white' }}>
                           <td style={{ padding: '8px', position: 'relative' }}>
                             <button
-                              onClick={(e) => { e.stopPropagation(); setOpenActionRowId(prev => prev === r.id ? null : r.id); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                                setActionMenu((prev) =>
+                                  prev && prev.rowId === r.id
+                                    ? null
+                                    : { rowId: r.id, x: rect.left, y: rect.bottom },
+                                );
+                              }}
                               style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid #16a34a', background: '#16a34a', color: 'white', cursor: 'pointer' }}
                             >
                               İşlemler ▾
                             </button>
-                            {openActionRowId === r.id && (
-                              <div style={{ position: 'absolute', top: 36, left: 8, minWidth: 140, background: 'white', color: '#111827', border: '1px solid #e5e7eb', borderRadius: 8, boxShadow: '0 10px 32px rgba(0,0,0,0.25)', zIndex: 50 }}>
-                                <button
-                                  onClick={() => { setOpenActionRowId(null); }}
-                                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}
-                                >
-                                  Düzenle
-                                </button>
-                                <div style={{ height: 1, background: '#e5e7eb' }} />
-                                <button
-                                  onClick={() => { setOpenActionRowId(null); }}
-                                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#ef4444', cursor: 'pointer' }}
-                                >
-                                  Sil
-                                </button>
-                              </div>
-                            )}
                           </td>
                           <td style={{ padding: '8px' }}>{r.date}</td>
                           <td style={{ padding: '8px' }}>{r.type}</td>
@@ -1042,6 +1036,44 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {actionMenu && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: 'fixed',
+            top: actionMenu.y + 4,
+            left: actionMenu.x,
+            zIndex: 2000,
+          }}
+        >
+          <div
+            style={{
+              minWidth: 140,
+              background: 'white',
+              color: '#111827',
+              border: '1px solid #e5e7eb',
+              borderRadius: 8,
+              boxShadow: '0 10px 32px rgba(0,0,0,0.25)',
+              overflow: 'hidden',
+            }}
+          >
+            <button
+              onClick={() => setActionMenu(null)}
+              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}
+            >
+              Düzenle
+            </button>
+            <div style={{ height: 1, background: '#e5e7eb' }} />
+            <button
+              onClick={() => setActionMenu(null)}
+              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+            >
+              Sil
+            </button>
           </div>
         </div>
       )}
