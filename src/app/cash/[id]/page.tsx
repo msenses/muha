@@ -3,18 +3,32 @@ export const dynamic = 'force-dynamic';
 
 import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
 
 type Row = { id: string; date: string; type: 'GİRİŞ(+) ' | 'ÇIKIŞ(-)'; amount: number; title: string; note: string };
 
+type CashLedger = {
+  id: string;
+  name: string;
+  description: string | null;
+  balance: number | null;
+};
+
 export default function CashDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const ledgerId = params.id;
+  const [ledger, setLedger] = useState<CashLedger | null>(null);
+  const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const cashName = useMemo(() => {
-    // basit isimlendirme
-    const slug = (params.id || '').toLowerCase();
+    if (ledger?.name) return ledger.name;
+    const slug = (ledgerId || '').toLowerCase();
     if (slug.includes('varsayilan') || slug.includes('varsayılan')) return 'Varsayılan Kasa';
-    return params.id;
-  }, [params.id]);
+    return ledgerId;
+  }, [ledger, ledgerId]);
 
   const [startDate, setStartDate] = useState('01.01.2022');
   const [endDate, setEndDate] = useState('14.11.2022');
@@ -95,23 +109,95 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
   const [reportStart, setReportStart] = useState('14.11.2022');
   const [reportEnd, setReportEnd] = useState('14.11.2022');
 
-  const rows: Row[] = [
-    { id: '1', date: '14.11.2022', type: 'GİRİŞ(+) ', amount: 500, title: '', note: '' },
-    { id: '2', date: '14.11.2022', type: 'GİRİŞ(+) ', amount: 250, title: '', note: '' },
-    { id: '3', date: '14.11.2022', type: 'GİRİŞ(+) ', amount: 100, title: '', note: '' },
-    { id: '4', date: '14.11.2022', type: 'ÇIKIŞ(-)', amount: 63, title: 'Mehmet Bey', note: 'Alış' },
-    { id: '5', date: '14.11.2022', type: 'ÇIKIŞ(-)', amount: 90, title: 'Mehmet Bey', note: 'Alış' },
-    { id: '6', date: '14.11.2022', type: 'ÇIKIŞ(-)', amount: 100, title: 'Mehmet Bey', note: 'Alış' },
-    { id: '7', date: '14.11.2022', type: 'ÇIKIŞ(-)', amount: 0, title: 'Mehmet Bey', note: 'Alış' },
-    { id: '8', date: '14.11.2022', type: 'ÇIKIŞ(-)', amount: 7.18, title: 'Mehmet Bey', note: 'ALIŞ FATURASI İADESİ' },
-    { id: '9', date: '14.11.2022', type: 'ÇIKIŞ(-)', amount: 3, title: 'Mehmet Bey', note: 'SATIŞ FATURASI İADESİ' },
-    { id: '10', date: '14.11.2022', type: 'ÇIKIŞ(-)', amount: 8.47, title: 'Mehmet Bey', note: 'Alış' },
-  ];
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          if (active) setLoading(false);
+          router.replace('/login');
+          return;
+        }
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) {
+          if (active) setLoading(false);
+          return;
+        }
+
+        const [{ data: ledgerData, error: ledgerErr }, { data: trxData, error: trxErr }] = await Promise.all([
+          supabase
+            .from('cash_ledgers')
+            .select('id, name, description, balance')
+            .eq('company_id', companyId)
+            .eq('id', ledgerId)
+            .single(),
+          supabase
+            .from('cash_transactions')
+            .select('id, amount, flow, description, trx_date')
+            .eq('cash_ledger_id', ledgerId)
+            .order('trx_date', { ascending: false })
+            .limit(1000),
+        ]);
+
+        if (!active) return;
+        if (ledgerErr) {
+          console.error('Kasa kaydı yüklenemedi', ledgerErr);
+        } else if (ledgerData) {
+          setLedger(ledgerData as any);
+        }
+
+        if (trxErr) {
+          console.error('Kasa hareketleri yüklenemedi', trxErr);
+          setRows([]);
+        } else {
+          const mapped: Row[] = (trxData ?? []).map((t: any) => ({
+            id: t.id,
+            date: t.trx_date,
+            type: t.flow === 'in' ? 'GİRİŞ(+) ' : 'ÇIKIŞ(-)',
+            amount: Number(t.amount ?? 0),
+            title: '',
+            note: t.description ?? '',
+          }));
+          setRows(mapped);
+        }
+      } catch (err) {
+        console.error('Kasa detayı yüklenirken hata', err);
+        if (active) {
+          setLedger(null);
+          setRows([]);
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [router, ledgerId]);
 
   const filtered = rows.filter((r) => {
     const hay = `${r.date} ${r.type} ${r.amount} ${r.title} ${r.note}`.toLowerCase();
     return hay.includes(q.toLowerCase());
   });
+
+  const totals = useMemo(() => {
+    let inSum = 0;
+    let outSum = 0;
+    for (const r of rows) {
+      if (r.type.startsWith('GİRİŞ')) inSum += r.amount;
+      else outSum += r.amount;
+    }
+    return {
+      inSum,
+      outSum,
+      balance: inSum - outSum,
+    };
+  }, [rows]);
+
+  const totalBalance = typeof ledger?.balance === 'number' ? Number(ledger.balance) : totals.balance;
 
   return (
     <main style={{ minHeight: '100dvh', background: 'linear-gradient(135deg,#0b2161,#0e3aa3)', color: 'white' }}>
@@ -130,10 +216,22 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
             <div style={{ marginTop: 12, borderRadius: 10, background: 'rgba(255,255,255,0.08)', padding: 12 }}>
               <div style={{ fontWeight: 700, marginBottom: 8 }}>Belirtilen Tarih Aralığındaki</div>
               <div style={{ display: 'grid', gap: 6, fontSize: 13 }}>
-                <div>Toplam Giriş: <b>1.042.616,88 ₺</b></div>
-                <div>Toplam Çıkış: <b>76.794,47 ₺</b></div>
-                <div>Kasa Bakiyesi: <b>965.822,41 ₺</b></div>
-                <div>Toplam Kasa Bakiyesi: <b>965.822,41 ₺</b></div>
+                <div>
+                  Toplam Giriş:{' '}
+                  <b>{totals.inSum.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</b>
+                </div>
+                <div>
+                  Toplam Çıkış:{' '}
+                  <b>{totals.outSum.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</b>
+                </div>
+                <div>
+                  Kasa Bakiyesi:{' '}
+                  <b>{totals.balance.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</b>
+                </div>
+                <div>
+                  Toplam Kasa Bakiyesi:{' '}
+                  <b>{totalBalance.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</b>
+                </div>
               </div>
             </div>
           </aside>
@@ -162,7 +260,7 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
               </div>
 
               <div style={{ padding: 12 }}>
-                <div style={{ overflow: 'auto', maxHeight: 'calc(100dvh - 260px)' }}>
+              <div style={{ overflow: 'auto', maxHeight: 'calc(100dvh - 260px)' }}>
                   <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
                     <thead>
                       <tr style={{ textAlign: 'left', color: 'white', opacity: 0.9 }}>
@@ -175,7 +273,17 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {filtered.map((r) => (
+                      {loading && (
+                        <tr>
+                          <td colSpan={6} style={{ padding: 12, textAlign: 'center' }}>Yükleniyor…</td>
+                        </tr>
+                      )}
+                      {!loading && filtered.length === 0 && (
+                        <tr>
+                          <td colSpan={6} style={{ padding: 12, textAlign: 'center', opacity: 0.8 }}>Kayıt bulunamadı</td>
+                        </tr>
+                      )}
+                      {!loading && filtered.map((r) => (
                       <tr key={r.id} style={{ color: 'white' }}>
                           <td style={{ padding: '8px', position: 'relative' }}>
                             <button
