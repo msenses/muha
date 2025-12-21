@@ -1,12 +1,75 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
+import { useEffect, useMemo, useState } from 'react';
+
+import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
+
+type Row = {
+  id: string;
+  bank: string;
+  branch: string;
+  balance: number;
+};
+
 export default function BankBalanceReportPage() {
-  const rows = [
-    { bank: 'Varsayılan', branch: 'Merkez', balance: 23223.77 },
-    { bank: 'Banka2', branch: 'Banka2', balance: 100.0 },
-  ];
-  const total = rows.reduce((s, r) => s + r.balance, 0);
+  const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          if (active) setLoading(false);
+          return;
+        }
+
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) {
+          console.warn('Company ID bulunamadı');
+          if (active) setLoading(false);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('bank_accounts')
+          .select('id, bank_name, branch_name, balance')
+          .eq('company_id', companyId)
+          .order('bank_name', { ascending: true });
+
+        if (error) {
+          console.error('Banka bakiye raporu için banka listesi yüklenemedi', error);
+          if (active) setRows([]);
+          return;
+        }
+
+        const mapped: Row[] = (data ?? []).map((b: any) => ({
+          id: b.id as string,
+          bank: (b.bank_name as string | null) ?? 'Banka',
+          branch: (b.branch_name as string | null) ?? 'Merkez',
+          balance: Number(b.balance ?? 0),
+        }));
+
+        if (active) setRows(mapped);
+      } catch (err) {
+        console.error('Banka bakiye raporu yüklenirken hata', err);
+        if (active) setRows([]);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const total = useMemo(() => rows.reduce((s, r) => s + r.balance, 0), [rows]);
 
   return (
     <main style={{ minHeight: '100dvh', background: '#ecf0f5', color: '#111827' }}>
@@ -39,13 +102,23 @@ export default function BankBalanceReportPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r, idx) => (
-                    <tr key={idx}>
+                  {rows.map((r) => (
+                    <tr key={r.id}>
                       <td style={{ padding: '8px', border: '1px solid #e5e7eb' }}>{r.bank}</td>
                       <td style={{ padding: '8px', border: '1px solid #e5e7eb' }}>{r.branch}</td>
                       <td style={{ padding: '8px', border: '1px solid #e5e7eb' }}>{r.balance.toLocaleString('tr-TR')}</td>
                     </tr>
                   ))}
+                  {!loading && rows.length === 0 && (
+                    <tr>
+                      <td colSpan={3} style={{ padding: '10px', textAlign: 'center', color: '#6b7280' }}>Kayıt bulunamadı.</td>
+                    </tr>
+                  )}
+                  {loading && (
+                    <tr>
+                      <td colSpan={3} style={{ padding: '10px', textAlign: 'center', color: '#6b7280' }}>Yükleniyor…</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

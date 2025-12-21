@@ -1,6 +1,12 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+
+import { supabase } from '@/lib/supabaseClient';
+import { fetchCurrentCompanyId } from '@/lib/company';
+
 type Txn = {
   date: string;
   type: 'GİRİŞ' | 'ÇIKIŞ';
@@ -11,6 +17,7 @@ type Txn = {
 };
 
 type BankSection = {
+  id: string;
   bank: string;
   accountNo: string;
   branch: string;
@@ -20,57 +27,142 @@ type BankSection = {
 };
 
 function Currency({ value }: { value: number }) {
-  return <span>{value.toLocaleString('tr-TR')}</span>;
+  return <span>{value.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>;
 }
 
 export default function BankDetailReportPage() {
-  const sections: BankSection[] = [
-    {
-      bank: 'Varsayılan',
-      accountNo: '',
-      branch: 'Merkez',
-      branchNo: '',
-      iban: '',
-      txns: [
-        { date: '27.10.2022', type: 'GİRİŞ', desc: '', method: 'HAVALE', docNo: '-', amount: 1000 },
-        { date: '31.10.2022', type: 'GİRİŞ', desc: '1. nolu taksidin 1. Taksitlendirme ödemesi, Taksit Sahibi: Mehmet Bey', method: 'KrediKartı', docNo: '-', amount: 100 },
-        { date: '03.11.2022', type: 'ÇIKIŞ', desc: 'ALIŞ FATURASI', method: 'Kredi Kartı', docNo: '-', amount: 25000 },
-        { date: '04.11.2022', type: 'GİRİŞ', desc: '', method: 'HAVALE', docNo: '-', amount: 20000 },
-        { date: '05.11.2022', type: 'GİRİŞ', desc: '', method: 'HAVALE', docNo: '-', amount: 15000 },
-        { date: '06.11.2022', type: 'GİRİŞ', desc: '', method: 'HAVALE', docNo: '-', amount: 2333 },
-        { date: '07.11.2022', type: 'ÇIKIŞ', desc: '', method: 'HAVALE', docNo: '-', amount: 5454 },
-        { date: '09.11.2022', type: 'GİRİŞ', desc: 'SATIŞ FATURASI', method: 'Kredi Kartı', docNo: '-', amount: 440 },
-        { date: '10.11.2022', type: 'GİRİŞ', desc: 'SATIŞ FATURASI', method: 'Kredi Kartı', docNo: 10, amount: 10000 },
-        { date: '12.11.2022', type: 'GİRİŞ', desc: 'Tahsilat', method: 'Kredi Kartı', docNo: '-', amount: 1000 },
-        { date: '13.11.2022', type: 'GİRİŞ', desc: 'Varsayılan Kasa Kasasından Varsayılan Bankasına Virman -', method: 'Kasadan Virman', docNo: '-', amount: 4000 },
-        { date: '14.11.2022', type: 'GİRİŞ', desc: '', method: 'HAVALE', docNo: '-', amount: 150 },
-        { date: '14.11.2022', type: 'GİRİŞ', desc: '', method: 'HAVALE', docNo: '-', amount: 250 },
-        { date: '14.11.2022', type: 'ÇIKIŞ', desc: 'Aktarım', method: 'HAVALE', docNo: '-', amount: 100 },
-      ],
-    },
-    {
-      bank: 'Banka2',
-      accountNo: '987654321',
-      branch: 'Banka2',
-      branchNo: '12',
-      iban: '897564231',
-      txns: [
-        { date: '14.11.2022', type: 'GİRİŞ', desc: 'Aktarım', method: 'Havale', docNo: '-', amount: 100 },
-      ],
-    },
-  ];
+  const sp = useSearchParams();
+  const allTime = sp.get('alltime') === '1';
+  const start = sp.get('start');
+  const end = sp.get('end');
 
-  const totals = sections.map((s) => {
-    let inSum = 0;
-    let outSum = 0;
-    for (const t of s.txns) {
-      if (t.type === 'GİRİŞ') inSum += t.amount;
-      else outSum += t.amount;
-    }
-    return { inSum, outSum, balance: inSum - outSum };
-  });
+  const [sections, setSections] = useState<BankSection[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const periodTotal = totals.reduce((s, t) => s + t.balance, 0);
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          if (active) setLoading(false);
+          return;
+        }
+
+        const companyId = await fetchCurrentCompanyId();
+        if (!companyId) {
+          console.warn('Company ID bulunamadı');
+          if (active) setLoading(false);
+          return;
+        }
+
+        const { data: banks, error: bankErr } = await supabase
+          .from('bank_accounts')
+          .select('id, bank_name, account_no, branch_name, iban, balance')
+          .eq('company_id', companyId)
+          .order('bank_name', { ascending: true });
+
+        if (bankErr) {
+          console.error('Banka listesi rapor için yüklenemedi', bankErr);
+          if (active) setSections([]);
+          return;
+        }
+
+        const bankList =
+          (banks ?? []) as {
+            id: string;
+            bank_name: string | null;
+            account_no: string | null;
+            branch_name: string | null;
+            iban: string | null;
+            balance: number | null;
+          }[];
+
+        if (bankList.length === 0) {
+          if (active) setSections([]);
+          return;
+        }
+
+        const bankIds = bankList.map((b) => b.id);
+
+        let trxQuery = supabase
+          .from('bank_transactions')
+          .select('id, bank_account_id, amount, flow, description, trx_date');
+
+        if (bankIds.length > 0) {
+          trxQuery = trxQuery.in('bank_account_id', bankIds);
+        }
+
+        if (!allTime) {
+          if (start) trxQuery = trxQuery.gte('trx_date', start);
+          if (end) trxQuery = trxQuery.lte('trx_date', end);
+        }
+
+        const { data: trxData, error: trxErr } = await trxQuery;
+        if (trxErr) {
+          console.error('Banka hareketleri rapor için yüklenemedi', trxErr);
+        }
+
+        const byBank = new Map<string, Txn[]>();
+        for (const t of trxData ?? []) {
+          const id = (t as any).bank_account_id as string;
+          const amount = Number((t as any).amount ?? 0);
+          const flow = (t as any).flow as 'in' | 'out';
+          const trxDate = String((t as any).trx_date ?? '');
+          if (!id || !Number.isFinite(amount)) continue;
+          const list = byBank.get(id) ?? [];
+          list.push({
+            date: trxDate,
+            type: flow === 'in' ? 'GİRİŞ' : 'ÇIKIŞ',
+            desc: (t as any).description ?? '',
+            method: '', // Şimdilik boş, istenirse ödeme şekli eklenecek
+            docNo: '-',
+            amount,
+          });
+          byBank.set(id, list);
+        }
+
+        const sectionsMapped: BankSection[] = bankList.map((b) => ({
+          id: b.id,
+          bank: b.bank_name ?? 'Banka',
+          accountNo: b.account_no ?? '',
+          branch: b.branch_name ?? 'Merkez',
+          branchNo: '',
+          iban: b.iban ?? '',
+          txns: byBank.get(b.id) ?? [],
+        }));
+
+        if (active) setSections(sectionsMapped);
+      } catch (err) {
+        console.error('Banka detaylı rapor yüklenirken hata', err);
+        if (active) setSections([]);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, [allTime, start, end]);
+
+  const totals = useMemo(
+    () =>
+      sections.map((s) => {
+        let inSum = 0;
+        let outSum = 0;
+        for (const t of s.txns) {
+          if (t.type === 'GİRİŞ') inSum += t.amount;
+          else outSum += t.amount;
+        }
+        return { inSum, outSum, balance: inSum - outSum };
+      }),
+    [sections],
+  );
+
+  const periodTotal = useMemo(() => totals.reduce((s, t) => s + t.balance, 0), [totals]);
 
   return (
     <main style={{ minHeight: '100dvh', background: '#ecf0f5', color: '#111827' }}>
@@ -90,15 +182,24 @@ export default function BankDetailReportPage() {
           <div style={{ padding: 16, borderBottom: '1px solid #e5e7eb' }}>
             <div style={{ textAlign: 'center', fontWeight: 800, color: '#0f766e' }}>BANKA RAPORU</div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 12, color: '#6b7280' }}>
-              <div>Firma : TEST BİLSOFT</div>
-              <div>Tarih Aralığı : 14.11.2021 - 14.11.2022</div>
+              <div>Firma : </div>
+              <div>
+                Tarih Aralığı :{' '}
+                {allTime ? (
+                  <b>Tüm Zamanlar</b>
+                ) : (
+                  <>
+                    <b>{start || '—'}</b> - <b>{end || '—'}</b>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Banka bölümleri */}
           <div style={{ padding: 12, display: 'grid', gap: 16 }}>
-            {sections.map((s, idx) => (
-              <div key={idx} style={{ display: 'grid', gap: 8 }}>
+          {sections.map((s, idx) => (
+            <div key={s.id} style={{ display: 'grid', gap: 8 }}>
                 {/* Banka info header */}
                 <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
                   <thead>
@@ -145,6 +246,11 @@ export default function BankDetailReportPage() {
                           <td style={{ padding: '8px' }}><Currency value={t.amount} /></td>
                         </tr>
                       ))}
+                      {!loading && s.txns.length === 0 && (
+                        <tr>
+                          <td colSpan={6} style={{ padding: '8px', textAlign: 'center', color: '#6b7280' }}>Bu banka için hareket bulunamadı.</td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -166,7 +272,7 @@ export default function BankDetailReportPage() {
 
             {/* Alt toplamlar */}
             <div style={{ border: '1px solid #e5e7eb', borderRadius: 6, background: '#f8fafc', display: 'grid', gridTemplateColumns: '1fr 220px' }}>
-              <div style={{ padding: 8, color: '#6b7280' }}>14.11.2021 - 14.11.2022 ARASI BANKA HESAPLARI TOPLAMI :</div>
+              <div style={{ padding: 8, color: '#6b7280' }}>{allTime ? 'TÜM ZAMANLAR BANKA HESAPLARI TOPLAMI :' : 'Seçili Tarih Aralığı Banka Hesapları Toplamı :'}</div>
               <div style={{ padding: 8, textAlign: 'right' }}><Currency value={periodTotal} /></div>
             </div>
             <div style={{ border: '1px solid #e5e7eb', borderRadius: 6, background: '#f8fafc', display: 'grid', gridTemplateColumns: '1fr 220px' }}>

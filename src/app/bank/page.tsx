@@ -234,7 +234,22 @@ export default function BankPage() {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button onClick={() => { setShowDetailReport(false); router.push(('/bank/reports/detail') as Route); }} style={{ padding: '10px 14px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>≡ Banka Raporu Getir</button>
+                <button
+                  onClick={() => {
+                    setShowDetailReport(false);
+                    const params = new URLSearchParams();
+                    if (repAllTime) {
+                      params.set('alltime', '1');
+                    } else {
+                      if (repStart) params.set('start', repStart);
+                      if (repEnd) params.set('end', repEnd);
+                    }
+                    router.push((`/bank/reports/detail?${params.toString()}`) as Route);
+                  }}
+                  style={{ padding: '10px 14px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}
+                >
+                  ≡ Banka Raporu Getir
+                </button>
               </div>
             </div>
           </div>
