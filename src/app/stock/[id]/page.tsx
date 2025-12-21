@@ -7,7 +7,7 @@ import type { Route } from 'next';
 
 import { supabase } from '@/lib/supabaseClient';
 
-type Product = { id: string; sku: string | null; name: string; unit: string; vat_rate?: number; price?: number };
+type Product = { id: string; sku: string | null; name: string; unit: string; vat_rate?: number; price?: number; cost_price?: number };
 type Movement = { id: string; created_at: string; move_type: 'in' | 'out'; qty: number; /* warehouse?: string */ };
 
 export default function StockDetailPage({ params }: { params: { id: string } }) {
@@ -32,7 +32,7 @@ export default function StockDetailPage({ params }: { params: { id: string } }) 
         return;
       }
       const [{ data: p }, { data: m }] = await Promise.all([
-        supabase.from('products').select('id, sku, name, unit, vat_rate, price').eq('id', productId).single(),
+        supabase.from('products').select('id, sku, name, unit, vat_rate, price, cost_price').eq('id', productId).single(),
         supabase
           .from('stock_movements')
           .select('id, created_at, move_type, qty, product_id')
@@ -81,7 +81,7 @@ export default function StockDetailPage({ params }: { params: { id: string } }) 
               <div>Stok Kodu :</div><div>{product?.sku ?? '-'}</div>
               <div>Stokta Rafı :</div><div>{'-'}</div>
               <div>Grup :</div><div>{'TEMEL GIDA'}</div>
-              <div>Alış Fiyatı :</div><div>{(0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
+              <div>Alış Fiyatı :</div><div>{Number(product?.cost_price ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
               <div>Satış Fiyatı :</div><div>{Number(product?.price ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
               <div>Kdv Oranı :</div><div>{Number(product?.vat_rate ?? 0)}</div>
               <div>Stokta Kalan :</div><div>{`${balance} ${product?.unit ?? 'Adet'}`}</div>

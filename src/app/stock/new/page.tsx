@@ -60,7 +60,8 @@ export default function StockNewPage() {
         name: trimmedName,
         unit,
         vat_rate: Number.isFinite(vatRate) ? vatRate : 0,
-        price: Number.isFinite(price) ? price : 0,
+        price: Number.isFinite(price) ? price : 0,          // Satış fiyatı
+        cost_price: Number.isFinite(purchasePrice) ? purchasePrice : 0, // Alış maliyeti
       });
       if (error) throw error;
       router.push(('/stock') as Route);

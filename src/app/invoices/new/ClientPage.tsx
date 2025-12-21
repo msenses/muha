@@ -399,6 +399,8 @@ export default function InvoiceNewClientPage() {
         .single();
       if (invErr) throw invErr;
       const invoiceId = (invData as any).id as string;
+
+      // 1) Fatura kalemlerini kaydet
       const itemRows = lines.map((l) => ({
         invoice_id: invoiceId,
         product_id: l.product_id,
@@ -409,15 +411,78 @@ export default function InvoiceNewClientPage() {
       }));
       const { error: itemsErr } = await supabase.from('invoice_items').insert(itemRows);
       if (itemsErr) throw itemsErr;
-      const moveRows = lines.map((l) => ({
+
+      // 2) Stok hareketlerini oluştur
+      const moveRows = lines
+        .filter((l) => !!l.product_id)
+        .map((l) => ({
         company_id: companyId,
         product_id: l.product_id!,
         invoice_id: invoiceId,
         move_type: type === 'sales' ? 'out' : 'in',
         qty: l.qty,
+        // Satınalma faturalarında maliyet için birim fiyatı da sakla
+        unit_cost: type === 'purchase' ? l.unit_price : null,
       }));
-      if (moveRows.every((m) => !!m.product_id)) {
+      if (moveRows.length > 0) {
         await supabase.from('stock_movements').insert(moveRows as any);
+      }
+
+      // 3) Alış faturası ise stok kartına alış maliyetini işle
+      if (type === 'purchase') {
+        // Sadece ürün seçilmiş satırlar
+        const productLines = lines.filter((l) => !!l.product_id && l.unit_price > 0 && l.qty > 0) as (Line & { product_id: string })[];
+        const uniqueProductIds = Array.from(new Set(productLines.map((l) => l.product_id as string)));
+
+        if (uniqueProductIds.length > 0) {
+          const { data: productRows, error: prodErr } = await supabase
+            .from('products')
+            .select('id, cost_price, stock_balance')
+            .in('id', uniqueProductIds);
+          if (prodErr) throw prodErr;
+
+          const productMap = new Map<string, { id: string; cost_price: number | null; stock_balance: number | null }>();
+          (productRows ?? []).forEach((p: any) => {
+            productMap.set(p.id, {
+              id: p.id,
+              cost_price: p.cost_price ?? null,
+              stock_balance: p.stock_balance ?? null,
+            });
+          });
+
+          // Her ürün için yeni maliyeti hesapla
+          for (const pid of uniqueProductIds) {
+            const relatedLines = productLines.filter((l) => l.product_id === pid);
+            if (relatedLines.length === 0) continue;
+
+            // Bu faturadaki ilgili ürün satırlarının toplam miktarı ve ortalama birim fiyatı
+            const totalQtyNew = relatedLines.reduce((s, l) => s + Number(l.qty || 0), 0);
+            if (totalQtyNew <= 0) continue;
+            const totalNetNew = relatedLines.reduce((s, l) => s + Number(l.unit_price || 0) * Number(l.qty || 0), 0);
+            const avgUnitNew = totalNetNew / totalQtyNew;
+
+            const current = productMap.get(pid);
+            let newCost = avgUnitNew;
+
+            if (stockMode === 'avg' && current) {
+              const prevQty = Number(current.stock_balance ?? 0);
+              const prevCost = Number(current.cost_price ?? 0);
+              const totalQty = prevQty + totalQtyNew;
+              if (totalQty > 0 && prevQty > 0 && prevCost > 0) {
+                newCost = round2(((prevQty * prevCost) + totalNetNew) / totalQty);
+              } else {
+                newCost = round2(avgUnitNew);
+              }
+            } else {
+              newCost = round2(avgUnitNew);
+            }
+
+            await supabase
+              .from('products')
+              .update({ cost_price: newCost })
+              .eq('id', pid);
+          }
+        }
       }
       // İADE fatura tipi için bilgilendirme
       if (invoiceKind === 'IADE') {
