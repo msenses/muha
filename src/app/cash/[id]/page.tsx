@@ -1104,14 +1104,14 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
                   <button
                     onClick={() => {
                       setShowReport(false);
-                      const params = new URLSearchParams();
+                      const search = new URLSearchParams();
                       if (reportAllTime) {
-                        params.set('alltime', '1');
+                        search.set('alltime', '1');
                       } else {
-                        if (reportStart) params.set('start', reportStart);
-                        if (reportEnd) params.set('end', reportEnd);
+                        if (reportStart) search.set('start', reportStart);
+                        if (reportEnd) search.set('end', reportEnd);
                       }
-                      router.push((`/cash/${params.id}/reports/transactions?${params.toString()}`) as Route);
+                      router.push((`/cash/${ledgerId}/reports/transactions?${search.toString()}`) as Route);
                     }}
                     style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}
                   >
