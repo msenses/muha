@@ -30,8 +30,12 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
     return ledgerId;
   }, [ledger, ledgerId]);
 
-  const [startDate, setStartDate] = useState('01.01.2022');
-  const [endDate, setEndDate] = useState('14.11.2022');
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().slice(0, 10);
+  });
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [q, setQ] = useState('');
 
   // Giriş modal durumu ve alanlar
@@ -289,6 +293,16 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
           return;
         }
 
+        let trxQuery = supabase
+          .from('cash_transactions')
+          .select('id, amount, flow, description, trx_date')
+          .eq('cash_ledger_id', ledgerId);
+
+        if (startDate) trxQuery = trxQuery.gte('trx_date', startDate);
+        if (endDate) trxQuery = trxQuery.lte('trx_date', endDate);
+
+        trxQuery = trxQuery.order('trx_date', { ascending: false }).limit(1000);
+
         const [{ data: ledgerData, error: ledgerErr }, { data: trxData, error: trxErr }] = await Promise.all([
           supabase
             .from('cash_ledgers')
@@ -296,12 +310,7 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
             .eq('company_id', companyId)
             .eq('id', ledgerId)
             .single(),
-          supabase
-            .from('cash_transactions')
-            .select('id, amount, flow, description, trx_date')
-            .eq('cash_ledger_id', ledgerId)
-            .order('trx_date', { ascending: false })
-            .limit(1000),
+          trxQuery,
         ]);
 
         if (!active) return;
@@ -339,7 +348,7 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
     return () => {
       active = false;
     };
-  }, [router, ledgerId]);
+  }, [router, ledgerId, startDate, endDate]);
 
   const filtered = rows.filter((r) => {
     const hay = `${r.date} ${r.type} ${r.amount} ${r.title} ${r.note}`.toLowerCase();
@@ -411,9 +420,19 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
                 <strong style={{ marginRight: 8 }}>KASA HAREKETLERİ</strong>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                   <span>Başlangıç Tarihi:</span>
-                  <input value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ width: 120, padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.1)', color: 'white' }} />
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    style={{ width: 150, padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.1)', color: 'white' }}
+                  />
                   <span>Bitiş Tarihi:</span>
-                  <input value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ width: 120, padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.1)', color: 'white' }} />
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    style={{ width: 150, padding: '6px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.1)', color: 'white' }}
+                  />
                   <button style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff' }}>🔍</button>
                 </div>
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
