@@ -195,103 +195,408 @@ export default function DashboardPage() {
 	}, [accountCount, productCount, sales30d, purchases30d]);
 
 	return (
-		<section style={{ padding: 16, color: 'white' }}>
-			{/* İlk satır: 3 kare kutu */}
-			<div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(220px, 1fr))', gap: 12, marginBottom: 16 }}>
-				{/* 1) Ajanda */}
-				<div style={{ borderRadius: 16, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', padding: 12, aspectRatio: '1 / 1', display: 'flex', flexDirection: 'column' }}>
-					<div style={{ fontWeight: 700, marginBottom: 8 }}>Ajanda</div>
-					<div style={{ display: 'grid', gap: 8, overflow: 'auto' }}>
+		<section
+			style={{
+				padding: 16,
+				color: 'white',
+				maxWidth: 1280,
+				margin: '0 auto',
+				display: 'flex',
+				flexDirection: 'column',
+				gap: 16,
+			}}
+		>
+			{/* Üst başlık ve kısayollar */}
+			<div
+				style={{
+					display: 'flex',
+					flexWrap: 'wrap',
+					alignItems: 'center',
+					justifyContent: 'space-between',
+					gap: 12,
+				}}
+			>
+				<div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+					<span style={{ fontSize: 13, opacity: 0.8 }}>Kontrol Paneli</span>
+					<span style={{ fontSize: 20, fontWeight: 800 }}>Genel Bakış</span>
+					<span style={{ fontSize: 12, opacity: 0.8 }}>
+						Son 30 gün satış ve alış hareketlerinizi, azalan stoklarınızı ve ajanda hatırlatmalarınızı tek ekranda takip edin.
+					</span>
+				</div>
+				<div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
+					<button
+						onClick={() => router.push('/invoices/new')}
+						style={{
+							padding: '10px 14px',
+							borderRadius: 999,
+							border: '1px solid rgba(34,197,94,0.6)',
+							background: 'linear-gradient(135deg,#22c55e,#16a34a)',
+							color: 'white',
+							cursor: 'pointer',
+							fontSize: 13,
+							fontWeight: 600,
+						}}
+					>
+						+ Yeni Satış Faturası
+					</button>
+					<button
+						onClick={() => router.push('/accounts/new')}
+						style={{
+							padding: '10px 14px',
+							borderRadius: 999,
+							border: '1px solid rgba(148,163,184,0.5)',
+							background: 'rgba(15,23,42,0.4)',
+							color: 'white',
+							cursor: 'pointer',
+							fontSize: 13,
+						}}
+					>
+						+ Yeni Cari
+					</button>
+					<button
+						onClick={() => router.push('/stock')}
+						style={{
+							padding: '10px 14px',
+							borderRadius: 999,
+							border: '1px solid rgba(148,163,184,0.5)',
+							background: 'rgba(15,23,42,0.4)',
+							color: 'white',
+							cursor: 'pointer',
+							fontSize: 13,
+						}}
+					>
+						Stok Kartları
+					</button>
+				</div>
+			</div>
+
+			{/* KPI alanı */}
+			<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 12 }}>
+				{kpis.map((k) => (
+					<KpiCard key={k.title} title={k.title} value={k.value} sub={k.sub} accent={k.accent} />
+				))}
+			</div>
+
+			{/* Ajanda + Azalan Stoklar */}
+			<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 12 }}>
+				{/* Ajanda */}
+				<div
+					style={{
+						borderRadius: 16,
+						background: 'rgba(15,23,42,0.7)',
+						border: '1px solid rgba(148,163,184,0.4)',
+						padding: 14,
+						display: 'flex',
+						flexDirection: 'column',
+						minHeight: 180,
+					}}
+				>
+					<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+						<div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+							<span style={{ fontSize: 13 }}>🗓</span>
+							<span style={{ fontWeight: 700, fontSize: 14 }}>Ajanda</span>
+						</div>
+						<span style={{ fontSize: 11, opacity: 0.7 }}>Yaklaşan 3 kayıt</span>
+					</div>
+					<div style={{ display: 'grid', gap: 8, overflow: 'auto', flex: 1 }}>
 						{agendaItems.map((a) => (
-							<div key={a.id} style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: 10, alignItems: 'center' }}>
-								<div style={{ fontSize: 12, opacity: 0.85 }}>{new Date(a.reminder_date).toLocaleString('tr-TR')}</div>
+							<div
+								key={a.id}
+								style={{
+									display: 'grid',
+									gridTemplateColumns: '100px 1fr',
+									gap: 10,
+									alignItems: 'center',
+									fontSize: 12,
+								}}
+							>
+								<div
+									style={{
+										padding: '6px 8px',
+										borderRadius: 8,
+										background: 'rgba(15,118,110,0.3)',
+										border: '1px solid rgba(34,211,238,0.3)',
+									}}
+								>
+									{new Date(a.reminder_date).toLocaleString('tr-TR')}
+								</div>
 								<div style={{ opacity: 0.95 }}>{a.title}</div>
 							</div>
 						))}
 						{!agendaItems.length && (
 							<div style={{ fontSize: 13, opacity: 0.8 }}>Yaklaşan ajanda kaydı bulunamadı.</div>
 						)}
-						<button onClick={() => router.push('/agenda')} style={{ marginTop: 'auto', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white', cursor: 'pointer' }}>Ajandaya Git</button>
 					</div>
+					<button
+						onClick={() => router.push('/agenda')}
+						style={{
+							marginTop: 10,
+							padding: '8px 10px',
+							borderRadius: 8,
+							border: '1px solid rgba(148,163,184,0.6)',
+							background: 'rgba(15,23,42,0.8)',
+							color: 'white',
+							cursor: 'pointer',
+							fontSize: 12,
+						}}
+					>
+						Ajandaya Git
+					</button>
 				</div>
 
-				{/* 2) En az stok */}
-				<div style={{ borderRadius: 16, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', padding: 12, aspectRatio: '1 / 1', display: 'flex', flexDirection: 'column' }}>
-					<div style={{ fontWeight: 700, marginBottom: 8 }}>Azalan Stoklar</div>
-					<div style={{ display: 'grid', gap: 8, overflow: 'auto' }}>
+				{/* Azalan stoklar */}
+				<div
+					style={{
+						borderRadius: 16,
+						background: 'rgba(15,23,42,0.7)',
+						border: '1px solid rgba(148,163,184,0.4)',
+						padding: 14,
+						display: 'flex',
+						flexDirection: 'column',
+						minHeight: 180,
+					}}
+				>
+					<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+						<div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+							<span style={{ fontSize: 13 }}>📦</span>
+							<span style={{ fontWeight: 700, fontSize: 14 }}>Azalan Stoklar</span>
+						</div>
+						<span style={{ fontSize: 11, opacity: 0.7 }}>Min. stok altındaki ürünler</span>
+					</div>
+					<div style={{ display: 'grid', gap: 8, overflow: 'auto', flex: 1 }}>
 						{lowStock.map((r) => (
-							<div key={r.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 10, alignItems: 'center' }}>
+							<div
+								key={r.id}
+								style={{
+									display: 'grid',
+									gridTemplateColumns: '1fr auto',
+									gap: 10,
+									alignItems: 'center',
+									fontSize: 12,
+								}}
+							>
 								<div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
-								<div style={{ fontWeight: 700, color: r.balance <= 0 ? '#ef4444' : '#f59e0b' }}>{r.balance}</div>
+								<div
+									style={{
+										fontWeight: 700,
+										color: r.balance <= 0 ? '#fecaca' : '#fed7aa',
+										background: r.balance <= 0 ? 'rgba(248,113,113,0.18)' : 'rgba(234,179,8,0.18)',
+										borderRadius: 999,
+										padding: '4px 10px',
+										border: '1px solid rgba(248,113,113,0.3)',
+									}}
+								>
+									{r.balance}
+								</div>
 							</div>
 						))}
 						{!lowStock.length && <div style={{ opacity: 0.8, fontSize: 13 }}>Gösterilecek ürün yok.</div>}
-						<button onClick={() => router.push('/stock')} style={{ marginTop: 'auto', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white', cursor: 'pointer' }}>Stok Modülüne Git</button>
 					</div>
+					<button
+						onClick={() => router.push('/stock')}
+						style={{
+							marginTop: 10,
+							padding: '8px 10px',
+							borderRadius: 8,
+							border: '1px solid rgba(148,163,184,0.6)',
+							background: 'rgba(15,23,42,0.8)',
+							color: 'white',
+							cursor: 'pointer',
+							fontSize: 12,
+						}}
+					>
+						Stok Modülüne Git
+					</button>
 				</div>
 			</div>
 
-			{/* 4. ve sonrası: en çok ihtiyaçtan en aza */}
-			{/* 4) KPI'lar */}
-			<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-				<div style={{ fontWeight: 800, fontSize: 20 }}>Genel Bakış</div>
-				<div style={{ display: 'flex', gap: 8 }}>
-					<button onClick={() => router.push('/invoices/new')} style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid #22c55e', background: '#22c55e', color: 'white', cursor: 'pointer' }}>+ Satış Faturası</button>
-					<button onClick={() => router.push('/accounts/new')} style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.15)', color: 'white', cursor: 'pointer' }}>+ Cari</button>
-					<button onClick={() => router.push('/stock')} style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.15)', color: 'white', cursor: 'pointer' }}>Stoklar</button>
-				</div>
-			</div>
-
-			<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 12, marginBottom: 16 }}>
-				{kpis.map((k) => <KpiCard key={k.title} title={k.title} value={k.value} sub={k.sub} accent={k.accent} />)}
-			</div>
-
-			{/* 5) Son Faturalar + 6) Aylık Satışlar */}
-			<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-				<div style={{ padding: 16, borderRadius: 16, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
-					<div style={{ fontWeight: 700, marginBottom: 8 }}>Son Faturalar</div>
-					<div style={{ display: 'grid', gap: 8 }}>
+			{/* Son Faturalar + Aylık Satışlar */}
+			<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 12 }}>
+				<div
+					style={{
+						padding: 16,
+						borderRadius: 16,
+						background: 'rgba(15,23,42,0.7)',
+						border: '1px solid rgba(148,163,184,0.4)',
+						display: 'flex',
+						flexDirection: 'column',
+						minHeight: 220,
+					}}
+				>
+					<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+						<div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+							<span style={{ fontSize: 13 }}>📄</span>
+							<span style={{ fontWeight: 700 }}>Son Faturalar</span>
+						</div>
+					</div>
+					<div style={{ display: 'grid', gap: 8, flex: 1, overflow: 'auto' }}>
 						{lastInvoices.map((r) => (
-							<div key={r.id} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 10, alignItems: 'center' }}>
-								<div style={{ fontSize: 12, opacity: 0.85 }}>{new Date(r.invoice_date).toLocaleDateString('tr-TR')}</div>
-								<div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', opacity: 0.95 }}>{r.accounts?.name ?? '-'}</div>
-								<div style={{ fontWeight: 700, color: r.type === 'sales' ? '#22c55e' : '#0ea5e9' }}>{formatCurrency(Number(r.total ?? 0))}</div>
+							<div
+								key={r.id}
+								style={{
+									display: 'grid',
+									gridTemplateColumns: 'auto 1fr auto',
+									gap: 10,
+									alignItems: 'center',
+									fontSize: 12,
+								}}
+							>
+								<div style={{ opacity: 0.8 }}>{new Date(r.invoice_date).toLocaleDateString('tr-TR')}</div>
+								<div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', opacity: 0.95 }}>
+									{r.accounts?.name ?? '-'}
+								</div>
+								<div
+									style={{
+										fontWeight: 700,
+										color: r.type === 'sales' ? '#bbf7d0' : '#bae6fd',
+									}}
+								>
+									{formatCurrency(Number(r.total ?? 0))}
+								</div>
 							</div>
 						))}
 						{!lastInvoices.length && <div style={{ opacity: 0.8, fontSize: 13 }}>Gösterilecek fatura bulunamadı.</div>}
-						<div>
-							<button onClick={() => router.push('/invoices')} style={{ marginTop: 8, padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', color: 'white', cursor: 'pointer' }}>Tüm Faturalar</button>
-						</div>
 					</div>
+					<button
+						onClick={() => router.push('/invoices')}
+						style={{
+							marginTop: 10,
+							padding: '8px 10px',
+							borderRadius: 8,
+							border: '1px solid rgba(148,163,184,0.6)',
+							background: 'rgba(15,23,42,0.8)',
+							color: 'white',
+							cursor: 'pointer',
+							fontSize: 12,
+							alignSelf: 'flex-start',
+						}}
+					>
+						Tüm Faturalar
+					</button>
 				</div>
 
-				<div style={{ padding: 16, borderRadius: 16, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
+				<div
+					style={{
+						padding: 16,
+						borderRadius: 16,
+						background: 'rgba(15,23,42,0.7)',
+						border: '1px solid rgba(148,163,184,0.4)',
+						minHeight: 220,
+						display: 'flex',
+						flexDirection: 'column',
+						gap: 10,
+					}}
+				>
 					<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-						<div style={{ fontWeight: 700 }}>Aylık Satışlar</div>
+						<div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+							<span style={{ fontSize: 13 }}>📈</span>
+							<span style={{ fontWeight: 700 }}>Aylık Satışlar</span>
+						</div>
 						<div style={{ fontSize: 12, opacity: 0.8 }}>Son 12 Ay</div>
 					</div>
-					<div style={{ marginTop: 8 }}>
+					<div style={{ marginTop: 4 }}>
 						<Sparkline points={sales12m} color="#22c55e" />
 					</div>
 				</div>
 			</div>
 
-			<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 12, marginTop: 16 }}>
-				<div style={{ padding: 16, borderRadius: 16, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+			{/* Modül kısayolları */}
+			<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 12 }}>
+				<div
+					style={{
+						padding: 16,
+						borderRadius: 16,
+						background: 'rgba(15,23,42,0.6)',
+						border: '1px solid rgba(148,163,184,0.4)',
+					}}
+				>
 					<div style={{ fontSize: 14, opacity: 0.9, marginBottom: 8 }}>Cariler</div>
-					<button onClick={() => router.push('/accounts')} style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.15)', color: 'white', cursor: 'pointer' }}>Cari Listesine Git</button>
+					<button
+						onClick={() => router.push('/accounts')}
+						style={{
+							padding: '10px 12px',
+							borderRadius: 10,
+							border: '1px solid rgba(148,163,184,0.6)',
+							background: 'rgba(15,23,42,0.9)',
+							color: 'white',
+							cursor: 'pointer',
+							fontSize: 13,
+						}}
+					>
+						Cari Listesine Git
+					</button>
 				</div>
-				<div style={{ padding: 16, borderRadius: 16, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+				<div
+					style={{
+						padding: 16,
+						borderRadius: 16,
+						background: 'rgba(15,23,42,0.6)',
+						border: '1px solid rgba(148,163,184,0.4)',
+					}}
+				>
 					<div style={{ fontSize: 14, opacity: 0.9, marginBottom: 8 }}>Faturalar</div>
-					<button onClick={() => router.push('/invoices')} style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.15)', color: 'white', cursor: 'pointer' }}>Fatura Modülüne Git</button>
+					<button
+						onClick={() => router.push('/invoices')}
+						style={{
+							padding: '10px 12px',
+							borderRadius: 10,
+							border: '1px solid rgba(148,163,184,0.6)',
+							background: 'rgba(15,23,42,0.9)',
+							color: 'white',
+							cursor: 'pointer',
+							fontSize: 13,
+						}}
+					>
+						Fatura Modülüne Git
+					</button>
 				</div>
-				<div style={{ padding: 16, borderRadius: 16, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+				<div
+					style={{
+						padding: 16,
+						borderRadius: 16,
+						background: 'rgba(15,23,42,0.6)',
+						border: '1px solid rgba(148,163,184,0.4)',
+					}}
+				>
 					<div style={{ fontSize: 14, opacity: 0.9, marginBottom: 8 }}>Stok</div>
-					<button onClick={() => router.push('/stock')} style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.15)', color: 'white', cursor: 'pointer' }}>Stok Modülüne Git</button>
+					<button
+						onClick={() => router.push('/stock')}
+						style={{
+							padding: '10px 12px',
+							borderRadius: 10,
+							border: '1px solid rgba(148,163,184,0.6)',
+							background: 'rgba(15,23,42,0.9)',
+							color: 'white',
+							cursor: 'pointer',
+							fontSize: 13,
+						}}
+					>
+						Stok Modülüne Git
+					</button>
 				</div>
-				<div style={{ padding: 16, borderRadius: 16, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+				<div
+					style={{
+						padding: 16,
+						borderRadius: 16,
+						background: 'rgba(15,23,42,0.6)',
+						border: '1px solid rgba(148,163,184,0.4)',
+					}}
+				>
 					<div style={{ fontSize: 14, opacity: 0.9, marginBottom: 8 }}>Kasa/Banka</div>
-					<button onClick={() => router.push('/cash')} style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.15)', color: 'white', cursor: 'pointer' }}>Kasa/Banka Modülüne Git</button>
+					<button
+						onClick={() => router.push('/cash')}
+						style={{
+							padding: '10px 12px',
+							borderRadius: 10,
+							border: '1px solid rgba(148,163,184,0.6)',
+							background: 'rgba(15,23,42,0.9)',
+							color: 'white',
+							cursor: 'pointer',
+							fontSize: 13,
+						}}
+					>
+						Kasa/Banka Modülüne Git
+					</button>
 				</div>
 			</div>
 		</section>
