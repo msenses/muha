@@ -44,6 +44,12 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
   const [editStatus, setEditStatus] = useState<string>('pending');
   const [editNotes, setEditNotes] = useState('');
 
+  // Ödeme için kasa ve banka seçenekleri
+  const [cashOptions, setCashOptions] = useState<{ id: string; name: string; balance: number | null }[]>([]);
+  const [selectedCashId, setSelectedCashId] = useState<string | null>(null);
+  const [bankOptions, setBankOptions] = useState<{ id: string; bank_name: string | null; branch_name: string | null; balance: number | null }[]>([]);
+  const [selectedBankId, setSelectedBankId] = useState<string | null>(null);
+
   useEffect(() => {
     let active = true;
     const load = async () => {
@@ -58,7 +64,12 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
           if (active) setError('Şirket bilgisi alınamadı');
           return;
         }
-        const [{ data: ch, error: chErr }, { data: accs, error: accErr }] = await Promise.all([
+        const [
+          { data: ch, error: chErr },
+          { data: accs, error: accErr },
+          { data: cashData, error: cashErr },
+          { data: bankData, error: bankErr },
+        ] = await Promise.all([
           supabase
             .from('cheques_notes')
             .select('id, issue_date, due_date, amount, status, direction, document_no, bank_name, bank_branch, drawer_name, notes, accounts ( name )')
@@ -70,6 +81,16 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
             .select('id, name, contact_name')
             .eq('company_id', companyId)
             .order('name', { ascending: true }),
+          supabase
+            .from('cash_ledgers')
+            .select('id, name, balance')
+            .eq('company_id', companyId)
+            .order('name', { ascending: true }),
+          supabase
+            .from('bank_accounts')
+            .select('id, bank_name, branch_name, balance')
+            .eq('company_id', companyId)
+            .order('bank_name', { ascending: true }),
         ]);
         if (!active) return;
         if (chErr) {
@@ -106,6 +127,37 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
               officer: (a.contact_name as string) ?? null,
             })),
           );
+        }
+
+        if (cashErr) {
+          console.error('Kasa listesi yüklenemedi:', cashErr);
+        } else if (cashData) {
+          const typed =
+            (cashData as any[]).map((c) => ({
+              id: c.id as string,
+              name: String(c.name ?? ''),
+              balance: typeof c.balance === 'number' ? (c.balance as number) : Number(c.balance ?? 0),
+            })) ?? [];
+          setCashOptions(typed);
+          if (!selectedCashId && typed.length > 0) {
+            setSelectedCashId(typed[0].id);
+          }
+        }
+
+        if (bankErr) {
+          console.error('Banka listesi yüklenemedi:', bankErr);
+        } else if (bankData) {
+          const typed =
+            (bankData as any[]).map((b) => ({
+              id: b.id as string,
+              bank_name: (b.bank_name as string) ?? null,
+              branch_name: (b.branch_name as string) ?? null,
+              balance: typeof b.balance === 'number' ? (b.balance as number) : Number(b.balance ?? 0),
+            })) ?? [];
+          setBankOptions(typed);
+          if (!selectedBankId && typed.length > 0) {
+            setSelectedBankId(typed[0].id);
+          }
         }
       } catch (err: any) {
         if (!active) return;
@@ -191,7 +243,6 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
   const [payDate, setPayDate] = useState('');
   const [payAmount, setPayAmount] = useState('0,00');
   const [payMethod, setPayMethod] = useState<'Kasadan' | 'Bankadan'>('Kasadan');
-  const [selectedCash, setSelectedCash] = useState<'Varsayılan Kasa' | 'Kasa2'>('Varsayılan Kasa');
   // Tahsilat modalı
   const [showCollect, setShowCollect] = useState(false);
   const [collectDate, setCollectDate] = useState('27.11.2022');
@@ -230,7 +281,9 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
       }),
     );
     setPayMethod('Kasadan');
-    setSelectedCash('Varsayılan Kasa');
+    if (cashOptions.length > 0 && !selectedCashId) {
+      setSelectedCashId(cashOptions[0].id);
+    }
     setShowPay(true);
   };
 
@@ -339,8 +392,9 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
           return;
         }
         let target = cashLedgers[0];
-        if (selectedCash === 'Kasa2' && cashLedgers.length > 1) {
-          target = cashLedgers[1];
+        if (selectedCashId) {
+          const found = cashLedgers.find((c) => c.id === selectedCashId);
+          if (found) target = found;
         }
         const trxDate = payDate;
         const { error: cashTrxErr } = await supabase.from('cash_transactions').insert({
@@ -359,7 +413,7 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
       } else {
         const { data: banks, error: bankErr } = await supabase
           .from('bank_accounts')
-          .select('id, bank_name, balance')
+          .select('id, bank_name, branch_name, balance')
           .eq('company_id', companyId)
           .order('bank_name', { ascending: true });
         if (bankErr) throw bankErr;
@@ -367,7 +421,11 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
           alert('Banka hesabı bulunamadı. Önce bir banka hesabı tanımlayın.');
           return;
         }
-        const bankAcc = banks[0];
+        let bankAcc = banks[0];
+        if (selectedBankId) {
+          const found = banks.find((b) => b.id === selectedBankId);
+          if (found) bankAcc = found;
+        }
         const trxDate = payDate;
         const { error: bankTrxErr } = await supabase.from('bank_transactions').insert({
           bank_account_id: bankAcc.id,
@@ -713,22 +771,48 @@ export default function ChequeNoteDetailPage({ params }: { params: { id: string 
               </label>
               <label style={{ display: 'grid', gap: 6 }}>
                 <span>Ödeme Şekli :</span>
-                <select value={payMethod} onChange={(e) => setPayMethod(e.target.value as 'Kasadan' | 'Bankadan')} style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db' }}>
+                <select
+                  value={payMethod}
+                  onChange={(e) => setPayMethod(e.target.value as 'Kasadan' | 'Bankadan')}
+                  style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db' }}
+                >
                   <option>Kasadan</option>
                   <option>Bankadan</option>
                 </select>
               </label>
               {payMethod === 'Kasadan' && (
                 <div style={{ display: 'grid', gap: 6 }}>
-                  <div style={{ fontSize: 12, opacity: 0.8 }}>Varsayılan Kasa</div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <input type="radio" checked={selectedCash === 'Varsayılan Kasa'} onChange={() => setSelectedCash('Varsayılan Kasa')} />
-                    <span>Varsayılan Kasa</span>
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <input type="radio" checked={selectedCash === 'Kasa2'} onChange={() => setSelectedCash('Kasa2')} />
-                    <span>Kasa2</span>
-                  </label>
+                  <div style={{ fontSize: 12, opacity: 0.8 }}>Kasa Seçimi</div>
+                  {cashOptions.length === 0 && <div style={{ fontSize: 12, color: '#6b7280' }}>Tanımlı kasa bulunamadı.</div>}
+                  {cashOptions.map((c) => (
+                    <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input
+                        type="radio"
+                        checked={selectedCashId === c.id}
+                        onChange={() => setSelectedCashId(c.id)}
+                      />
+                      <span>{c.name}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+              {payMethod === 'Bankadan' && (
+                <div style={{ display: 'grid', gap: 6 }}>
+                  <div style={{ fontSize: 12, opacity: 0.8 }}>Banka Seçimi</div>
+                  {bankOptions.length === 0 && <div style={{ fontSize: 12, color: '#6b7280' }}>Tanımlı banka hesabı bulunamadı.</div>}
+                  {bankOptions.map((b) => (
+                    <label key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input
+                        type="radio"
+                        checked={selectedBankId === b.id}
+                        onChange={() => setSelectedBankId(b.id)}
+                      />
+                      <span>
+                        {b.bank_name ?? 'Banka'}
+                        {b.branch_name ? ` - ${b.branch_name}` : ''}
+                      </span>
+                    </label>
+                  ))}
                 </div>
               )}
             </div>
