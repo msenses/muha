@@ -120,13 +120,17 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
     if (!ledgerId) throw new Error('Kasa bulunamadı.');
     const trxDate = (date && date.trim()) || new Date().toISOString().slice(0, 10);
 
-    const { error } = await supabase.from('cash_transactions').insert({
-      cash_ledger_id: ledgerId,
-      amount,
-      flow,
-      description,
-      trx_date: trxDate,
-    });
+    const { data: inserted, error } = await supabase
+      .from('cash_transactions')
+      .insert({
+        cash_ledger_id: ledgerId,
+        amount,
+        flow,
+        description,
+        trx_date: trxDate,
+      })
+      .select('id, amount, flow, description, trx_date')
+      .single();
     if (error) throw error;
 
     const delta = flow === 'in' ? amount : -amount;
@@ -134,6 +138,29 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
       .from('cash_ledgers')
       .update({ balance: (ledger?.balance ?? 0) + delta })
       .eq('id', ledgerId);
+
+    // Frontend state'i de anında güncelle
+    if (inserted) {
+      setRows((prev) => [
+        {
+          id: inserted.id as string,
+          date: inserted.trx_date,
+          type: inserted.flow === 'in' ? 'GİRİŞ(+) ' : 'ÇIKIŞ(-)',
+          amount: Number(inserted.amount ?? amount),
+          title: '',
+          note: inserted.description ?? '',
+        },
+        ...prev,
+      ]);
+    }
+    setLedger((prev) =>
+      prev
+        ? {
+            ...prev,
+            balance: (prev.balance ?? 0) + delta,
+          }
+        : prev,
+    );
   };
 
   const handleAddIncome = async () => {
