@@ -92,7 +92,8 @@ export default function BankDetailPage({ params }: { params: { id: string } }) {
   const [ctDocNo, setCtDocNo] = useState('');
   const [ctDesc, setCtDesc] = useState('Bankadan, kasaya virman');
   const [ctAmount, setCtAmount] = useState('0.00');
-  const [ctCash, setCtCash] = useState<'Varsayılan Kasa' | 'Kasa2'>('Varsayılan Kasa');
+  const [cashOptions, setCashOptions] = useState<{ id: string; name: string; balance: number | null }[]>([]);
+  const [ctCashId, setCtCashId] = useState<string | null>(null);
 
   const bankName = useMemo(() => {
     if (!bank) return 'Banka';
@@ -126,7 +127,11 @@ export default function BankDetailPage({ params }: { params: { id: string } }) {
 
         trxQuery = trxQuery.order('trx_date', { ascending: false }).limit(1000);
 
-        const [{ data: bankData, error: bankErr }, { data: trxData, error: trxErr }] = await Promise.all([
+        const [
+          { data: bankData, error: bankErr },
+          { data: trxData, error: trxErr },
+          { data: cashData, error: cashErr },
+        ] = await Promise.all([
           supabase
             .from('bank_accounts')
             .select('id, bank_name, account_no, branch_name, iban, balance')
@@ -134,6 +139,11 @@ export default function BankDetailPage({ params }: { params: { id: string } }) {
             .eq('id', bankId)
             .single(),
           trxQuery,
+          supabase
+            .from('cash_ledgers')
+            .select('id, name, balance')
+            .eq('company_id', companyId)
+            .order('name', { ascending: true }),
         ]);
 
         if (!active) return;
@@ -158,6 +168,20 @@ export default function BankDetailPage({ params }: { params: { id: string } }) {
             account: '',
           }));
           setRows(mapped);
+        }
+
+        if (cashErr) {
+          console.error('Kasa listesi yüklenemedi', cashErr);
+        } else if (cashData) {
+          const typed = (cashData as any[]).map((c) => ({
+            id: c.id as string,
+            name: String(c.name ?? ''),
+            balance: typeof c.balance === 'number' ? c.balance : Number(c.balance ?? 0),
+          }));
+          setCashOptions(typed);
+          if (!ctCashId && typed.length > 0) {
+            setCtCashId(typed[0].id);
+          }
         }
       } catch (err) {
         console.error('Banka detayı yüklenirken hata', err);
@@ -302,7 +326,7 @@ export default function BankDetailPage({ params }: { params: { id: string } }) {
         date: ctDate,
       });
 
-      // Hedef kasa: şirket kasalarından sırasıyla seç
+      // Hedef kasa: şirket kasalarından seçilen kasa
       const companyId = await fetchCurrentCompanyId();
       if (!companyId) {
         alert('Şirket bilgisi bulunamadı. Kasa seçilemedi.');
@@ -322,8 +346,9 @@ export default function BankDetailPage({ params }: { params: { id: string } }) {
       }
 
       let target = cashLedgers[0];
-      if (ctCash === 'Kasa2' && cashLedgers.length > 1) {
-        target = cashLedgers[1];
+      if (ctCashId) {
+        const found = cashLedgers.find((c) => c.id === ctCashId);
+        if (found) target = found;
       }
 
       const trxDate = (ctDate && ctDate.trim()) || new Date().toISOString().slice(0, 10);
@@ -598,8 +623,17 @@ export default function BankDetailPage({ params }: { params: { id: string } }) {
               </label>
               <div style={{ display: 'grid', gap: 6 }}>
                 <span>Kasa :</span>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}><input type="radio" checked={ctCash === 'Varsayılan Kasa'} onChange={() => setCtCash('Varsayılan Kasa')} /> Varsayılan Kasa</label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}><input type="radio" checked={ctCash === 'Kasa2'} onChange={() => setCtCash('Kasa2')} /> Kasa2</label>
+                {cashOptions.length === 0 && <div style={{ fontSize: 12, color: '#6b7280' }}>Tanımlı kasa bulunamadı.</div>}
+                {cashOptions.map((c) => (
+                  <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input
+                      type="radio"
+                      checked={ctCashId === c.id}
+                      onChange={() => setCtCashId(c.id)}
+                    />
+                    <span>{c.name}</span>
+                  </label>
+                ))}
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
