@@ -84,6 +84,7 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
   const [bankTransferDocNo, setBankTransferDocNo] = useState('');
   const [bankTransferAmount, setBankTransferAmount] = useState('0.00');
   const [bankName, setBankName] = useState<string | null>(null);
+  const [selectedBankId, setSelectedBankId] = useState<string | null>(null);
   const [openBankPick, setOpenBankPick] = useState(false);
   const [bankPickQuery, setBankPickQuery] = useState('');
 
@@ -214,13 +215,45 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
       alert('Tutar 0’dan büyük olmalıdır.');
       return;
     }
+    if (!selectedBankId) {
+      alert('Lütfen bir banka seçin.');
+      return;
+    }
     try {
+      // Kasadan çıkış
       await addCashTransaction({
         flow: 'out',
         amount,
         description: bankTransferDesc || `Bankaya virman${bankName ? ` - ${bankName}` : ''}`,
         date: bankTransferDate,
       });
+
+      // Bankaya giriş
+      const trxDate = (bankTransferDate && bankTransferDate.trim()) || new Date().toISOString().slice(0, 10);
+      const { data: bankRow, error: bankRowErr } = await supabase
+        .from('bank_accounts')
+        .select('id, balance')
+        .eq('id', selectedBankId)
+        .maybeSingle();
+      if (bankRowErr) throw bankRowErr;
+
+      const { error: bankTrxErr } = await supabase.from('bank_transactions').insert({
+        bank_account_id: selectedBankId,
+        amount,
+        flow: 'in',
+        description: bankTransferDesc || `Kasadan virman - Kaynak Kasa: ${cashName}`,
+        trx_date: trxDate,
+      });
+      if (bankTrxErr) throw bankTrxErr;
+
+      if (bankRow) {
+        const currentBal = Number(bankRow.balance ?? 0);
+        await supabase
+          .from('bank_accounts')
+          .update({ balance: currentBal + amount })
+          .eq('id', selectedBankId);
+      }
+
       setShowBankTransfer(false);
     } catch (e: any) {
       console.error('Bankaya virman kaydedilemedi', e);
@@ -887,6 +920,7 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
                             <td style={{ padding: '8px 10px' }}>
                               <button
                                 onClick={() => {
+                                  setSelectedBankId(r.id);
                                   setBankName(`${r.bank_name ?? ''}${r.branch_name ? ` - ${r.branch_name}` : ''}`);
                                   setOpenBankPick(false);
                                 }}
