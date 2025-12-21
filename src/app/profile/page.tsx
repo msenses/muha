@@ -17,6 +17,12 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPw, setCurrentPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [newPw2, setNewPw2] = useState('');
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwSuccess, setPwSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -85,6 +91,55 @@ export default function ProfilePage() {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return '-';
     return d.toLocaleString('tr-TR');
+  };
+
+  const handlePasswordChange = async () => {
+    setPwError(null);
+    setPwSuccess(null);
+    if (!profile?.email) {
+      setPwError('Kullanıcı e-posta bilgisi alınamadı.');
+      return;
+    }
+    if (!currentPw || !newPw || !newPw2) {
+      setPwError('Tüm şifre alanlarını doldurun.');
+      return;
+    }
+    if (newPw !== newPw2) {
+      setPwError('Yeni şifre ve tekrarı eşleşmiyor.');
+      return;
+    }
+    if (newPw.length < 6) {
+      setPwError('Yeni şifre en az 6 karakter olmalıdır.');
+      return;
+    }
+
+    setPwLoading(true);
+    try {
+      // Mevcut şifreyi doğrula
+      const { error: signInErr } = await supabase.auth.signInWithPassword({
+        email: profile.email,
+        password: currentPw,
+      });
+      if (signInErr) {
+        setPwError('Mevcut şifre hatalı.');
+        return;
+      }
+
+      const { error: updateErr } = await supabase.auth.updateUser({ password: newPw });
+      if (updateErr) {
+        setPwError(updateErr.message ?? 'Şifre güncellenemedi.');
+        return;
+      }
+
+      setPwSuccess('Şifreniz başarıyla güncellendi.');
+      setCurrentPw('');
+      setNewPw('');
+      setNewPw2('');
+    } catch (err: any) {
+      setPwError(err?.message ?? 'Şifre güncellenemedi.');
+    } finally {
+      setPwLoading(false);
+    }
   };
 
   return (
@@ -195,6 +250,95 @@ export default function ProfilePage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 13 }}>
                 <span style={{ opacity: 0.7 }}>Aktif Şirket</span>
                 <span>{profile.companyName ?? '-'}</span>
+              </div>
+            </div>
+
+            {/* Şifre Değiştirme */}
+            <div
+              style={{
+                padding: 12,
+                borderRadius: 14,
+                background: 'rgba(15,23,42,0.9)',
+                border: '1px solid rgba(248,250,252,0.08)',
+                display: 'grid',
+                gap: 8,
+              }}
+            >
+              <div style={{ fontSize: 13, opacity: 0.8 }}>Şifre Değiştir</div>
+              <div style={{ display: 'grid', gap: 8, fontSize: 13 }}>
+                <label style={{ display: 'grid', gap: 4 }}>
+                  <span style={{ opacity: 0.8 }}>Mevcut Şifre</span>
+                  <input
+                    type="password"
+                    value={currentPw}
+                    onChange={(e) => setCurrentPw(e.target.value)}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                      border: '1px solid rgba(148,163,184,0.6)',
+                      background: 'rgba(15,23,42,0.9)',
+                      color: 'white',
+                      fontSize: 13,
+                    }}
+                  />
+                </label>
+                <label style={{ display: 'grid', gap: 4 }}>
+                  <span style={{ opacity: 0.8 }}>Yeni Şifre</span>
+                  <input
+                    type="password"
+                    value={newPw}
+                    onChange={(e) => setNewPw(e.target.value)}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                      border: '1px solid rgba(148,163,184,0.6)',
+                      background: 'rgba(15,23,42,0.9)',
+                      color: 'white',
+                      fontSize: 13,
+                    }}
+                  />
+                </label>
+                <label style={{ display: 'grid', gap: 4 }}>
+                  <span style={{ opacity: 0.8 }}>Yeni Şifre (Tekrar)</span>
+                  <input
+                    type="password"
+                    value={newPw2}
+                    onChange={(e) => setNewPw2(e.target.value)}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                      border: '1px solid rgba(148,163,184,0.6)',
+                      background: 'rgba(15,23,42,0.9)',
+                      color: 'white',
+                      fontSize: 13,
+                    }}
+                  />
+                </label>
+                {pwError && (
+                  <div style={{ fontSize: 12, color: '#fecaca' }}>{pwError}</div>
+                )}
+                {pwSuccess && (
+                  <div style={{ fontSize: 12, color: '#bbf7d0' }}>{pwSuccess}</div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
+                  <button
+                    type="button"
+                    onClick={handlePasswordChange}
+                    disabled={pwLoading}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: 999,
+                      border: '1px solid rgba(34,197,94,0.6)',
+                      background: 'linear-gradient(135deg,#22c55e,#16a34a)',
+                      color: 'white',
+                      fontSize: 12,
+                      cursor: 'pointer',
+                      opacity: pwLoading ? 0.7 : 1,
+                    }}
+                  >
+                    {pwLoading ? 'Güncelleniyor…' : 'Şifreyi Güncelle'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
