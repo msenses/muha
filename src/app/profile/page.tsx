@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import { fetchCurrentCompanyId } from '@/lib/company';
 
 type ProfileInfo = {
   email: string;
@@ -42,26 +41,28 @@ export default function ProfilePage() {
         const email = user.email ?? '';
         const createdAt = user.created_at ?? null;
 
-        const companyId = await fetchCurrentCompanyId();
-
         let companyName: string | null = null;
-        if (companyId) {
-          const { data: company } = await supabase
-            .from('companies')
-            .select('name')
-            .eq('id', companyId)
-            .single();
-          companyName = (company as any)?.name ?? null;
-        }
-
         let role: string | null = null;
+
         if (user.id) {
+          // user_profiles üzerinden hem rolü hem de bağlı olduğu şirketi al
           const { data: prof } = await supabase
             .from('user_profiles')
-            .select('role')
+            .select('role, company_id')
             .eq('user_id', user.id)
             .maybeSingle();
+
           role = (prof as any)?.role ?? null;
+          const companyId = (prof as any)?.company_id ?? null;
+
+          if (companyId) {
+            const { data: company } = await supabase
+              .from('companies')
+              .select('name')
+              .eq('id', companyId)
+              .single();
+            companyName = (company as any)?.name ?? null;
+          }
         }
 
         if (!active) return;
