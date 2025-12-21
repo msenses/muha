@@ -442,7 +442,7 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
               </div>
 
               <div style={{ padding: 12 }}>
-              <div style={{ overflow: 'auto', maxHeight: 'calc(100dvh - 260px)' }}>
+              <div style={{ overflowX: 'auto', overflowY: 'visible', maxHeight: 'calc(100dvh - 260px)', position: 'relative' }}>
                   <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
                     <thead>
                       <tr style={{ textAlign: 'left', color: 'white', opacity: 0.9 }}>
