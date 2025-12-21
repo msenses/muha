@@ -1101,7 +1101,22 @@ export default function CashDetailPage({ params }: { params: { id: string } }) {
                 </div>
 
                 <div style={{ padding: 12, display: 'flex', justifyContent: 'flex-end' }}>
-                  <button onClick={() => { setShowReport(false); const query = `?start=${encodeURIComponent(reportStart)}&end=${encodeURIComponent(reportEnd)}&all=${reportAllTime ? '1' : '0'}`; router.push((`/cash/${params.id}/reports/transactions${query}`) as Route); }} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}>≡ Kasa Raporu Getir</button>
+                  <button
+                    onClick={() => {
+                      setShowReport(false);
+                      const params = new URLSearchParams();
+                      if (reportAllTime) {
+                        params.set('alltime', '1');
+                      } else {
+                        if (reportStart) params.set('start', reportStart);
+                        if (reportEnd) params.set('end', reportEnd);
+                      }
+                      router.push((`/cash/${params.id}/reports/transactions?${params.toString()}`) as Route);
+                    }}
+                    style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#fff', cursor: 'pointer' }}
+                  >
+                    ≡ Kasa Raporu Getir
+                  </button>
                 </div>
               </div>
             </div>
