@@ -189,7 +189,7 @@ export default function InstallmentDetailPage({ params }: { params: { id: string
             </div>
 
             {/* Taksit listesi alt tablo */}
-            <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid #e5e7eb', background: '#fff' }}>
+            <div style={{ borderRadius: 12, border: '1px solid #e5e7eb', background: '#fff' }}>
               <div style={{ background: '#12b3c5', color: 'white', padding: '8px 10px', fontWeight: 700 }}>Taksit Listesi</div>
               <div style={{ padding: 12 }}>
                 <div style={{ overflowX: 'auto' }}>
