@@ -30,6 +30,7 @@ export default function InstallmentDetailPage({ params }: { params: { id: string
   const [error, setError] = useState<string | null>(null);
 
   const [openActionRowId, setOpenActionRowId] = useState<string | null>(null);
+  const [actionMenuPos, setActionMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [showReport, setShowReport] = useState(false);
   const [reportAllTime, setReportAllTime] = useState(false);
   const [reportStart, setReportStart] = useState('22.11.2022');
@@ -210,22 +211,56 @@ export default function InstallmentDetailPage({ params }: { params: { id: string
                         <tr key={r.id} style={{ color: '#111827' }}>
                           <td style={{ padding: '8px', position: 'relative' }}>
                             <button
-                              onClick={() => setOpenActionRowId(prev => prev === r.id ? null : r.id)}
+                              onClick={(e) => {
+                                const isOpenForRow = openActionRowId === r.id;
+                                if (isOpenForRow) {
+                                  setOpenActionRowId(null);
+                                  setActionMenuPos(null);
+                                  return;
+                                }
+                                const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                                setOpenActionRowId(r.id);
+                                setActionMenuPos({
+                                  top: rect.bottom + window.scrollY,
+                                  left: rect.left + window.scrollX,
+                                });
+                              }}
                               style={{ padding: '6px 10px', borderRadius: 999, border: '1px solid #16a34a', background: '#16a34a', color: 'white', cursor: 'pointer' }}
                             >
                               İşlemler ▾
                             </button>
-                            {openActionRowId === r.id && (
-                              <div style={{ position: 'absolute', top: 36, left: 8, minWidth: 180, background: 'white', color: '#111827', border: '1px solid #e5e7eb', borderRadius: 8, boxShadow: '0 10px 32px rgba(0,0,0,0.25)', zIndex: 50 }}>
+                            {openActionRowId === r.id && actionMenuPos && (
+                              <div
+                                style={{
+                                  position: 'fixed',
+                                  top: actionMenuPos.top + 4,
+                                  left: actionMenuPos.left,
+                                  minWidth: 180,
+                                  background: 'white',
+                                  color: '#111827',
+                                  border: '1px solid #e5e7eb',
+                                  borderRadius: 8,
+                                  boxShadow: '0 10px 32px rgba(0,0,0,0.25)',
+                                  zIndex: 2000,
+                                }}
+                              >
                                 <button
-                                  onClick={() => { setOpenActionRowId(null); router.push((`/installments/${params.id}/receipt`) as Route); }}
+                                  onClick={() => {
+                                    setOpenActionRowId(null);
+                                    setActionMenuPos(null);
+                                    router.push((`/installments/${params.id}/receipt`) as Route);
+                                  }}
                                   style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}
                                 >
                                   🖨 Makbuz Bas
                                 </button>
                                 <div style={{ height: 1, background: '#e5e7eb' }} />
                                 <button
-                                  onClick={() => { setOpenActionRowId(null); setShowCollect(true); }}
+                                  onClick={() => {
+                                    setOpenActionRowId(null);
+                                    setActionMenuPos(null);
+                                    setShowCollect(true);
+                                  }}
                                   style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', cursor: 'pointer' }}
                                 >
                                   ✏ Tahsil Et
@@ -233,7 +268,16 @@ export default function InstallmentDetailPage({ params }: { params: { id: string
                                 <div style={{ height: 1, background: '#e5e7eb' }} />
                                 <button
                                   disabled
-                                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', background: 'white', border: 'none', color: '#9ca3af', cursor: 'not-allowed' }}
+                                  style={{
+                                    display: 'block',
+                                    width: '100%',
+                                    textAlign: 'left',
+                                    padding: '8px 10px',
+                                    background: 'white',
+                                    border: 'none',
+                                    color: '#9ca3af',
+                                    cursor: 'not-allowed',
+                                  }}
                                 >
                                   🗑 İptal Et
                                 </button>
