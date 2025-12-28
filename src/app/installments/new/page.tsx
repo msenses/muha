@@ -10,7 +10,8 @@ import { fetchCurrentCompanyId } from '@/lib/company';
 
 type AccountPick = { id: string; title: string; officer: string | null };
 type CashLedger = { id: string; name: string; is_default: boolean | null };
-type CollectionMethod = 'cash' | 'bank' | 'cheque_note' | 'other';
+type BankAccount = { id: string; bank_name: string | null; branch_name: string | null; account_no: string | null; is_default: boolean | null };
+type CollectionMethod = 'cash' | 'bank';
 
 export default function InstallmentsNewPage() {
   const router = useRouter();
@@ -23,6 +24,8 @@ export default function InstallmentsNewPage() {
   const [downPayment, setDownPayment] = useState('0');
   const [cashLedgers, setCashLedgers] = useState<CashLedger[]>([]);
   const [cashLedgerId, setCashLedgerId] = useState<string | null>(null);
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+  const [bankAccountId, setBankAccountId] = useState<string | null>(null);
   const [collectionMethod, setCollectionMethod] = useState<CollectionMethod>('cash');
   const [firstInstallment, setFirstInstallment] = useState(() => new Date().toISOString().slice(0, 10));
   const [count, setCount] = useState('2');
@@ -91,6 +94,33 @@ export default function InstallmentsNewPage() {
           const def = mapped.find((c) => c.is_default) ?? mapped[0] ?? null;
           setCashLedgerId(def?.id ?? null);
         }
+
+        // Banka listesi
+        const { data: bankRows, error: bankErr } = await supabase
+          .from('bank_accounts')
+          .select('id, bank_name, branch_name, account_no, is_default')
+          .eq('company_id', cid)
+          .order('is_default', { ascending: false })
+          .order('bank_name', { ascending: true });
+
+        if (!active) return;
+
+        if (bankErr) {
+          console.error('Banka listesi yüklenemedi:', bankErr);
+          setBankAccounts([]);
+          setBankAccountId(null);
+        } else {
+          const mappedBanks = ((bankRows ?? []) as any[]).map((b) => ({
+            id: b.id as string,
+            bank_name: (b.bank_name as string) ?? null,
+            branch_name: (b.branch_name as string) ?? null,
+            account_no: (b.account_no as string) ?? null,
+            is_default: (b.is_default as boolean) ?? null,
+          }));
+          setBankAccounts(mappedBanks);
+          const defBank = mappedBanks.find((b) => b.is_default) ?? mappedBanks[0] ?? null;
+          setBankAccountId(defBank?.id ?? null);
+        }
       } catch (err) {
         if (!active) return;
         console.error('Cari listesi yüklenirken beklenmeyen hata:', err);
@@ -145,18 +175,22 @@ export default function InstallmentsNewPage() {
       setSaveError('Taksitlere bölünecek tutar 0 dan büyük olmalıdır');
       return;
     }
+    if (collectionMethod === 'cash' && !cashLedgerId) {
+      setSaveError('Kasa seçmelisiniz');
+      return;
+    }
+    if (collectionMethod === 'bank' && !bankAccountId) {
+      setSaveError('Banka hesabı seçmelisiniz');
+      return;
+    }
     setSaving(true);
     try {
       const methodLabel =
         collectionMethod === 'cash'
           ? 'Kasa (Nakit)'
-          : collectionMethod === 'bank'
-          ? 'Banka'
-          : collectionMethod === 'cheque_note'
-          ? 'Çek/Senet'
-          : 'Diğer';
+          : 'Banka';
 
-      const combinedNotes = [desc.trim() || null, methodLabel ? `Tahsilat: ${methodLabel}` : null]
+      const combinedNotes = [desc.trim() || null, `Tahsilat: ${methodLabel}`]
         .filter((v) => v && v.length > 0)
         .join(' | ');
 
@@ -169,6 +203,9 @@ export default function InstallmentsNewPage() {
           installment_count: installmentsCount,
           start_date: date || new Date().toISOString().slice(0, 10),
           notes: combinedNotes || null,
+          collection_method: collectionMethod,
+          cash_ledger_id: collectionMethod === 'cash' ? cashLedgerId : null,
+          bank_account_id: collectionMethod === 'bank' ? bankAccountId : null,
         })
         .select('id')
         .single();
@@ -233,23 +270,6 @@ export default function InstallmentsNewPage() {
           </label>
 
           <label style={{ display: 'grid', gap: 6 }}>
-            <span>Kasa Seçimi :</span>
-            <select
-              value={cashLedgerId ?? ''}
-              onChange={(e) => setCashLedgerId(e.target.value || null)}
-              style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db' }}
-            >
-              <option value="">Kasa seçin</option>
-              {cashLedgers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                  {c.is_default ? ' (Varsayılan)' : ''}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label style={{ display: 'grid', gap: 6 }}>
             <span>Taksit Tahsilat Şekli :</span>
             <select
               value={collectionMethod}
@@ -258,10 +278,47 @@ export default function InstallmentsNewPage() {
             >
               <option value="cash">Kasa (Nakit)</option>
               <option value="bank">Banka</option>
-              <option value="cheque_note">Çek / Senet</option>
-              <option value="other">Diğer</option>
             </select>
           </label>
+
+          {collectionMethod === 'cash' && (
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span>Kasa Seçimi :</span>
+              <select
+                value={cashLedgerId ?? ''}
+                onChange={(e) => setCashLedgerId(e.target.value || null)}
+                style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db' }}
+              >
+                <option value="">Kasa seçin</option>
+                {cashLedgers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                    {c.is_default ? ' (Varsayılan)' : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
+          {collectionMethod === 'bank' && (
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span>Banka Seçimi :</span>
+              <select
+                value={bankAccountId ?? ''}
+                onChange={(e) => setBankAccountId(e.target.value || null)}
+                style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db' }}
+              >
+                <option value="">Banka seçin</option>
+                {bankAccounts.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.bank_name ?? 'Banka'}
+                    {b.branch_name ? ` - ${b.branch_name}` : ''}
+                    {b.account_no ? ` / ${b.account_no}` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
           <label style={{ display: 'grid', gap: 6 }}>
             <span>İlk Taksit Tarihi :</span>
