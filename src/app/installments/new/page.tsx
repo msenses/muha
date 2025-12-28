@@ -9,6 +9,8 @@ import { supabase } from '@/lib/supabaseClient';
 import { fetchCurrentCompanyId } from '@/lib/company';
 
 type AccountPick = { id: string; title: string; officer: string | null };
+type CashLedger = { id: string; name: string; is_default: boolean | null };
+type CollectionMethod = 'cash' | 'bank' | 'cheque_note' | 'other';
 
 export default function InstallmentsNewPage() {
   const router = useRouter();
@@ -19,7 +21,9 @@ export default function InstallmentsNewPage() {
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [total, setTotal] = useState('0');
   const [downPayment, setDownPayment] = useState('0');
-  const [cash, setCash] = useState('Varsayılan Kasa');
+  const [cashLedgers, setCashLedgers] = useState<CashLedger[]>([]);
+  const [cashLedgerId, setCashLedgerId] = useState<string | null>(null);
+  const [collectionMethod, setCollectionMethod] = useState<CollectionMethod>('cash');
   const [firstInstallment, setFirstInstallment] = useState(() => new Date().toISOString().slice(0, 10));
   const [count, setCount] = useState('2');
   const [period, setPeriod] = useState('(30 GÜN) Aylık');
@@ -61,6 +65,31 @@ export default function InstallmentsNewPage() {
               officer: (a.contact_name as string) ?? null,
             })),
           );
+        }
+
+        // Kasa listesi
+        const { data: cashRows, error: cashErr } = await supabase
+          .from('cash_ledgers')
+          .select('id, name, is_default')
+          .eq('company_id', cid)
+          .order('is_default', { ascending: false })
+          .order('name', { ascending: true });
+
+        if (!active) return;
+
+        if (cashErr) {
+          console.error('Kasa listesi yüklenemedi:', cashErr);
+          setCashLedgers([]);
+          setCashLedgerId(null);
+        } else {
+          const mapped = ((cashRows ?? []) as any[]).map((c) => ({
+            id: c.id as string,
+            name: c.name as string,
+            is_default: (c.is_default as boolean) ?? null,
+          }));
+          setCashLedgers(mapped);
+          const def = mapped.find((c) => c.is_default) ?? mapped[0] ?? null;
+          setCashLedgerId(def?.id ?? null);
         }
       } catch (err) {
         if (!active) return;
@@ -118,6 +147,19 @@ export default function InstallmentsNewPage() {
     }
     setSaving(true);
     try {
+      const methodLabel =
+        collectionMethod === 'cash'
+          ? 'Kasa (Nakit)'
+          : collectionMethod === 'bank'
+          ? 'Banka'
+          : collectionMethod === 'cheque_note'
+          ? 'Çek/Senet'
+          : 'Diğer';
+
+      const combinedNotes = [desc.trim() || null, methodLabel ? `Tahsilat: ${methodLabel}` : null]
+        .filter((v) => v && v.length > 0)
+        .join(' | ');
+
       const { data: plan, error: planErr } = await supabase
         .from('installment_plans')
         .insert({
@@ -126,7 +168,7 @@ export default function InstallmentsNewPage() {
           total_amount: totalAmount,
           installment_count: installmentsCount,
           start_date: date || new Date().toISOString().slice(0, 10),
-          notes: desc.trim() || null,
+          notes: combinedNotes || null,
         })
         .select('id')
         .single();
@@ -192,9 +234,32 @@ export default function InstallmentsNewPage() {
 
           <label style={{ display: 'grid', gap: 6 }}>
             <span>Kasa Seçimi :</span>
-            <select value={cash} onChange={(e) => setCash(e.target.value)} style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db' }}>
-              <option>Varsayılan Kasa</option>
-              <option>Kasa2</option>
+            <select
+              value={cashLedgerId ?? ''}
+              onChange={(e) => setCashLedgerId(e.target.value || null)}
+              style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db' }}
+            >
+              <option value="">Kasa seçin</option>
+              {cashLedgers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                  {c.is_default ? ' (Varsayılan)' : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span>Taksit Tahsilat Şekli :</span>
+            <select
+              value={collectionMethod}
+              onChange={(e) => setCollectionMethod(e.target.value as CollectionMethod)}
+              style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db' }}
+            >
+              <option value="cash">Kasa (Nakit)</option>
+              <option value="bank">Banka</option>
+              <option value="cheque_note">Çek / Senet</option>
+              <option value="other">Diğer</option>
             </select>
           </label>
 

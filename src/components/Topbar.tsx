@@ -302,9 +302,9 @@ export default function Topbar() {
               type="button"
               onClick={() => setUserMenuOpen((v) => !v)}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
                 padding: '4px 8px',
                 borderRadius: 999,
                 border: 'none',
@@ -314,24 +314,24 @@ export default function Topbar() {
                 fontSize: 12,
               }}
             >
-              <div style={{
-                width: 28,
-                height: 28,
-                borderRadius: '50%',
-                background: 'rgba(255,255,255,0.15)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 12,
-                fontWeight: 600,
-                color: 'white',
-              }}>
-                {userEmail.charAt(0).toUpperCase()}
-              </div>
+            <div style={{
+              width: 28,
+              height: 28,
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 12,
+              fontWeight: 600,
+              color: 'white',
+            }}>
+              {userEmail.charAt(0).toUpperCase()}
+            </div>
               <span style={{ fontSize: 12, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {userEmail}
               </span>
-              <span style={{ fontSize: 10, opacity: 0.8 }}>▾</span>
+            <span style={{ fontSize: 10, opacity: 0.8 }}>▾</span>
             </button>
 
             {userMenuOpen && (

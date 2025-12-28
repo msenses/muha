@@ -427,8 +427,8 @@ export default function DashboardPage() {
 						<div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
 							<span style={{ fontSize: 13 }}>📄</span>
 							<span style={{ fontWeight: 700 }}>Son Faturalar</span>
-						</div>
-					</div>
+				</div>
+			</div>
 					<div style={{ display: 'grid', gap: 8, flex: 1, overflow: 'auto' }}>
 						{lastInvoices.map((r) => (
 							<div
@@ -452,11 +452,11 @@ export default function DashboardPage() {
 									}}
 								>
 									{formatCurrency(Number(r.total ?? 0))}
-								</div>
+			</div>
 							</div>
 						))}
 						{!lastInvoices.length && <div style={{ opacity: 0.8, fontSize: 13 }}>Gösterilecek fatura bulunamadı.</div>}
-					</div>
+						</div>
 					<button
 						onClick={() => router.push('/invoices')}
 						style={{
